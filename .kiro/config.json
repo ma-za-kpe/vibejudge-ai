@@ -1,0 +1,47 @@
+{
+  "version": "1.0",
+  "project": {
+    "name": "vibejudge-ai",
+    "type": "python-fastapi-serverless",
+    "description": "Multi-agent AI hackathon judging platform"
+  },
+  "autopilot": {
+    "enabled": true,
+    "trustedCommands": [
+      "pytest",
+      "sam build",
+      "sam local",
+      "pip install",
+      "python -m",
+      "ruff",
+      "mypy"
+    ]
+  },
+  "codeGeneration": {
+    "alwaysIncludeTypeHints": true,
+    "preferPydantic": true,
+    "loggingLibrary": "structlog",
+    "errorHandlingStyle": "explicit-try-catch",
+    "importStyle": "absolute"
+  },
+  "awsOptimization": {
+    "targetFreeTier": true,
+    "dynamodbBillingMode": "PROVISIONED",
+    "lambdaMemorySizeMB": {
+      "api": 1024,
+      "analyzer": 2048
+    }
+  },
+  "creditOptimization": {
+    "avoidManualCodeFor": [
+      "simple file creation",
+      "basic variable edits",
+      "configuration files"
+    ],
+    "preferHooksFor": [
+      "test generation",
+      "documentation updates",
+      "commit message generation"
+    ]
+  }
+}
