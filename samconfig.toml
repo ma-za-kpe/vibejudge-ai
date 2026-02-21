@@ -1,0 +1,33 @@
+# SAM deployment configuration
+# Run: sam deploy --config-env dev
+
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "vibejudge-dev"
+resolve_s3 = true
+s3_prefix = "vibejudge"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "Environment=\"dev\" BedrockRegion=\"us-east-1\" LogLevel=\"DEBUG\""
+disable_rollback = false
+image_repositories = []
+
+[staging.deploy.parameters]
+stack_name = "vibejudge-staging"
+resolve_s3 = true
+s3_prefix = "vibejudge"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "Environment=\"staging\" BedrockRegion=\"us-east-1\" LogLevel=\"INFO\""
+
+[prod.deploy.parameters]
+stack_name = "vibejudge-prod"
+resolve_s3 = true
+s3_prefix = "vibejudge"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "Environment=\"prod\" BedrockRegion=\"us-east-1\" LogLevel=\"WARNING\""

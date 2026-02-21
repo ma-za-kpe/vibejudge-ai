@@ -1,0 +1,32 @@
+# VibeJudge AI — Development Dependencies
+
+# Testing
+pytest>=7.4.0,<9.0.0
+pytest-asyncio>=0.23.0,<1.0.0
+pytest-cov>=4.1.0,<6.0.0
+pytest-mock>=3.12.0,<4.0.0
+pytest-env>=1.1.0,<2.0.0
+
+# AWS Mocking
+moto[dynamodb,s3]>=5.0.0,<6.0.0
+
+# Code Quality
+ruff>=0.1.0,<1.0.0
+mypy>=1.7.0,<2.0.0
+black>=23.12.0,<25.0.0
+
+# Type Stubs
+boto3-stubs[bedrock-runtime,dynamodb,s3]>=1.34.0,<2.0.0
+types-requests>=2.31.0,<3.0.0
+
+# Local Development
+uvicorn[standard]>=0.25.0,<1.0.0
+python-dotenv>=1.0.0,<2.0.0
+watchfiles>=0.21.0,<1.0.0
+
+# HTTP Testing
+httpx>=0.25.0,<1.0.0
+
+# Debugging
+ipython>=8.18.0,<9.0.0
+ipdb>=0.13.13,<1.0.0
