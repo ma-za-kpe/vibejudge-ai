@@ -1,7 +1,7 @@
 """FastAPI dependency injection for AWS services and authentication."""
 
 import os
-from typing import Annotated
+from typing import Annotated, Any
 
 import boto3
 import structlog
@@ -18,19 +18,19 @@ api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 # AWS SERVICE CLIENTS
 # ============================================================
 
-def get_dynamodb_table():
+def get_dynamodb_table() -> Any:
     """Get DynamoDB table resource."""
     table_name = os.environ.get("DYNAMODB_TABLE_NAME", "VibeJudgeTable")
     dynamodb = boto3.resource("dynamodb")
     return dynamodb.Table(table_name)
 
 
-def get_bedrock_client():
+def get_bedrock_client() -> Any:
     """Get Bedrock Runtime client."""
     return boto3.client("bedrock-runtime")
 
 
-def get_s3_client():
+def get_s3_client() -> Any:
     """Get S3 client."""
     return boto3.client("s3")
 
