@@ -28,9 +28,9 @@ async def create_organizer(
     try:
         return service.create_organizer(data)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to create organizer: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create organizer: {str(e)}") from e
 
 
 @router.post("/login", response_model=OrganizerLoginResponse)
@@ -55,7 +55,7 @@ async def login_organizer(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}") from e
 
 
 @router.get("/me", response_model=OrganizerResponse)

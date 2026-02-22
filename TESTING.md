@@ -37,6 +37,9 @@ make install-dev
 # Or manually:
 pip install -r requirements.txt
 pip install -r requirements-dev.txt
+
+# Install pre-commit hooks (recommended)
+.venv/bin/pre-commit install
 ```
 
 ### Environment Variables
@@ -79,7 +82,7 @@ pytest tests/unit/test_agents.py::test_bug_hunter_initialization -v
 - Cost calculations
 - Evidence validation
 
-**Current status:** 48 tests passing ✅
+**Current status:** 62 tests passing ✅ (includes 14 property-based tests for cost tracking bugfix)
 
 ### 2. Local API Testing (FastAPI + Uvicorn)
 Best for rapid development and debugging:
@@ -198,28 +201,34 @@ make run-local       # Terminal 2
 # 2. Create organizer and hackathon (see API testing above)
 
 # 3. Submit a repo for analysis
-curl -X POST http://localhost:8000/api/v1/submissions \
+curl -X POST http://localhost:8000/api/v1/hackathons/HACK#YOUR_HACK_ID/submissions \
   -H "Content-Type: application/json" \
   -H "X-API-Key: YOUR_API_KEY" \
   -d '{
-    "hackathon_id": "HACK#YOUR_HACK_ID",
     "team_name": "Test Team",
     "repo_url": "https://github.com/anthropics/anthropic-quickstarts",
     "submission_time": "2026-02-21T10:00:00Z"
   }'
 
 # 4. Trigger analysis (this will call Bedrock!)
-curl -X POST http://localhost:8000/api/v1/analysis/analyze \
+curl -X POST http://localhost:8000/api/v1/hackathons/HACK#YOUR_HACK_ID/analyze \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: YOUR_API_KEY" \
-  -d @events/test-analysis-request.json
+  -H "X-API-Key: YOUR_API_KEY"
 
 # 5. Check analysis status
-curl http://localhost:8000/api/v1/analysis/status/SUB#YOUR_SUB_ID \
+curl http://localhost:8000/api/v1/hackathons/HACK#YOUR_HACK_ID/analyze/status \
   -H "X-API-Key: YOUR_API_KEY"
 
 # 6. View results
 curl http://localhost:8000/api/v1/submissions/SUB#YOUR_SUB_ID \
+  -H "X-API-Key: YOUR_API_KEY"
+
+# 7. View scorecard
+curl http://localhost:8000/api/v1/hackathons/HACK#YOUR_HACK_ID/submissions/SUB#YOUR_SUB_ID/scorecard \
+  -H "X-API-Key: YOUR_API_KEY"
+
+# 8. View evidence
+curl http://localhost:8000/api/v1/hackathons/HACK#YOUR_HACK_ID/submissions/SUB#YOUR_SUB_ID/evidence \
   -H "X-API-Key: YOUR_API_KEY"
 ```
 
@@ -272,7 +281,7 @@ The system has built-in cost limits:
 **Solution:** Request model access in AWS Console → Bedrock → Model access
 
 ### Issue: "DynamoDB table not found"
-**Solution:** 
+**Solution:**
 ```bash
 # Check if local DynamoDB is running
 docker ps | grep dynamodb
@@ -378,7 +387,7 @@ Once local testing is complete:
    ```bash
    # Get API Gateway URL from SAM output
    export API_URL="https://YOUR_API_ID.execute-api.us-east-1.amazonaws.com"
-   
+
    curl $API_URL/health
    ```
 
@@ -403,6 +412,10 @@ make run-local              # Start FastAPI with uvicorn
 make test                   # Run all tests
 make test-cov               # Run tests with coverage
 make quality                # Run all code quality checks
+
+# Testing
+./scripts/quick_test.sh     # Comprehensive API test (20 endpoints)
+./scripts/start_local.sh    # Start local development server
 
 # Local Lambda Testing
 make build                  # Build SAM application

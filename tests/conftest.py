@@ -37,6 +37,7 @@ from src.models.submission import RepoMeta
 # MOCK BEDROCK CLIENT
 # ============================================================
 
+
 @pytest.fixture
 def mock_bedrock_client():
     """Mock Bedrock client with configurable responses."""
@@ -83,6 +84,7 @@ def mock_bedrock_client():
 # ============================================================
 # SAMPLE REPO DATA
 # ============================================================
+
 
 @pytest.fixture
 def sample_repo_data() -> RepoData:
@@ -155,6 +157,7 @@ def sample_repo_data() -> RepoData:
 # ============================================================
 # SAMPLE AGENT RESPONSES
 # ============================================================
+
 
 @pytest.fixture
 def sample_bug_hunter_response() -> BugHunterResponse:
@@ -317,6 +320,7 @@ def sample_ai_detection_response() -> AIDetectionResponse:
 # SAMPLE RUBRIC
 # ============================================================
 
+
 @pytest.fixture
 def sample_rubric() -> RubricConfig:
     """Sample rubric configuration."""
@@ -350,6 +354,7 @@ def sample_rubric() -> RubricConfig:
 # BEDROCK RESPONSE BUILDERS
 # ============================================================
 
+
 def build_bedrock_response(
     content: str,
     input_tokens: int = 1000,
@@ -357,13 +362,13 @@ def build_bedrock_response(
     model_id: str = "amazon.nova-lite-v1:0",
 ) -> dict[str, Any]:
     """Build a mock Bedrock API response.
-    
+
     Args:
         content: Response content (JSON string)
         input_tokens: Number of input tokens
         output_tokens: Number of output tokens
         model_id: Bedrock model ID
-        
+
     Returns:
         Mock Bedrock response dict
     """
@@ -520,6 +525,7 @@ def build_ai_detection_json() -> str:
 # ============================================================
 # MOCK RESPONSE HELPERS FOR ORCHESTRATOR TESTS
 # ============================================================
+
 
 def build_complete_bug_hunter_dict(overall_score: float = 8.5, confidence: float = 0.9) -> dict:
     """Build complete BugHunter response dict for mocking."""

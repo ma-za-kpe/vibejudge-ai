@@ -1,0 +1,78 @@
+=== VibeJudge AI - Comprehensive Endpoint Testing ===
+API URL: https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev
+Date: Sun Feb 22 16:29:42 GMT 2026
+
+1/20: GET /health
+✅ PASS
+
+2/20: POST /api/v1/organizers
+✅ PASS (API_KEY: 89252ed30f71aadb0e11...)
+
+3/20: GET /api/v1/organizers/me
+✅ PASS
+
+4/20: PUT /api/v1/organizers/me
+✅ PASS
+
+5/20: POST /api/v1/hackathons
+✅ PASS (HACK_ID: 01KJ32Z1EZSD01PNSZHB3J5X52)
+
+6/20: GET /api/v1/hackathons
+✅ PASS
+
+7/20: GET /api/v1/hackathons/{hack_id}
+✅ PASS
+
+8/20: PUT /api/v1/hackathons/{hack_id}
+✅ PASS
+
+9/20: POST /api/v1/hackathons/{hack_id}/submissions
+✅ PASS (SUB_ID: 01KJ32Z55KZJCVKVQQJH72SB1F)
+
+10/20: GET /api/v1/hackathons/{hack_id}/submissions
+✅ PASS
+
+11/20: GET /api/v1/submissions/{sub_id}
+✅ PASS
+
+12/20: GET /api/v1/hackathons/{hack_id}/submissions/{sub_id}/scorecard
+✅ PASS
+
+13/20: GET /api/v1/hackathons/{hack_id}/submissions/{sub_id}/evidence
+✅ PASS
+
+14/20: POST /api/v1/hackathons/{hack_id}/analyze
+✅ PASS (JOB_ID: 01KJ32ZA8RZ43DXS3WA4XZA6WE)
+
+15/20: GET /api/v1/hackathons/{hack_id}/jobs
+❌ FAIL: {"detail":"Not Found"}
+
+16/20: GET /api/v1/jobs/{job_id}
+❌ FAIL: {"detail":"Not Found"}
+
+17/20: GET /api/v1/hackathons/{hack_id}/leaderboard
+❌ FAIL: {"detail":"No scored submissions available"}
+
+18/20: GET /api/v1/hackathons/{hack_id}/costs
+✅ PASS
+
+19/20: POST /api/v1/hackathons/{hack_id}/estimate-cost
+❌ FAIL: {"detail":"Not Found"}
+
+20/20: GET /api/v1/submissions/{sub_id}/costs
+✅ PASS
+
+===================================
+SUMMARY
+===================================
+Total Tests: 20
+Passed: 16
+Failed: 4
+Success Rate: 80%
+
+Test IDs for further testing:
+ORG_ID=01KJ32YYKKEVZQX3F2ACATMF36
+API_KEY=89252ed30f71aadb0e11debde2b6df1411e056a763cb14697f2bd15961507174
+HACK_ID=01KJ32Z1EZSD01PNSZHB3J5X52
+SUB_ID=01KJ32Z55KZJCVKVQQJH72SB1F
+JOB_ID=01KJ32ZA8RZ43DXS3WA4XZA6WE

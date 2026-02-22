@@ -11,7 +11,7 @@
   },
   "then": {
     "type": "runCommand",
-    "command": "pytest tests/ -v --tb=short -x",
+    "command": ".venv/bin/pytest tests/ -v --tb=short -x",
     "timeout": 60
   }
 }

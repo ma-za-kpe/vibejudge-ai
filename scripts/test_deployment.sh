@@ -158,14 +158,14 @@ echo ""
 for i in {1..18}; do
     sleep 5
     echo -n "."
-    
+
     # Check status every 15 seconds
     if [ $((i % 3)) -eq 0 ]; then
         STATUS_RESPONSE=$(curl -s $API_URL/api/v1/hackathons/$HACK_ID/analyze/status \
           -H "X-API-Key: $API_KEY")
-        
+
         STATUS=$(echo "$STATUS_RESPONSE" | jq -r '.status')
-        
+
         if [ "$STATUS" = "completed" ]; then
             echo ""
             echo "✅ Analysis completed!"

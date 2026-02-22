@@ -1,7 +1,7 @@
 """Common base models and utilities shared across all VibeJudge models."""
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -9,7 +9,8 @@ from pydantic import BaseModel, ConfigDict, Field
 # ENUMS
 # ============================================================
 
-class HackathonStatus(str, Enum):
+
+class HackathonStatus(StrEnum):
     DRAFT = "draft"
     CONFIGURED = "configured"
     ANALYZING = "analyzing"
@@ -17,7 +18,7 @@ class HackathonStatus(str, Enum):
     ARCHIVED = "archived"
 
 
-class SubmissionStatus(str, Enum):
+class SubmissionStatus(StrEnum):
     PENDING = "pending"
     CLONING = "cloning"
     ANALYZING = "analyzing"
@@ -26,7 +27,7 @@ class SubmissionStatus(str, Enum):
     TIMEOUT = "timeout"
 
 
-class JobStatus(str, Enum):
+class JobStatus(StrEnum):
     QUEUED = "queued"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -34,27 +35,27 @@ class JobStatus(str, Enum):
     CANCELLED = "cancelled"
 
 
-class AgentName(str, Enum):
+class AgentName(StrEnum):
     BUG_HUNTER = "bug_hunter"
     PERFORMANCE = "performance"
     INNOVATION = "innovation"
     AI_DETECTION = "ai_detection"
 
 
-class AIPolicyMode(str, Enum):
+class AIPolicyMode(StrEnum):
     FULL_VIBE = "full_vibe"
     AI_ASSISTED = "ai_assisted"
     TRADITIONAL = "traditional"
     CUSTOM = "custom"
 
 
-class Tier(str, Enum):
+class Tier(StrEnum):
     FREE = "free"
     PREMIUM = "premium"
     ENTERPRISE = "enterprise"
 
 
-class Severity(str, Enum):
+class Severity(StrEnum):
     CRITICAL = "critical"
     HIGH = "high"
     MEDIUM = "medium"
@@ -62,14 +63,14 @@ class Severity(str, Enum):
     INFO = "info"
 
 
-class Recommendation(str, Enum):
+class Recommendation(StrEnum):
     STRONG_CONTENDER = "strong_contender"
     SOLID_SUBMISSION = "solid_submission"
     NEEDS_IMPROVEMENT = "needs_improvement"
     CONCERNS_FLAGGED = "concerns_flagged"
 
 
-class ServiceTier(str, Enum):
+class ServiceTier(StrEnum):
     STANDARD = "standard"
     FLEX = "flex"
 
@@ -78,8 +79,10 @@ class ServiceTier(str, Enum):
 # BASE MODELS
 # ============================================================
 
+
 class VibeJudgeBase(BaseModel):
     """Base model with shared configuration."""
+
     model_config = ConfigDict(
         populate_by_name=True,
         use_enum_values=True,
@@ -89,5 +92,6 @@ class VibeJudgeBase(BaseModel):
 
 class TimestampMixin(BaseModel):
     """Mixin for created_at/updated_at fields."""
+
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)

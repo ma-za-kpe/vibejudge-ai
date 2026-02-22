@@ -25,38 +25,90 @@ CLONE_TIMEOUT = 120  # seconds
 
 # File patterns to ignore
 IGNORE_PATTERNS = {
-    ".git", "__pycache__", "node_modules", ".venv", "venv",
-    ".env", ".DS_Store", ".pyc", ".pyo", ".egg-info",
-    "dist", "build", ".next", ".nuxt", "coverage",
-    ".terraform", ".serverless", "target", "bin", "obj",
+    ".git",
+    "__pycache__",
+    "node_modules",
+    ".venv",
+    "venv",
+    ".env",
+    ".DS_Store",
+    ".pyc",
+    ".pyo",
+    ".egg-info",
+    "dist",
+    "build",
+    ".next",
+    ".nuxt",
+    "coverage",
+    ".terraform",
+    ".serverless",
+    "target",
+    "bin",
+    "obj",
 }
 
 # Source code extensions
 SOURCE_EXTENSIONS = {
-    ".py", ".js", ".ts", ".jsx", ".tsx", ".go", ".rs",
-    ".java", ".kt", ".cs", ".rb", ".php", ".swift",
-    ".c", ".cpp", ".h", ".hpp", ".sql", ".sh", ".bash",
+    ".py",
+    ".js",
+    ".ts",
+    ".jsx",
+    ".tsx",
+    ".go",
+    ".rs",
+    ".java",
+    ".kt",
+    ".cs",
+    ".rb",
+    ".php",
+    ".swift",
+    ".c",
+    ".cpp",
+    ".h",
+    ".hpp",
+    ".sql",
+    ".sh",
+    ".bash",
 }
 
 # Config file extensions
 CONFIG_EXTENSIONS = {
-    ".json", ".yaml", ".yml", ".toml", ".env.example",
-    ".cfg", ".ini", ".xml", ".md", ".txt",
+    ".json",
+    ".yaml",
+    ".yml",
+    ".toml",
+    ".env.example",
+    ".cfg",
+    ".ini",
+    ".xml",
+    ".md",
+    ".txt",
 }
 
 # File priority scoring
 FILE_PRIORITIES = {
     # Entry points
-    "main.py": 100, "app.py": 100, "server.py": 100,
-    "index.js": 100, "index.ts": 100, "main.go": 100,
-    "main.rs": 100, "Program.cs": 100,
+    "main.py": 100,
+    "app.py": 100,
+    "server.py": 100,
+    "index.js": 100,
+    "index.ts": 100,
+    "main.go": 100,
+    "main.rs": 100,
+    "Program.cs": 100,
     # Configuration
-    "requirements.txt": 90, "pyproject.toml": 90,
-    "package.json": 90, "Cargo.toml": 90,
-    "Dockerfile": 85, "docker-compose.yml": 85, "docker-compose.yaml": 85,
+    "requirements.txt": 90,
+    "pyproject.toml": 90,
+    "package.json": 90,
+    "Cargo.toml": 90,
+    "Dockerfile": 85,
+    "docker-compose.yml": 85,
+    "docker-compose.yaml": 85,
     # IaC
-    "template.yaml": 80, "template.yml": 80,
-    "serverless.yml": 80, "cdk.json": 80,
+    "template.yaml": 80,
+    "template.yml": 80,
+    "serverless.yml": 80,
+    "cdk.json": 80,
 }
 
 # GitHub URL pattern
@@ -210,16 +262,18 @@ def extract_commits(repo: git.Repo, max_commits: int = 100) -> list[CommitInfo]:
     try:
         for commit in repo.iter_commits(branch, max_count=max_commits):
             stats = commit.stats.total
-            commits.append(CommitInfo(
-                hash=commit.hexsha,
-                short_hash=commit.hexsha[:8],
-                message=commit.message.strip().split("\n")[0][:200],
-                author=commit.author.name or commit.author.email or "unknown",
-                timestamp=datetime.fromtimestamp(commit.committed_date, tz=UTC),
-                files_changed=stats.get("files", 0),
-                insertions=stats.get("insertions", 0),
-                deletions=stats.get("deletions", 0),
-            ))
+            commits.append(
+                CommitInfo(
+                    hash=commit.hexsha,
+                    short_hash=commit.hexsha[:8],
+                    message=commit.message.strip().split("\n")[0][:200],
+                    author=commit.author.name or commit.author.email or "unknown",
+                    timestamp=datetime.fromtimestamp(commit.committed_date, tz=UTC),
+                    files_changed=stats.get("files", 0),
+                    insertions=stats.get("insertions", 0),
+                    deletions=stats.get("deletions", 0),
+                )
+            )
     except Exception as e:
         logger.warning("commit_extraction_failed", error=str(e))
 
@@ -228,9 +282,7 @@ def extract_commits(repo: git.Repo, max_commits: int = 100) -> list[CommitInfo]:
 
 
 def extract_diff_summary(
-    repo: git.Repo,
-    commits: list[CommitInfo],
-    max_diffs: int = 30
+    repo: git.Repo, commits: list[CommitInfo], max_diffs: int = 30
 ) -> list[DiffEntry]:
     """Extract significant diffs from commit history.
 
@@ -260,14 +312,16 @@ def extract_diff_summary(
                 change_type = _diff_change_type(diff_item)
                 file_path = diff_item.b_path or diff_item.a_path or "unknown"
 
-                diffs.append(DiffEntry(
-                    commit_hash=commit_info.short_hash,
-                    file_path=file_path,
-                    change_type=change_type,
-                    insertions=0,  # Per-file stats not easily available
-                    deletions=0,
-                    summary=f"{change_type}: {file_path}",
-                ))
+                diffs.append(
+                    DiffEntry(
+                        commit_hash=commit_info.short_hash,
+                        file_path=file_path,
+                        change_type=change_type,
+                        insertions=0,  # Per-file stats not easily available
+                        deletions=0,
+                        summary=f"{change_type}: {file_path}",
+                    )
+                )
 
             if len(diffs) >= max_diffs:
                 break
@@ -306,13 +360,7 @@ def extract_file_tree(clone_path: Path, max_depth: int = 4) -> str:
     return "\n".join(lines[:200])  # Cap at 200 lines
 
 
-def _walk_tree(
-    path: Path,
-    lines: list,
-    prefix: str,
-    depth: int,
-    max_depth: int
-) -> None:
+def _walk_tree(path: Path, lines: list, prefix: str, depth: int, max_depth: int) -> None:
     """Recursively walk directory tree."""
     if depth > max_depth:
         return
@@ -385,19 +433,23 @@ def extract_source_files(
         # Handle large files
         if line_count > 5000:
             content = "\n".join(lines[:max_lines_per_file])
-            content += f"\n\n... [TRUNCATED: {line_count} total lines, showing first {max_lines_per_file}]"
+            content += (
+                f"\n\n... [TRUNCATED: {line_count} total lines, showing first {max_lines_per_file}]"
+            )
             line_count = max_lines_per_file
         elif line_count > max_lines_per_file:
             content = "\n".join(lines[:max_lines_per_file])
             content += f"\n\n... [TRUNCATED: {line_count} total lines]"
 
-        candidates.append(SourceFile(
-            path=str(relative),
-            content=content,
-            lines=line_count,
-            language=_detect_language(ext),
-            priority=priority,
-        ))
+        candidates.append(
+            SourceFile(
+                path=str(relative),
+                content=content,
+                lines=line_count,
+                language=_detect_language(ext),
+                priority=priority,
+            )
+        )
 
     # Sort by priority and size
     candidates.sort(key=lambda f: (-f.priority, -f.lines))
@@ -408,14 +460,30 @@ def extract_source_files(
 def _detect_language(ext: str) -> str:
     """Detect language from file extension."""
     LANG_MAP = {
-        ".py": "Python", ".js": "JavaScript", ".ts": "TypeScript",
-        ".jsx": "React/JSX", ".tsx": "React/TSX", ".go": "Go",
-        ".rs": "Rust", ".java": "Java", ".kt": "Kotlin",
-        ".cs": "C#", ".rb": "Ruby", ".php": "PHP",
-        ".swift": "Swift", ".c": "C", ".cpp": "C++",
-        ".sql": "SQL", ".sh": "Shell", ".bash": "Bash",
-        ".json": "JSON", ".yaml": "YAML", ".yml": "YAML",
-        ".toml": "TOML", ".md": "Markdown", ".txt": "Text",
+        ".py": "Python",
+        ".js": "JavaScript",
+        ".ts": "TypeScript",
+        ".jsx": "React/JSX",
+        ".tsx": "React/TSX",
+        ".go": "Go",
+        ".rs": "Rust",
+        ".java": "Java",
+        ".kt": "Kotlin",
+        ".cs": "C#",
+        ".rb": "Ruby",
+        ".php": "PHP",
+        ".swift": "Swift",
+        ".c": "C",
+        ".cpp": "C++",
+        ".sql": "SQL",
+        ".sh": "Shell",
+        ".bash": "Bash",
+        ".json": "JSON",
+        ".yaml": "YAML",
+        ".yml": "YAML",
+        ".toml": "TOML",
+        ".md": "Markdown",
+        ".txt": "Text",
     }
     return LANG_MAP.get(ext, "Unknown")
 
@@ -431,8 +499,12 @@ def extract_readme(clone_path: Path, max_chars: int = 12000) -> str:
         README content or placeholder
     """
     readme_names = [
-        "README.md", "README.MD", "readme.md",
-        "README.rst", "README.txt", "README",
+        "README.md",
+        "README.MD",
+        "readme.md",
+        "README.rst",
+        "README.txt",
+        "README",
     ]
 
     for name in readme_names:
@@ -508,7 +580,7 @@ def extract_repo_meta(
         dev_hours = round(delta.total_seconds() / 3600, 2)
 
     # Contributors
-    authors = set(c.author for c in commits)
+    authors = {c.author for c in commits}
 
     # Detect features
     has_readme = any((clone_path / name).exists() for name in ["README.md", "readme.md", "README"])
@@ -558,15 +630,18 @@ def _has_test_files(clone_path: Path) -> bool:
             return True
 
     test_patterns = [
-        "test_*.py", "*_test.py", "*_test.go", "*.test.js", "*.test.ts",
-        "*.spec.js", "*.spec.ts", "*Test.java", "*_test.rs",
+        "test_*.py",
+        "*_test.py",
+        "*_test.go",
+        "*.test.js",
+        "*.test.ts",
+        "*.spec.js",
+        "*.spec.ts",
+        "*Test.java",
+        "*_test.rs",
     ]
 
-    for pattern in test_patterns:
-        if list(clone_path.rglob(pattern)):
-            return True
-
-    return False
+    return any(clone_path.rglob(pattern) for pattern in test_patterns)
 
 
 def clone_and_extract(

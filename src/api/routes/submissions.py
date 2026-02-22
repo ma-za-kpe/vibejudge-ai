@@ -14,7 +14,11 @@ from src.models.submission import (
 router = APIRouter(tags=["submissions"])
 
 
-@router.post("/hackathons/{hack_id}/submissions", response_model=SubmissionBatchCreateResponse, status_code=201)
+@router.post(
+    "/hackathons/{hack_id}/submissions",
+    response_model=SubmissionBatchCreateResponse,
+    status_code=201,
+)
 async def create_submissions(
     hack_id: str,
     data: SubmissionBatchCreate,
@@ -39,7 +43,9 @@ async def create_submissions(
 
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to create submissions: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to create submissions: {str(e)}"
+        ) from e
 
 
 @router.get("/hackathons/{hack_id}/submissions", response_model=SubmissionListResponse)
@@ -56,7 +62,7 @@ async def list_submissions(
     try:
         return service.list_submissions(hack_id)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to list submissions: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to list submissions: {str(e)}") from e
 
 
 @router.get("/submissions/{sub_id}", response_model=SubmissionResponse)
@@ -108,21 +114,23 @@ async def get_submission_costs(
         # Convert dict records to CostRecord models
         agent_records = []
         for record in cost_data.get("agent_costs", []):
-            agent_records.append(CostRecord(
-                sub_id=record["sub_id"],
-                hack_id=record.get("hack_id", ""),
-                agent_name=record["agent_name"],
-                model_id=record["model_id"],
-                input_tokens=record["input_tokens"],
-                output_tokens=record["output_tokens"],
-                total_tokens=record["total_tokens"],
-                input_cost_usd=record["input_cost_usd"],
-                output_cost_usd=record["output_cost_usd"],
-                total_cost_usd=record["total_cost_usd"],
-                latency_ms=record.get("latency_ms", 0),
-                cache_read_tokens=record.get("cache_read_tokens", 0),
-                cache_write_tokens=record.get("cache_write_tokens", 0),
-            ))
+            agent_records.append(
+                CostRecord(
+                    sub_id=record["sub_id"],
+                    hack_id=record.get("hack_id", ""),
+                    agent_name=record["agent_name"],
+                    model_id=record["model_id"],
+                    input_tokens=record["input_tokens"],
+                    output_tokens=record["output_tokens"],
+                    total_tokens=record["total_tokens"],
+                    input_cost_usd=record["input_cost_usd"],
+                    output_cost_usd=record["output_cost_usd"],
+                    total_cost_usd=record["total_cost_usd"],
+                    latency_ms=record.get("latency_ms", 0),
+                    cache_read_tokens=record.get("cache_read_tokens", 0),
+                    cache_write_tokens=record.get("cache_write_tokens", 0),
+                )
+            )
 
         return SubmissionCostResponse(
             sub_id=cost_data["sub_id"],
@@ -134,4 +142,4 @@ async def get_submission_costs(
             agents=agent_records,
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get costs: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get costs: {str(e)}") from e

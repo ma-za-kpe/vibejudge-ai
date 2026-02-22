@@ -364,6 +364,10 @@ def test_property_batch_processing_independence_preserved():
         patch("src.analysis.lambda_handler.CostService") as mock_cost_service_class,
         patch("src.analysis.lambda_handler.analyze_single_submission") as mock_analyze,
         patch("src.analysis.lambda_handler.logger") as mock_logger,
+        patch(
+            "src.constants.MODEL_RATES",
+            {"amazon.nova-lite-v1:0": {"input": 0.00000006, "output": 0.00000024}},
+        ),
     ):
         # Setup mocks
         mock_db = MagicMock()

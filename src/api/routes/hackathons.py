@@ -36,9 +36,9 @@ async def create_hackathon(
         org_id = current_organizer["org_id"]
         return service.create_hackathon(org_id, data)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to create hackathon: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create hackathon: {str(e)}") from e
 
 
 @router.get("", response_model=HackathonListResponse)
@@ -58,7 +58,7 @@ async def list_hackathons(
         org_id = current_organizer["org_id"]
         return service.list_hackathons(org_id)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to list hackathons: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to list hackathons: {str(e)}") from e
 
 
 @router.get("/{hack_id}", response_model=HackathonResponse)
@@ -89,9 +89,9 @@ async def update_hackathon(
     try:
         return service.update_hackathon(hack_id, data)
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to update hackathon: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to update hackathon: {str(e)}") from e
 
 
 @router.delete("/{hack_id}", status_code=204)
@@ -129,32 +129,29 @@ async def get_leaderboard(
 
     # Get all submissions with scores
     all_submissions = submission_service.list_submissions(hack_id)
-    scored_submissions = [
-        s for s in all_submissions.submissions
-        if s.overall_score is not None
-    ]
+    scored_submissions = [s for s in all_submissions.submissions if s.overall_score is not None]
 
     if not scored_submissions:
         raise HTTPException(status_code=400, detail="No scored submissions available")
 
     # Sort by overall_score descending
     sorted_submissions = sorted(
-        scored_submissions,
-        key=lambda x: x.overall_score or 0,
-        reverse=True
+        scored_submissions, key=lambda x: x.overall_score or 0, reverse=True
     )
 
     # Build leaderboard entries
     leaderboard_entries = []
     for rank, submission in enumerate(sorted_submissions, start=1):
-        leaderboard_entries.append(LeaderboardEntry(
-            rank=rank,
-            sub_id=submission.sub_id,
-            team_name=submission.team_name,
-            overall_score=submission.overall_score or 0.0,
-            dimension_scores={},  # Not available in list view - get full submission for details
-            recommendation=Recommendation.SOLID_SUBMISSION,  # Default - not available in list view
-        ))
+        leaderboard_entries.append(
+            LeaderboardEntry(
+                rank=rank,
+                sub_id=submission.sub_id,
+                team_name=submission.team_name,
+                overall_score=submission.overall_score or 0.0,
+                dimension_scores={},  # Not available in list view - get full submission for details
+                recommendation=Recommendation.SOLID_SUBMISSION,  # Default - not available in list view
+            )
+        )
 
     # Calculate statistics
     scores = [s.overall_score or 0.0 for s in scored_submissions]
@@ -165,7 +162,7 @@ async def get_leaderboard(
     # Calculate standard deviation
     if len(scores) > 1:
         variance = sum((x - mean_score) ** 2 for x in scores) / len(scores)
-        std_dev = variance ** 0.5
+        std_dev = variance**0.5
     else:
         std_dev = 0.0
 
@@ -193,7 +190,9 @@ async def get_leaderboard(
         name=hackathon.name,
         submission_count=len(all_submissions.submissions),
         analyzed_count=len(scored_submissions),
-        ai_policy_mode=hackathon.ai_policy_mode.value if hasattr(hackathon.ai_policy_mode, 'value') else str(hackathon.ai_policy_mode),
+        ai_policy_mode=hackathon.ai_policy_mode.value
+        if hasattr(hackathon.ai_policy_mode, "value")
+        else str(hackathon.ai_policy_mode),
     )
 
     return LeaderboardResponse(

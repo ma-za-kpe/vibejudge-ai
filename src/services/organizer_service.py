@@ -185,7 +185,7 @@ class OrganizerService:
         try:
             response = self.db.table.scan(
                 FilterExpression="entity_type = :type",
-                ExpressionAttributeValues={":type": "ORGANIZER"}
+                ExpressionAttributeValues={":type": "ORGANIZER"},
             )
 
             items = response.get("Items", [])
@@ -256,3 +256,63 @@ class OrganizerService:
         record["updated_at"] = datetime.now(UTC)
 
         return self.db.put_organizer(record)
+
+    def update_organizer(
+        self,
+        org_id: str,
+        name: str | None = None,
+        organization: str | None = None,
+    ) -> OrganizerResponse:
+        """Update organizer profile.
+
+        Args:
+            org_id: Organizer ID
+            name: New name (optional)
+            organization: New organization (optional)
+
+        Returns:
+            Updated organizer response
+
+        Raises:
+            ValueError: If organizer not found or no fields to update
+        """
+        # Get existing organizer
+        record = self.db.get_organizer(org_id)
+        if not record:
+            raise ValueError(f"Organizer {org_id} not found")
+
+        # Check if any fields to update
+        if name is None and organization is None:
+            raise ValueError("At least one field must be provided for update")
+
+        # Update fields
+        if name is not None:
+            record["name"] = name
+        if organization is not None:
+            record["organization"] = organization
+
+        record["updated_at"] = datetime.now(UTC)
+
+        # Save to DynamoDB
+        success = self.db.put_organizer(record)
+        if not success:
+            logger.error("organizer_update_failed", org_id=org_id)
+            raise RuntimeError("Failed to update organizer")
+
+        logger.info(
+            "organizer_updated",
+            org_id=org_id,
+            name=name,
+            organization=organization,
+        )
+
+        return OrganizerResponse(
+            org_id=record["org_id"],
+            email=record["email"],
+            name=record["name"],
+            organization=record.get("organization"),
+            tier=Tier(record.get("tier", "free")),
+            hackathon_count=record.get("hackathon_count", 0),
+            created_at=record["created_at"],
+            updated_at=record["updated_at"],
+        )

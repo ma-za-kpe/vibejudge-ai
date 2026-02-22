@@ -20,7 +20,7 @@
   - Mark task complete when test is written, run, and failure is documented
   - _Requirements: 1.1, 1.2, 1.3, 2.1, 2.2, 2.3, 2.4, 2.5_
 
-- [-] 2. Write preservation property tests (BEFORE implementing fix)
+- [x] 2. Write preservation property tests (BEFORE implementing fix)
   - **Property 2: Preservation** - Successful Cost Recording Behavior
   - **IMPORTANT**: Follow observation-first methodology
   - Observe: `record_agent_cost()` with successful `put_cost_record()` returns cost record dict on unfixed code
@@ -38,9 +38,9 @@
   - Mark task complete when tests are written, run, and passing on unfixed code
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
 
-- [~] 3. Fix cost tracking error handling and logging
+- [x] 3. Fix cost tracking error handling and logging
 
-  - [ ] 3.1 Enhance `src/services/cost_service.py`
+  - [x] 3.1 Enhance `src/services/cost_service.py`
     - Add enum-to-string conversion for `agent_name` parameter
       - Check if `agent_name` has `.value` attribute (enum)
       - Convert: `agent_name_str = agent_name.value if hasattr(agent_name, 'value') else str(agent_name)`
@@ -56,7 +56,7 @@
     - _Preservation: Successful cost recording behavior unchanged (Property 4 from design)_
     - _Requirements: 2.1, 2.2, 2.3, 3.1, 3.2, 3.3_
 
-  - [ ] 3.2 Enhance `src/analysis/lambda_handler.py`
+  - [x] 3.2 Enhance `src/analysis/lambda_handler.py`
     - Add detailed diagnostic logging BEFORE `cost_service.record_agent_cost()` call
       - Log submission ID, agent name, model ID, input/output tokens, total cost
       - Move logging before try block (currently at lines 163-168)
@@ -71,7 +71,7 @@
     - _Preservation: Batch processing independence maintained (Property 4 from design)_
     - _Requirements: 2.4, 2.5, 3.4, 3.5, 3.6_
 
-  - [ ] 3.3 Verify bug condition exploration test now passes
+  - [x] 3.3 Verify bug condition exploration test now passes
     - **Property 1: Expected Behavior** - Cost Recording Failures Raise Exceptions
     - **IMPORTANT**: Re-run the SAME test from task 1 - do NOT write a new test
     - The test from task 1 encodes the expected behavior
@@ -84,7 +84,7 @@
     - Verify Lambda handler catches exceptions and continues batch processing
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
 
-  - [ ] 3.4 Verify preservation tests still pass
+  - [x] 3.4 Verify preservation tests still pass
     - **Property 2: Preservation** - Successful Cost Recording Unchanged
     - **IMPORTANT**: Re-run the SAME tests from task 2 - do NOT write new tests
     - Run preservation property tests from step 2
@@ -95,7 +95,7 @@
     - Confirm hackathon cost summary aggregation unchanged
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
 
-- [~] 4. Checkpoint - Ensure all tests pass
+- [x] 4. Checkpoint - Ensure all tests pass
   - Run full test suite: `pytest tests/`
   - Verify all unit tests pass
   - Verify all property-based tests pass

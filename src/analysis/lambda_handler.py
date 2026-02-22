@@ -4,6 +4,7 @@ import asyncio
 import json
 import os
 from datetime import UTC, datetime
+from decimal import Decimal
 from typing import Any
 
 from src.analysis.actions_analyzer import ActionsAnalyzer
@@ -81,7 +82,7 @@ def handler(event: dict, context: Any) -> dict:
         # Process each submission
         completed = 0
         failed = 0
-        total_cost = 0.0
+        total_cost = Decimal("0.0")  # Use Decimal to match DynamoDB type
 
         for sub_id in submission_ids:
             try:
@@ -110,7 +111,8 @@ def handler(event: dict, context: Any) -> dict:
 
                 if result["success"]:
                     completed += 1
-                    total_cost += float(result["cost"])  # Convert to float to avoid Decimal issues
+                    # Convert cost to Decimal to avoid type mismatch with DynamoDB
+                    total_cost += Decimal(str(result["cost"]))
 
                     # Update submission with results
                     submission_service.update_submission_with_scores(
@@ -133,37 +135,62 @@ def handler(event: dict, context: Any) -> dict:
                     # Record costs
                     for cost_record in result["cost_records"]:
                         agent_name_str = "unknown"
+                        model_id = "unknown"
+                        input_tokens = 0
+                        output_tokens = 0
+
                         try:
                             # cost_record is a CostRecord Pydantic model
                             # Extract agent_name as string (handle both enum and string)
                             agent_name_str = (
                                 cost_record.agent_name.value
-                                if hasattr(cost_record.agent_name, 'value')
+                                if hasattr(cost_record.agent_name, "value")
                                 else str(cost_record.agent_name)
                             )
+                            model_id = cost_record.model_id
+                            input_tokens = cost_record.input_tokens
+                            output_tokens = cost_record.output_tokens
 
-                            logger.debug(
-                                "recording_cost",
+                            # Log diagnostic information BEFORE attempting to record cost
+                            logger.info(
+                                "recording_agent_cost",
                                 sub_id=sub_id,
                                 agent=agent_name_str,
-                                model=cost_record.model_id,
-                                tokens=cost_record.total_tokens,
+                                model_id=model_id,
+                                input_tokens=input_tokens,
+                                output_tokens=output_tokens,
+                                total_tokens=cost_record.total_tokens,
                             )
 
                             cost_service.record_agent_cost(
                                 sub_id=sub_id,
                                 agent_name=agent_name_str,
-                                model_id=cost_record.model_id,
-                                input_tokens=cost_record.input_tokens,
-                                output_tokens=cost_record.output_tokens,
+                                model_id=model_id,
+                                input_tokens=input_tokens,
+                                output_tokens=output_tokens,
                             )
+
+                            # Log success
+                            logger.info(
+                                "cost_recorded_successfully",
+                                sub_id=sub_id,
+                                agent=agent_name_str,
+                                model_id=model_id,
+                            )
+
                         except Exception as e:
                             # Don't fail the entire analysis if cost recording fails
+                            # Log detailed diagnostic information for debugging
                             logger.error(
                                 "cost_recording_failed",
                                 sub_id=sub_id,
                                 agent=agent_name_str,
+                                model_id=model_id,
+                                input_tokens=input_tokens,
+                                output_tokens=output_tokens,
+                                tokens=input_tokens + output_tokens,
                                 error=str(e),
+                                error_type=type(e).__name__,
                             )
 
                     logger.info(
@@ -180,7 +207,9 @@ def handler(event: dict, context: Any) -> dict:
                         status=SubmissionStatus.FAILED,
                         error_message=result.get("error", "Analysis failed"),
                     )
-                    logger.error("submission_analysis_failed", sub_id=sub_id, error=result.get("error"))
+                    logger.error(
+                        "submission_analysis_failed", sub_id=sub_id, error=result.get("error")
+                    )
 
             except Exception as e:
                 logger.error("submission_processing_error", sub_id=sub_id, error=str(e))
@@ -211,18 +240,20 @@ def handler(event: dict, context: Any) -> dict:
             job_id=job_id,
             completed=completed,
             failed=failed,
-            total_cost=total_cost,
+            total_cost=float(total_cost),  # Convert to float for logging
         )
 
         return {
             "statusCode": 200,
-            "body": json.dumps({
-                "job_id": job_id,
-                "status": "completed",
-                "completed": completed,
-                "failed": failed,
-                "total_cost_usd": total_cost,
-            }),
+            "body": json.dumps(
+                {
+                    "job_id": job_id,
+                    "status": "completed",
+                    "completed": completed,
+                    "failed": failed,
+                    "total_cost_usd": float(total_cost),  # Convert to float for JSON
+                }
+            ),
         }
 
     except Exception as e:
@@ -286,7 +317,7 @@ def analyze_single_submission(
         logger.info("repo_data_extracted", sub_id=submission.sub_id)
 
         # Build context for agents
-        rubric_json = hackathon.rubric.model_dump_json(indent=2)
+        hackathon.rubric.model_dump_json(indent=2)
 
         # Note: We don't use build_context here because agents build their own context
         # The orchestrator passes repo_data directly to agents
@@ -313,16 +344,20 @@ def analyze_single_submission(
                 sub_id=submission.sub_id,
                 rubric=hackathon.rubric,
                 agents_enabled=agents_enabled,
-                ai_policy_mode=hackathon.ai_policy_mode.value if hasattr(hackathon.ai_policy_mode, 'value') else str(hackathon.ai_policy_mode),
+                ai_policy_mode=hackathon.ai_policy_mode.value
+                if hasattr(hackathon.ai_policy_mode, "value")
+                else str(hackathon.ai_policy_mode),
             )
         )
 
-        logger.info("orchestrator_complete", sub_id=submission.sub_id, score=result["overall_score"])
+        logger.info(
+            "orchestrator_complete", sub_id=submission.sub_id, score=result["overall_score"]
+        )
 
         # Build agent_scores dict for storage
         agent_scores = {}
         for agent_name, response in result["agent_responses"].items():
-            agent_key = agent_name.value if hasattr(agent_name, 'value') else str(agent_name)
+            agent_key = agent_name.value if hasattr(agent_name, "value") else str(agent_name)
             agent_scores[agent_key] = response.model_dump()
 
         # Build dimension_scores dict

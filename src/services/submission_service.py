@@ -132,9 +132,33 @@ class SubmissionService:
         weighted_scores = None
         if record.get("weighted_scores"):
             weighted_scores = {
-                k: WeightedDimensionScore(**v)
-                for k, v in record["weighted_scores"].items()
+                k: WeightedDimensionScore(**v) for k, v in record["weighted_scores"].items()
             }
+
+        # Convert Decimal values to float for JSON serialization
+        agent_scores = record.get("agent_scores", {})
+        if agent_scores:
+            # Handle both formats: dict with full response or just numeric scores
+            cleaned_scores = {}
+            for k, v in agent_scores.items():
+                if isinstance(v, dict):
+                    # Extract score from full agent response
+                    score = v.get("overall_score", 0)
+                    cleaned_scores[k] = float(score) if isinstance(score, Decimal) else score
+                elif isinstance(v, Decimal):
+                    cleaned_scores[k] = float(v)
+                else:
+                    cleaned_scores[k] = v
+            agent_scores = cleaned_scores
+
+        # Convert numeric fields from Decimal to float
+        overall_score = record.get("overall_score")
+        if overall_score is not None and isinstance(overall_score, Decimal):
+            overall_score = float(overall_score)
+
+        total_cost_usd = record.get("total_cost_usd")
+        if total_cost_usd is not None and isinstance(total_cost_usd, Decimal):
+            total_cost_usd = float(total_cost_usd)
 
         return SubmissionResponse(
             sub_id=record["sub_id"],
@@ -142,18 +166,20 @@ class SubmissionService:
             team_name=record["team_name"],
             repo_url=record["repo_url"],
             status=SubmissionStatus(record["status"]),
-            overall_score=record.get("overall_score"),
+            overall_score=overall_score,
             rank=record.get("rank"),
             recommendation=record.get("recommendation"),
             repo_meta=repo_meta,
             weighted_scores=weighted_scores,
             strengths=record.get("strengths", []),
             weaknesses=record.get("weaknesses", []),
-            agent_scores=record.get("agent_scores", {}),
-            total_cost_usd=record.get("total_cost_usd"),
+            agent_scores=agent_scores,
+            total_cost_usd=total_cost_usd,
             total_tokens=record.get("total_tokens"),
             analysis_duration_ms=record.get("analysis_duration_ms"),
-            analyzed_at=datetime.fromisoformat(record["analyzed_at"]) if record.get("analyzed_at") else None,
+            analyzed_at=datetime.fromisoformat(record["analyzed_at"])
+            if record.get("analyzed_at")
+            else None,
             created_at=datetime.fromisoformat(record["created_at"]),
             updated_at=datetime.fromisoformat(record["updated_at"]),
         )
@@ -332,9 +358,9 @@ class SubmissionService:
                 return {k: convert_to_decimal(v) for k, v in obj.items()}
             elif isinstance(obj, list):
                 return [convert_to_decimal(item) for item in obj]
-            elif hasattr(obj, 'model_dump'):
+            elif hasattr(obj, "model_dump"):
                 # Handle Pydantic models - use mode='json' to serialize datetimes
-                return convert_to_decimal(obj.model_dump(mode='json'))
+                return convert_to_decimal(obj.model_dump(mode="json"))
             return obj
 
         # Call the main update method (dimension_scores and confidence not stored)
@@ -368,3 +394,122 @@ class SubmissionService:
             sub_id=sub_id,
             status=SubmissionStatus.DELETED,
         )
+
+    def get_submission_scorecard(self, sub_id: str) -> dict | None:
+        """Get comprehensive scorecard with all agent scores.
+
+        Args:
+            sub_id: Submission ID
+
+        Returns:
+            Scorecard data dict or None if not found
+        """
+        submission = self.get_submission(sub_id)
+        if not submission:
+            return None
+
+        agent_score_records = self.db.get_agent_scores(sub_id)
+
+        agent_scores = []
+        for record in agent_score_records:
+            agent_scores.append(
+                {
+                    "agent_name": record.get("agent_name", ""),
+                    "overall_score": record.get("overall_score", 0.0),
+                    "confidence": record.get("confidence", 1.0),
+                    "summary": record.get("summary", ""),
+                    "scores": record.get("scores", {}),
+                    "evidence": record.get("evidence", []),
+                    "observations": record.get("observations", {}),
+                }
+            )
+
+        return {
+            "sub_id": submission.sub_id,
+            "hack_id": submission.hack_id,
+            "team_name": submission.team_name,
+            "repo_url": submission.repo_url,
+            "status": submission.status,
+            "overall_score": submission.overall_score,
+            "rank": submission.rank,
+            "recommendation": submission.recommendation,
+            "weighted_scores": submission.weighted_scores,
+            "agent_scores": agent_scores,
+            "repo_meta": submission.repo_meta,
+            "strengths": submission.strengths,
+            "weaknesses": submission.weaknesses,
+            "total_cost_usd": submission.total_cost_usd,
+            "total_tokens": submission.total_tokens,
+            "analysis_duration_ms": submission.analysis_duration_ms,
+            "analyzed_at": submission.analyzed_at,
+            "created_at": submission.created_at,
+            "updated_at": submission.updated_at,
+        }
+
+    def get_submission_evidence(
+        self,
+        sub_id: str,
+        agent: str | None = None,
+        severity: str | None = None,
+        verified_only: bool = False,
+    ) -> dict | None:
+        """Get filtered evidence from all agents.
+
+        Args:
+            sub_id: Submission ID
+            agent: Filter by agent name (optional)
+            severity: Filter by severity (optional)
+            verified_only: Only show verified evidence
+
+        Returns:
+            Evidence data dict or None if not found
+        """
+        submission = self.get_submission(sub_id)
+        if not submission:
+            return None
+
+        agent_score_records = self.db.get_agent_scores(sub_id)
+
+        evidence_items = []
+        for record in agent_score_records:
+            agent_name = record.get("agent_name", "")
+
+            if agent and agent_name != agent:
+                continue
+
+            for ev in record.get("evidence", []):
+                if severity and ev.get("severity") != severity:
+                    continue
+
+                if verified_only and not ev.get("verified", False):
+                    continue
+
+                evidence_items.append(
+                    {
+                        "agent_name": agent_name,
+                        "finding": ev.get("finding", ""),
+                        "file": ev.get("file", ""),
+                        "line": ev.get("line"),
+                        "severity": ev.get("severity"),
+                        "category": ev.get("category", ""),
+                        "detail": ev.get("detail") or ev.get("recommendation", ""),
+                        "verified": ev.get("verified", False),
+                    }
+                )
+
+        filtered_by = {}
+        if agent:
+            filtered_by["agent"] = agent
+        if severity:
+            filtered_by["severity"] = severity
+        if verified_only:
+            filtered_by["verified_only"] = True
+
+        return {
+            "sub_id": submission.sub_id,
+            "hack_id": submission.hack_id,
+            "team_name": submission.team_name,
+            "evidence": evidence_items,
+            "total_count": len(evidence_items),
+            "filtered_by": filtered_by,
+        }

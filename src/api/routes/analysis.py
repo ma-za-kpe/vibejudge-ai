@@ -40,7 +40,7 @@ async def trigger_analysis(
     try:
         return analysis_service.trigger_analysis(hack_id, data.submission_ids)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to trigger analysis: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to trigger analysis: {str(e)}") from e
 
 
 @router.get("/hackathons/{hack_id}/analyze/status", response_model=AnalysisStatusResponse)
@@ -64,12 +64,17 @@ async def get_analysis_status(
 
     # Build progress object
     from src.models.analysis import AnalysisProgress
+
     progress = AnalysisProgress(
         total_submissions=latest_job.total_submissions,
         completed=latest_job.completed_submissions,
         failed=latest_job.failed_submissions,
-        remaining=latest_job.total_submissions - latest_job.completed_submissions - latest_job.failed_submissions,
-        percent_complete=(latest_job.completed_submissions / latest_job.total_submissions * 100) if latest_job.total_submissions > 0 else 0,
+        remaining=latest_job.total_submissions
+        - latest_job.completed_submissions
+        - latest_job.failed_submissions,
+        percent_complete=(latest_job.completed_submissions / latest_job.total_submissions * 100)
+        if latest_job.total_submissions > 0
+        else 0,
     )
 
     return AnalysisStatusResponse(
@@ -109,7 +114,7 @@ async def estimate_analysis_cost(
         raise HTTPException(status_code=400, detail="No pending submissions to analyze")
 
     try:
-        agents = [a.value if hasattr(a, 'value') else a for a in hackathon.agents_enabled]
+        agents = [a.value if hasattr(a, "value") else a for a in hackathon.agents_enabled]
         return cost_service.estimate_analysis_cost_response(
             hack_id=hack_id,
             submission_count=submission_count,
@@ -117,4 +122,4 @@ async def estimate_analysis_cost(
             budget_limit_usd=hackathon.budget_limit_usd,
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to estimate cost: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to estimate cost: {str(e)}") from e

@@ -1,0 +1,152 @@
+==========================================
+VibeJudge API - Complete Endpoint Testing
+==========================================
+
+=== Health Check ===
+Testing: GET /health ... [0;32m✓ PASS[0m (HTTP 200)
+{
+  "status": "healthy",
+  "version": "1.0.0",
+  "timestamp": "2026-02-22T16:46:28.650109",
+  "services": {
+    "dynamodb": {
+      "available": true,
+      "latency_ms": 0,
+      "error": null
+    }
+  }
+}
+
+=== Organizer Management ===
+Created Organizer: 01KJ33XM9HFJ6FPS1962RKR4QF
+API Key: 2cb142041b706c525a33179743966947aa37816324bec78849282921f356d12e
+
+Testing: POST /api/v1/organizers ... [0;31m✗ FAIL[0m (HTTP 400)
+{
+  "detail": "Email test-1771778788@example.com is already registered"
+}
+
+Testing: GET /api/v1/organizers/me ... [0;31m✗ FAIL[0m (HTTP 401)
+0
+{
+  "detail": "Missing API key. Provide X-API-Key header."
+}
+
+Testing: PUT /api/v1/organizers/me ... [0;31m✗ FAIL[0m (HTTP 401)
+0
+{
+  "detail": "Missing API key. Provide X-API-Key header."
+}
+
+=== Hackathon Management ===
+Created Hackathon: null
+
+Testing: POST /api/v1/hackathons ... [0;31m✗ FAIL[0m (HTTP 401)
+0
+{
+  "detail": "Missing API key. Provide X-API-Key header."
+}
+
+Testing: GET /api/v1/hackathons ... [0;31m✗ FAIL[0m (HTTP 401)
+0
+{
+  "detail": "Missing API key. Provide X-API-Key header."
+}
+
+Testing: GET /api/v1/hackathons/{hack_id} ... [0;31m✗ FAIL[0m (HTTP 404)
+{
+  "detail": "Hackathon not found"
+}
+
+Testing: PUT /api/v1/hackathons/{hack_id} ... [0;31m✗ FAIL[0m (HTTP 404)
+{
+  "detail": "Hackathon null not found"
+}
+
+=== Submission Management ===
+Created Submission: null
+
+Testing: POST /api/v1/hackathons/{hack_id}/submissions ... [0;31m✗ FAIL[0m (HTTP 404)
+{
+  "detail": "Hackathon not found"
+}
+
+Testing: GET /api/v1/hackathons/{hack_id}/submissions ... [0;32m✓ PASS[0m (HTTP 200)
+{
+  "submissions": [],
+  "next_cursor": null,
+  "has_more": false
+}
+
+Testing: GET /api/v1/submissions/{sub_id} ... [0;31m✗ FAIL[0m (HTTP 404)
+{
+  "detail": "Submission not found"
+}
+
+=== Cost Estimation ===
+Testing: POST /api/v1/hackathons/{hack_id}/estimate ... [0;31m✗ FAIL[0m (HTTP 404)
+0
+{
+  "detail": "Hackathon not found"
+}
+
+=== Analysis ===
+Created Analysis Job: null
+
+Testing: POST /api/v1/hackathons/{hack_id}/analyze ... [0;31m✗ FAIL[0m (HTTP 404)
+0
+{
+  "detail": "Hackathon not found"
+}
+
+Testing: GET /api/v1/hackathons/{hack_id}/jobs ... [0;32m✓ PASS[0m (HTTP 200)
+0
+[]
+
+Testing: GET /api/v1/hackathons/{hack_id}/jobs/{job_id} ... [0;31m✗ FAIL[0m (HTTP 500)
+
+000Internal Server Error
+
+=== Scoring ===
+Testing: GET /api/v1/submissions/{sub_id}/scorecard ... [0;31m✗ FAIL[0m (HTTP 404)
+{
+  "detail": "Not Found"
+}
+
+Testing: GET /api/v1/hackathons/{hack_id}/submissions/{sub_id}/evidence ... [0;31m✗ FAIL[0m (HTTP 404)
+{
+  "detail": "Submission not found"
+}
+
+Testing: GET /api/v1/hackathons/{hack_id}/leaderboard ... [0;31m✗ FAIL[0m (HTTP 404)
+{
+  "detail": "Hackathon not found"
+}
+
+=== Cost Tracking ===
+Testing: GET /api/v1/hackathons/{hack_id}/costs ... [0;31m✗ FAIL[0m (HTTP 404)
+0
+{
+  "detail": "Hackathon not found"
+}
+
+Testing: GET /api/v1/submissions/{sub_id}/costs ... [0;32m✓ PASS[0m (HTTP 200)
+0
+{
+  "sub_id": "null",
+  "total_cost_usd": 0.0,
+  "total_tokens": 0,
+  "total_input_tokens": 0,
+  "total_output_tokens": 0,
+  "analysis_duration_ms": 0,
+  "agents": []
+}
+
+==========================================
+Test Summary
+==========================================
+[0;32mPassed: 4[0m
+[0;31mFailed: 16[0m
+Total: 20
+
+[0;31m✗ Some tests failed[0m

@@ -1,0 +1,202 @@
+==========================================
+VibeJudge API - Complete Endpoint Testing
+==========================================
+
+Testing: GET /health ... [0;32m✓ PASS[0m (HTTP 200)
+{
+  "status": "healthy",
+  "version": "1.0.0",
+  "timestamp": "2026-02-22T16:48:36.661825",
+  "services": {
+    "dynamodb": {
+      "available": true,
+      "latency_ms": 0,
+      "error": null
+    }
+  }
+}
+
+API Key: e765e4bfdd5af713d304dbd64e0653b36af244f92cd1a0b03ce1a70ebe66a27b
+
+Testing: POST /api/v1/organizers ... [0;31m✗ FAIL[0m (HTTP 400)
+{
+  "detail": "Email test-1771778916@example.com is already registered"
+}
+
+Testing: GET /api/v1/organizers/me ... [0;32m✓ PASS[0m (HTTP 200)
+{
+  "created_at": "2026-02-22T16:48:37.661910+00:00",
+  "updated_at": "2026-02-22T16:48:37.661910+00:00",
+  "org_id": "01KJ341H8X57KJRACPDSYP6ES4",
+  "email": "test-1771778916@example.com",
+  "name": "Test Org",
+  "organization": "Test",
+  "tier": "free",
+  "hackathon_count": 0
+}
+
+Testing: PUT /api/v1/organizers/me ... [0;32m✓ PASS[0m (HTTP 200)
+{
+  "created_at": "2026-02-22T16:48:37.661910+00:00",
+  "updated_at": "2026-02-22T16:48:40.885267+00:00",
+  "org_id": "01KJ341H8X57KJRACPDSYP6ES4",
+  "email": "test-1771778916@example.com",
+  "name": "Updated",
+  "organization": "Test",
+  "tier": "free",
+  "hackathon_count": 0
+}
+
+Hackathon ID: null
+
+Testing: POST /api/v1/hackathons ... [0;31m✗ FAIL[0m (HTTP 422)
+{
+  "detail": [
+    {
+      "type": "missing",
+      "loc": [
+        "body",
+        "rubric",
+        "dimensions",
+        0,
+        "name"
+      ],
+      "msg": "Field required",
+      "input": {
+        "agent": "bug_hunter",
+        "weight": 0.4,
+        "criteria": [
+          "Quality"
+        ]
+      }
+    },
+    {
+      "type": "missing",
+      "loc": [
+        "body",
+        "rubric",
+        "dimensions",
+        1,
+        "name"
+      ],
+      "msg": "Field required",
+      "input": {
+        "agent": "performance",
+        "weight": 0.3,
+        "criteria": [
+          "Speed"
+        ]
+      }
+    },
+    {
+      "type": "missing",
+      "loc": [
+        "body",
+        "rubric",
+        "dimensions",
+        2,
+        "name"
+      ],
+      "msg": "Field required",
+      "input": {
+        "agent": "innovation",
+        "weight": 0.3,
+        "criteria": [
+          "Novel"
+        ]
+      }
+    }
+  ]
+}
+
+Testing: GET /api/v1/hackathons ... [0;32m✓ PASS[0m (HTTP 200)
+{
+  "hackathons": [],
+  "next_cursor": null,
+  "has_more": false
+}
+
+Testing: GET /api/v1/hackathons/{hack_id} ... [0;31m✗ FAIL[0m (HTTP 404)
+{
+  "detail": "Hackathon not found"
+}
+
+Testing: PUT /api/v1/hackathons/{hack_id} ... [0;31m✗ FAIL[0m (HTTP 404)
+{
+  "detail": "Hackathon null not found"
+}
+
+Submission ID: null
+
+Testing: POST /api/v1/hackathons/{hack_id}/submissions ... [0;31m✗ FAIL[0m (HTTP 404)
+{
+  "detail": "Hackathon not found"
+}
+
+Testing: GET /api/v1/hackathons/{hack_id}/submissions ... [0;32m✓ PASS[0m (HTTP 200)
+{
+  "submissions": [],
+  "next_cursor": null,
+  "has_more": false
+}
+
+Testing: GET /api/v1/submissions/{sub_id} ... [0;31m✗ FAIL[0m (HTTP 404)
+{
+  "detail": "Submission not found"
+}
+
+Testing: POST /api/v1/hackathons/{hack_id}/estimate ... [0;31m✗ FAIL[0m (HTTP 404)
+{
+  "detail": "Hackathon not found"
+}
+
+Job ID: null
+
+Testing: POST /api/v1/hackathons/{hack_id}/analyze ... [0;31m✗ FAIL[0m (HTTP 404)
+{
+  "detail": "Hackathon not found"
+}
+
+Testing: GET /api/v1/hackathons/{hack_id}/jobs ... [0;32m✓ PASS[0m (HTTP 200)
+[]
+
+Testing: GET /api/v1/hackathons/{hack_id}/jobs/{job_id} ... [0;31m✗ FAIL[0m (HTTP 500)
+Internal Server Error
+
+Testing: GET /api/v1/submissions/{sub_id}/scorecard ... [0;31m✗ FAIL[0m (HTTP 404)
+{
+  "detail": "Not Found"
+}
+
+Testing: GET /api/v1/hackathons/{hack_id}/submissions/{sub_id}/evidence ... [0;31m✗ FAIL[0m (HTTP 404)
+{
+  "detail": "Submission not found"
+}
+
+Testing: GET /api/v1/hackathons/{hack_id}/leaderboard ... [0;31m✗ FAIL[0m (HTTP 404)
+{
+  "detail": "Hackathon not found"
+}
+
+Testing: GET /api/v1/hackathons/{hack_id}/costs ... [0;31m✗ FAIL[0m (HTTP 404)
+{
+  "detail": "Hackathon not found"
+}
+
+Testing: GET /api/v1/submissions/{sub_id}/costs ... [0;32m✓ PASS[0m (HTTP 200)
+{
+  "sub_id": "null",
+  "total_cost_usd": 0.0,
+  "total_tokens": 0,
+  "total_input_tokens": 0,
+  "total_output_tokens": 0,
+  "analysis_duration_ms": 0,
+  "agents": []
+}
+
+==========================================
+Test Summary
+==========================================
+[0;32mPassed: 7[0m
+[0;31mFailed: 13[0m
+Total: 20
