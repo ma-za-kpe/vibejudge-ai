@@ -33,6 +33,7 @@ app = FastAPI(
     title="VibeJudge AI API",
     description="AI-powered hackathon judging platform using Amazon Bedrock",
     version="1.0.0",
+    root_path=f"/{stage}",
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
