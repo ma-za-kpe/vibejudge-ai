@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, HTTPException
 
-from src.api.dependencies import CostServiceDep, HackathonServiceDep
+from src.api.dependencies import CostServiceDep, CurrentOrganizer, HackathonServiceDep
 from src.models.costs import HackathonCostResponse
 
 router = APIRouter(tags=["costs"])
@@ -13,15 +13,24 @@ async def get_hackathon_costs(
     hack_id: str,
     hackathon_service: HackathonServiceDep,
     cost_service: CostServiceDep,
+    current_organizer: CurrentOrganizer,
 ) -> HackathonCostResponse:
     """Get aggregated cost analytics for hackathon.
 
     GET /api/v1/hackathons/{hack_id}/costs
+
+    Requires X-API-Key header for authentication.
     """
     # Verify hackathon exists
     hackathon = hackathon_service.get_hackathon(hack_id)
     if not hackathon:
         raise HTTPException(status_code=404, detail="Hackathon not found")
+
+    # Ownership verification
+    if hackathon.org_id != current_organizer["org_id"]:
+        raise HTTPException(
+            status_code=403, detail="You do not have permission to access this hackathon"
+        )
 
     try:
         return cost_service.get_hackathon_costs_response(hack_id, hackathon.budget_limit_usd)

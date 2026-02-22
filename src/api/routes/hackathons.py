@@ -65,14 +65,24 @@ async def list_hackathons(
 async def get_hackathon(
     hack_id: str,
     service: HackathonServiceDep,
+    current_organizer: CurrentOrganizer,
 ) -> HackathonResponse:
     """Get hackathon details.
 
     GET /api/v1/hackathons/{hack_id}
+
+    Requires X-API-Key header for authentication.
     """
     hackathon = service.get_hackathon(hack_id)
     if not hackathon:
         raise HTTPException(status_code=404, detail="Hackathon not found")
+
+    # Ownership verification
+    if hackathon.org_id != current_organizer["org_id"]:
+        raise HTTPException(
+            status_code=403, detail="You do not have permission to access this hackathon"
+        )
+
     return hackathon
 
 
@@ -81,13 +91,29 @@ async def update_hackathon(
     hack_id: str,
     data: HackathonUpdate,
     service: HackathonServiceDep,
+    current_organizer: CurrentOrganizer,
 ) -> HackathonResponse:
     """Update hackathon configuration.
 
     PUT /api/v1/hackathons/{hack_id}
+
+    Requires X-API-Key header for authentication.
     """
     try:
+        # Get hackathon first to verify ownership
+        hackathon = service.get_hackathon(hack_id)
+        if not hackathon:
+            raise HTTPException(status_code=404, detail="Hackathon not found")
+
+        # Ownership verification
+        if hackathon.org_id != current_organizer["org_id"]:
+            raise HTTPException(
+                status_code=403, detail="You do not have permission to access this hackathon"
+            )
+
         return service.update_hackathon(hack_id, data)
+    except HTTPException:
+        raise
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
@@ -106,6 +132,17 @@ async def delete_hackathon(
 
     Requires X-API-Key header for authentication.
     """
+    # Get hackathon first to verify ownership
+    hackathon = service.get_hackathon(hack_id)
+    if not hackathon:
+        raise HTTPException(status_code=404, detail="Hackathon not found")
+
+    # Ownership verification
+    if hackathon.org_id != current_organizer["org_id"]:
+        raise HTTPException(
+            status_code=403, detail="You do not have permission to access this hackathon"
+        )
+
     org_id = current_organizer["org_id"]
     success = service.delete_hackathon(hack_id, org_id)
     if not success:

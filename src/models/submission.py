@@ -17,7 +17,13 @@ from src.models.common import (
 class SubmissionInput(VibeJudgeBase):
     """Single submission within a batch add request."""
 
-    team_name: str = Field(..., min_length=1, max_length=100)
+    team_name: str = Field(
+        ...,
+        min_length=1,
+        max_length=50,
+        pattern=r"^[a-zA-Z0-9 _-]+$",
+        description="Team name (alphanumeric, spaces, hyphens, underscores only)",
+    )
     repo_url: str = Field(..., pattern=r"^https://github\.com/[\w\-\.]+/[\w\-\.]+/?$")
 
 

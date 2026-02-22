@@ -1,6 +1,6 @@
 """Configuration management using Pydantic Settings."""
 
-
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -43,7 +43,29 @@ class Settings(BaseSettings):
     structured_logging: bool = True
 
     # GitHub API
-    github_token: str | None = None
+    github_token: str
+
+    @field_validator("github_token")
+    @classmethod
+    def validate_github_token(cls, v: str) -> str:
+        """Validate GitHub token is not empty and has valid prefix."""
+        if not v or v.strip() == "":
+            raise ValueError(
+                "GITHUB_TOKEN is required but not provided. "
+                "Set GITHUB_TOKEN environment variable to avoid rate limit exhaustion. "
+                "Without authentication, GitHub API limits requests to 60/hour, "
+                "causing cascading failures when analyzing multiple repositories."
+            )
+
+        # Check for valid GitHub token prefixes
+        valid_prefixes = ("ghp_", "github_pat_", "gho_", "ghu_", "ghs_", "ghr_")
+        if not v.startswith(valid_prefixes):
+            raise ValueError(
+                f"GITHUB_TOKEN must start with a valid prefix: {', '.join(valid_prefixes)}. "
+                f"Received token starting with: {v[:10]}..."
+            )
+
+        return v
 
     # Analysis Configuration
     max_repo_size_mb: int = 500

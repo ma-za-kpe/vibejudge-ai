@@ -113,14 +113,36 @@ FILE_PRIORITIES = {
 # ============================================================
 
 SOURCE_EXTENSIONS = {
-    ".py", ".js", ".ts", ".jsx", ".tsx", ".go", ".rs",
-    ".java", ".kt", ".cs", ".rb", ".php", ".swift",
-    ".c", ".cpp", ".h", ".hpp", ".sql", ".sh",
+    ".py",
+    ".js",
+    ".ts",
+    ".jsx",
+    ".tsx",
+    ".go",
+    ".rs",
+    ".java",
+    ".kt",
+    ".cs",
+    ".rb",
+    ".php",
+    ".swift",
+    ".c",
+    ".cpp",
+    ".h",
+    ".hpp",
+    ".sql",
+    ".sh",
 }
 
 CONFIG_EXTENSIONS = {
-    ".json", ".yaml", ".yml", ".toml", ".env.example",
-    ".cfg", ".ini", ".xml",
+    ".json",
+    ".yaml",
+    ".yml",
+    ".toml",
+    ".env.example",
+    ".cfg",
+    ".ini",
+    ".xml",
 }
 
 # ============================================================
@@ -128,10 +150,24 @@ CONFIG_EXTENSIONS = {
 # ============================================================
 
 IGNORE_PATTERNS = {
-    ".git", "__pycache__", "node_modules", ".venv", "venv",
-    ".env", ".DS_Store", "*.pyc", "*.pyo", "*.egg-info",
-    "dist", "build", ".next", ".nuxt", "coverage",
-    ".terraform", ".serverless", ".aws-sam",
+    ".git",
+    "__pycache__",
+    "node_modules",
+    ".venv",
+    "venv",
+    ".env",
+    ".DS_Store",
+    "*.pyc",
+    "*.pyo",
+    "*.egg-info",
+    "dist",
+    "build",
+    ".next",
+    ".nuxt",
+    "coverage",
+    ".terraform",
+    ".serverless",
+    ".aws-sam",
 }
 
 # ============================================================
@@ -146,6 +182,14 @@ MAX_WORKFLOW_RUNS = 50
 MAX_README_CHARS = 12000
 MAX_FILE_TREE_LINES = 200
 MAX_FILE_TREE_DEPTH = 4
+
+# ============================================================
+# COST ESTIMATION
+# ============================================================
+
+# Average cost per submission based on empirical data
+# Includes all enabled agents (BugHunter, Performance, Innovation, AIDetection)
+COST_PER_SUBMISSION = 0.053
 
 # ============================================================
 # CLONE CONFIGURATION

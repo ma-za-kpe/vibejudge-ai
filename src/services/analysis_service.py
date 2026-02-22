@@ -5,7 +5,9 @@ import os
 from datetime import UTC, datetime
 
 import boto3
+from botocore.exceptions import ClientError
 
+from src.constants import COST_PER_SUBMISSION
 from src.models.analysis import AnalysisJobResponse
 from src.models.common import JobStatus, SubmissionStatus
 from src.utils.dynamo import DynamoDBHelper
@@ -48,19 +50,63 @@ class AnalysisService:
 
         Returns:
             Analysis job response
+
+        Raises:
+            ValueError: If estimated cost exceeds budget limit
         """
         job_id = generate_job_id()
         now = datetime.now(UTC)
+
+        # Get hackathon to check budget limit
+        hackathon_record = self.db.get_hackathon(hack_id)
+        if not hackathon_record:
+            raise ValueError(f"Hackathon {hack_id} not found")
 
         # Get submissions to analyze
         if submission_ids is None:
             # Get all pending submissions
             all_subs = self.db.list_submissions(hack_id)
             submission_ids = [
-                s["sub_id"]
-                for s in all_subs
-                if s.get("status") == SubmissionStatus.PENDING.value
+                s["sub_id"] for s in all_subs if s.get("status") == SubmissionStatus.PENDING.value
             ]
+
+        # Budget validation - check estimated cost against budget limit
+        estimated_cost = len(submission_ids) * COST_PER_SUBMISSION
+        budget_limit = hackathon_record.get("budget_limit_usd")
+
+        if budget_limit is not None and estimated_cost > budget_limit:
+            logger.warning(
+                "budget_exceeded",
+                hackathon_id=hack_id,
+                estimated_cost=estimated_cost,
+                budget_limit=budget_limit,
+                submission_count=len(submission_ids),
+            )
+            raise ValueError(
+                f"Estimated cost ${estimated_cost:.2f} exceeds budget limit ${budget_limit:.2f}"
+            )
+
+        # Atomic conditional write to prevent concurrent analysis
+        # This ensures only one analysis job can be created at a time
+        try:
+            self.db.table.update_item(
+                Key={"PK": f"HACK#{hack_id}", "SK": "META"},
+                UpdateExpression="SET analysis_status = :in_progress",
+                ConditionExpression="attribute_not_exists(analysis_status) OR analysis_status = :not_started",
+                ExpressionAttributeValues={
+                    ":in_progress": "in_progress",
+                    ":not_started": "not_started",
+                },
+            )
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
+                logger.warning(
+                    "concurrent_analysis_prevented",
+                    hackathon_id=hack_id,
+                    message="Analysis already in progress",
+                )
+                raise ValueError("Analysis already in progress") from None
+            raise
 
         # Create analysis job record
         job_record = {
@@ -175,8 +221,12 @@ class AnalysisService:
             completed_submissions=job_record.get("completed_submissions", 0),
             failed_submissions=job_record.get("failed_submissions", 0),
             total_cost_usd=job_record.get("total_cost_usd", 0.0),
-            started_at=datetime.fromisoformat(job_record["started_at"]) if job_record.get("started_at") else None,
-            completed_at=datetime.fromisoformat(job_record["completed_at"]) if job_record.get("completed_at") else None,
+            started_at=datetime.fromisoformat(job_record["started_at"])
+            if job_record.get("started_at")
+            else None,
+            completed_at=datetime.fromisoformat(job_record["completed_at"])
+            if job_record.get("completed_at")
+            else None,
             error_message=job_record.get("error_message"),
             created_at=datetime.fromisoformat(job_record["created_at"]),
             updated_at=datetime.fromisoformat(job_record["updated_at"]),
@@ -203,7 +253,9 @@ class AnalysisService:
                 failed_submissions=r.get("failed_submissions", 0),
                 total_cost_usd=r.get("total_cost_usd", 0.0),
                 started_at=datetime.fromisoformat(r["started_at"]) if r.get("started_at") else None,
-                completed_at=datetime.fromisoformat(r["completed_at"]) if r.get("completed_at") else None,
+                completed_at=datetime.fromisoformat(r["completed_at"])
+                if r.get("completed_at")
+                else None,
                 error_message=r.get("error_message"),
                 created_at=datetime.fromisoformat(r["created_at"]),
                 updated_at=datetime.fromisoformat(r["updated_at"]),

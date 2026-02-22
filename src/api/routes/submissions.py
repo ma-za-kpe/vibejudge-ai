@@ -2,7 +2,12 @@
 
 from fastapi import APIRouter, HTTPException, Query
 
-from src.api.dependencies import CostServiceDep, HackathonServiceDep, SubmissionServiceDep
+from src.api.dependencies import (
+    CostServiceDep,
+    CurrentOrganizer,
+    HackathonServiceDep,
+    SubmissionServiceDep,
+)
 from src.models.costs import CostRecord, SubmissionCostResponse
 from src.models.submission import (
     SubmissionBatchCreate,
@@ -84,15 +89,29 @@ async def get_submission(
 async def delete_submission(
     sub_id: str,
     service: SubmissionServiceDep,
+    hackathon_service: HackathonServiceDep,
+    current_organizer: CurrentOrganizer,
 ) -> None:
     """Delete submission.
 
     DELETE /api/v1/submissions/{sub_id}
+
+    Requires X-API-Key header for authentication.
     """
     # Get submission to extract hack_id
     submission = service.get_submission(sub_id)
     if not submission:
         raise HTTPException(status_code=404, detail="Submission not found")
+
+    # Verify hackathon ownership
+    hackathon = hackathon_service.get_hackathon(submission.hack_id)
+    if not hackathon:
+        raise HTTPException(status_code=404, detail="Hackathon not found")
+
+    if hackathon.org_id != current_organizer["org_id"]:
+        raise HTTPException(
+            status_code=403, detail="You do not have permission to delete this submission"
+        )
 
     success = service.delete_submission(submission.hack_id, sub_id)
     if not success:
@@ -103,11 +122,31 @@ async def delete_submission(
 async def get_submission_costs(
     sub_id: str,
     cost_service: CostServiceDep,
+    submission_service: SubmissionServiceDep,
+    hackathon_service: HackathonServiceDep,
+    current_organizer: CurrentOrganizer,
 ) -> SubmissionCostResponse:
     """Get detailed cost breakdown for submission.
 
     GET /api/v1/submissions/{sub_id}/costs
+
+    Requires X-API-Key header for authentication.
     """
+    # Get submission to extract hack_id
+    submission = submission_service.get_submission(sub_id)
+    if not submission:
+        raise HTTPException(status_code=404, detail="Submission not found")
+
+    # Verify hackathon ownership
+    hackathon = hackathon_service.get_hackathon(submission.hack_id)
+    if not hackathon:
+        raise HTTPException(status_code=404, detail="Hackathon not found")
+
+    if hackathon.org_id != current_organizer["org_id"]:
+        raise HTTPException(
+            status_code=403, detail="You do not have permission to access this submission's costs"
+        )
+
     try:
         cost_data = cost_service.get_submission_costs(sub_id)
 

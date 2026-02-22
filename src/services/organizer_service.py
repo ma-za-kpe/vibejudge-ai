@@ -178,6 +178,7 @@ class OrganizerService:
         Note:
             For MVP, scans all organizers and filters in Python (acceptable for small datasets).
             In production, add GSI3 with api_key_hash as PK for O(1) lookup.
+            Uses secrets.compare_digest() for constant-time comparison to prevent timing attacks.
         """
         api_key_hash = self._hash_api_key(api_key)
 
@@ -190,7 +191,12 @@ class OrganizerService:
 
             items = response.get("Items", [])
             for item in items:
-                if item.get("api_key_hash") == api_key_hash:
+                stored_hash = item.get("api_key_hash", "")
+                # Use constant-time comparison to prevent timing attacks
+                # Add length check to prevent length-based timing leaks
+                if len(api_key_hash) == len(stored_hash) and secrets.compare_digest(
+                    api_key_hash, stored_hash
+                ):
                     org_id = item.get("org_id")
                     logger.info("api_key_verified", org_id=org_id)
                     return org_id

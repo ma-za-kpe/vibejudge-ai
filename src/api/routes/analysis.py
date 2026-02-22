@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException
 from src.api.dependencies import (
     AnalysisServiceDep,
     CostServiceDep,
+    CurrentOrganizer,
     HackathonServiceDep,
     SubmissionServiceDep,
 )
@@ -24,10 +25,13 @@ async def trigger_analysis(
     data: AnalysisTrigger,
     analysis_service: AnalysisServiceDep,
     hackathon_service: HackathonServiceDep,
+    current_organizer: CurrentOrganizer,
 ) -> AnalysisJobResponse:
     """Trigger batch analysis for submissions.
 
     POST /api/v1/hackathons/{hack_id}/analyze
+
+    Requires X-API-Key header for authentication.
 
     Creates an analysis job and invokes the Analyzer Lambda asynchronously.
     Returns immediately with job details. Use /analyze/status to check progress.
@@ -36,6 +40,12 @@ async def trigger_analysis(
     hackathon = hackathon_service.get_hackathon(hack_id)
     if not hackathon:
         raise HTTPException(status_code=404, detail="Hackathon not found")
+
+    # Ownership verification
+    if hackathon.org_id != current_organizer["org_id"]:
+        raise HTTPException(
+            status_code=403, detail="You do not have permission to access this hackathon"
+        )
 
     try:
         return analysis_service.trigger_analysis(hack_id, data.submission_ids)

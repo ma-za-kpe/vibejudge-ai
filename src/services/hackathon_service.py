@@ -71,8 +71,10 @@ class HackathonService:
             "start_date": data.start_date.isoformat() if data.start_date else None,
             "end_date": data.end_date.isoformat() if data.end_date else None,
             "rubric": data.rubric.model_dump(),
-            "agents_enabled": [a.value if hasattr(a, 'value') else a for a in data.agents_enabled],
-            "ai_policy_mode": data.ai_policy_mode.value if hasattr(data.ai_policy_mode, 'value') else data.ai_policy_mode,
+            "agents_enabled": [a.value if hasattr(a, "value") else a for a in data.agents_enabled],
+            "ai_policy_mode": data.ai_policy_mode.value
+            if hasattr(data.ai_policy_mode, "value")
+            else data.ai_policy_mode,
             "ai_policy_config": data.ai_policy_config,
             "budget_limit_usd": data.budget_limit_usd,
             "submission_count": 0,
@@ -99,6 +101,7 @@ class HackathonService:
 
         return HackathonResponse(
             hack_id=hack_id,
+            org_id=org_id,
             name=data.name,
             description=data.description,
             status=HackathonStatus.DRAFT,
@@ -131,10 +134,13 @@ class HackathonService:
 
         return HackathonResponse(
             hack_id=record["hack_id"],
+            org_id=record["org_id"],
             name=record["name"],
             description=record.get("description", ""),
             status=HackathonStatus(record.get("status", "draft")),
-            start_date=datetime.fromisoformat(record["start_date"]) if record.get("start_date") else None,
+            start_date=datetime.fromisoformat(record["start_date"])
+            if record.get("start_date")
+            else None,
             end_date=datetime.fromisoformat(record["end_date"]) if record.get("end_date") else None,
             rubric=RubricConfig(**record["rubric"]),
             agents_enabled=[AgentName(a) for a in record["agents_enabled"]],
@@ -206,9 +212,15 @@ class HackathonService:
         if data.rubric is not None:
             record["rubric"] = data.rubric.model_dump()
         if data.agents_enabled is not None:
-            record["agents_enabled"] = [a.value if hasattr(a, 'value') else a for a in data.agents_enabled]
+            record["agents_enabled"] = [
+                a.value if hasattr(a, "value") else a for a in data.agents_enabled
+            ]
         if data.ai_policy_mode is not None:
-            record["ai_policy_mode"] = data.ai_policy_mode.value if hasattr(data.ai_policy_mode, 'value') else data.ai_policy_mode
+            record["ai_policy_mode"] = (
+                data.ai_policy_mode.value
+                if hasattr(data.ai_policy_mode, "value")
+                else data.ai_policy_mode
+            )
         if data.budget_limit_usd is not None:
             record["budget_limit_usd"] = data.budget_limit_usd
 

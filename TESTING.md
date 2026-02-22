@@ -82,7 +82,43 @@ pytest tests/unit/test_agents.py::test_bug_hunter_initialization -v
 - Cost calculations
 - Evidence validation
 
-**Current status:** 62 tests passing ✅ (includes 14 property-based tests for cost tracking bugfix)
+**Current status:** 62 tests passing ✅ (includes 14 property-based tests for security vulnerabilities)
+
+### 3. Security Vulnerability Tests
+Tests that verify critical security vulnerabilities are fixed:
+
+```bash
+# Run security vulnerability exploration tests
+pytest tests/unit/test_security_vulnerabilities_exploration.py -v
+
+# Run security vulnerability preservation tests
+pytest tests/unit/test_security_vulnerabilities_preservation.py -v
+
+# Run specific vulnerability test
+pytest tests/unit/test_security_vulnerabilities_exploration.py::TestTimingAttackExploration -v
+```
+
+**What's tested:**
+- Timing attack on API key verification (constant-time comparison)
+- Prompt injection via team names (strict input validation)
+- GitHub rate limit exhaustion (required authentication token)
+- Authorization bypass on hackathon operations (ownership verification)
+- Budget enforcement bypass (pre-flight cost validation)
+- Concurrent analysis race conditions (atomic DynamoDB writes)
+
+**Test methodology:**
+- **Phase 1 - Exploration Tests:** Tests designed to FAIL on unfixed code (confirms vulnerabilities exist)
+- **Phase 2 - Preservation Tests:** Tests capture baseline behavior to prevent regressions
+- **Phase 3 - Implementation:** Security fixes are implemented
+- **Phase 4 - Validation:** Exploration tests PASS after fixes (confirms fixes work), preservation tests still PASS (confirms no regressions)
+- Follows formal bugfix requirements-first workflow with property-based testing using Hypothesis
+
+**Current status:** All 6 critical vulnerabilities fixed and verified ✅
+
+**Security Test Results:**
+- 6 exploration tests: All PASS (vulnerabilities eliminated)
+- 8 preservation tests: All PASS (no regressions introduced)
+- 14 total property-based security tests with thousands of generated test cases
 
 ### 2. Local API Testing (FastAPI + Uvicorn)
 Best for rapid development and debugging:

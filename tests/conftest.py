@@ -1,10 +1,13 @@
 """Shared pytest fixtures for VibeJudge AI tests."""
 
+import os
 from datetime import UTC, datetime
 from typing import Any
 from unittest.mock import MagicMock
 
+import boto3
 import pytest
+from moto import mock_aws
 
 from src.models.analysis import (
     CommitInfo,
@@ -32,6 +35,34 @@ from src.models.scores import (
     TechStackAssessment,
 )
 from src.models.submission import RepoMeta
+
+# ============================================================
+# PYTEST CONFIGURATION HOOKS
+# ============================================================
+
+
+def pytest_configure(config):
+    """Set up test environment before any imports."""
+    # Set a valid test GitHub token if not already set
+    # This runs before collection, so it's available for all imports
+    if "GITHUB_TOKEN" not in os.environ:
+        os.environ["GITHUB_TOKEN"] = "ghp_test_token_for_automated_tests_1234567890"
+
+
+# ============================================================
+# ENVIRONMENT SETUP
+# ============================================================
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_environment():
+    """Set up test environment variables before any imports."""
+    # Set a valid test GitHub token if not already set
+    if "GITHUB_TOKEN" not in os.environ:
+        os.environ["GITHUB_TOKEN"] = "ghp_test_token_for_automated_tests_1234567890"
+    yield
+    # Cleanup is optional since this is session-scoped
+
 
 # ============================================================
 # MOCK BEDROCK CLIENT
@@ -609,3 +640,68 @@ def build_complete_ai_detection_dict(overall_score: float = 8.0, confidence: flo
         "commit_analysis": {},
         "ai_policy_observation": "",
     }
+
+
+# ============================================================
+# DYNAMODB HELPER FIXTURE
+# ============================================================
+
+
+@pytest.fixture
+def dynamodb_helper():
+    """Create a mock DynamoDB helper for testing."""
+    with mock_aws():
+        # Create mock DynamoDB table
+        dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
+        dynamodb.create_table(
+            TableName="VibeJudgeTable",
+            KeySchema=[
+                {"AttributeName": "PK", "KeyType": "HASH"},
+                {"AttributeName": "SK", "KeyType": "RANGE"},
+            ],
+            AttributeDefinitions=[
+                {"AttributeName": "PK", "AttributeType": "S"},
+                {"AttributeName": "SK", "AttributeType": "S"},
+                {"AttributeName": "GSI1PK", "AttributeType": "S"},
+                {"AttributeName": "GSI1SK", "AttributeType": "S"},
+                {"AttributeName": "GSI2PK", "AttributeType": "S"},
+                {"AttributeName": "GSI2SK", "AttributeType": "S"},
+            ],
+            GlobalSecondaryIndexes=[
+                {
+                    "IndexName": "GSI1",
+                    "KeySchema": [
+                        {"AttributeName": "GSI1PK", "KeyType": "HASH"},
+                        {"AttributeName": "GSI1SK", "KeyType": "RANGE"},
+                    ],
+                    "Projection": {"ProjectionType": "ALL"},
+                    "ProvisionedThroughput": {
+                        "ReadCapacityUnits": 5,
+                        "WriteCapacityUnits": 5,
+                    },
+                },
+                {
+                    "IndexName": "GSI2",
+                    "KeySchema": [
+                        {"AttributeName": "GSI2PK", "KeyType": "HASH"},
+                        {"AttributeName": "GSI2SK", "KeyType": "RANGE"},
+                    ],
+                    "Projection": {"ProjectionType": "ALL"},
+                    "ProvisionedThroughput": {
+                        "ReadCapacityUnits": 5,
+                        "WriteCapacityUnits": 5,
+                    },
+                },
+            ],
+            BillingMode="PROVISIONED",
+            ProvisionedThroughput={
+                "ReadCapacityUnits": 5,
+                "WriteCapacityUnits": 5,
+            },
+        )
+
+        # Import and create DynamoDBHelper
+        from src.utils.dynamo import DynamoDBHelper
+
+        helper = DynamoDBHelper(table_name="VibeJudgeTable")
+        yield helper

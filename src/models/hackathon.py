@@ -14,8 +14,10 @@ from src.models.common import (
 
 # --- Rubric Models ---
 
+
 class RubricDimension(VibeJudgeBase):
     """A single scoring dimension within a rubric."""
+
     name: str = Field(..., min_length=1, max_length=50)
     weight: float = Field(..., ge=0.0, le=1.0)
     agent: AgentName
@@ -24,6 +26,7 @@ class RubricDimension(VibeJudgeBase):
 
 class RubricConfig(VibeJudgeBase):
     """Complete rubric configuration for a hackathon."""
+
     name: str = Field("Default Rubric", max_length=200)
     version: str = "1.0"
     max_score: float = 100.0
@@ -40,8 +43,10 @@ class RubricConfig(VibeJudgeBase):
 
 # --- Request Models ---
 
+
 class HackathonCreate(VibeJudgeBase):
     """POST /api/v1/hackathons"""
+
     name: str = Field(..., min_length=1, max_length=200)
     description: str = Field("", max_length=2000)
     start_date: datetime | None = None
@@ -69,14 +74,13 @@ class HackathonCreate(VibeJudgeBase):
             enabled_set = set(v)
             missing = rubric_agents - enabled_set
             if missing:
-                raise ValueError(
-                    f"Rubric references agents not in agents_enabled: {missing}"
-                )
+                raise ValueError(f"Rubric references agents not in agents_enabled: {missing}")
         return v
 
 
 class HackathonUpdate(VibeJudgeBase):
     """PUT /api/v1/hackathons/{hack_id} — all fields optional."""
+
     name: str | None = Field(None, min_length=1, max_length=200)
     description: str | None = Field(None, max_length=2000)
     start_date: datetime | None = None
@@ -89,9 +93,12 @@ class HackathonUpdate(VibeJudgeBase):
 
 # --- Response Models ---
 
+
 class HackathonResponse(VibeJudgeBase, TimestampMixin):
     """Standard hackathon response."""
+
     hack_id: str
+    org_id: str
     name: str
     description: str = ""
     status: HackathonStatus = HackathonStatus.DRAFT
@@ -106,6 +113,7 @@ class HackathonResponse(VibeJudgeBase, TimestampMixin):
 
 class HackathonListItem(VibeJudgeBase):
     """Compact hackathon item for list endpoint."""
+
     hack_id: str
     name: str
     status: HackathonStatus
@@ -115,6 +123,7 @@ class HackathonListItem(VibeJudgeBase):
 
 class HackathonListResponse(VibeJudgeBase):
     """GET /api/v1/hackathons"""
+
     hackathons: list[HackathonListItem]
     next_cursor: str | None = None
     has_more: bool = False
