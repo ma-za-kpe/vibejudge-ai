@@ -2,13 +2,14 @@
 
 from datetime import datetime
 
-from pydantic import Field, HttpUrl, field_validator
+from pydantic import Field
 
 from src.models.common import (
-    VibeJudgeBase, TimestampMixin, SubmissionStatus,
     Recommendation,
+    SubmissionStatus,
+    TimestampMixin,
+    VibeJudgeBase,
 )
-
 
 # --- Request Models ---
 

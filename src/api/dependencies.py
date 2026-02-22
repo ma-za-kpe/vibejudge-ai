@@ -5,17 +5,17 @@ from typing import Annotated
 
 import boto3
 import structlog
-from fastapi import Depends, HTTPException, Header
+from fastapi import Depends, HTTPException
 from fastapi.security import APIKeyHeader
 
-from src.utils.dynamo import DynamoDBHelper
 from src.services import (
-    OrganizerService,
-    HackathonService,
-    SubmissionService,
     AnalysisService,
     CostService,
+    HackathonService,
+    OrganizerService,
+    SubmissionService,
 )
+from src.utils.dynamo import DynamoDBHelper
 
 logger = structlog.get_logger()
 
@@ -31,14 +31,14 @@ def get_dynamodb_table():
     """Get DynamoDB table resource."""
     table_name = os.environ.get("TABLE_NAME", "VibeJudgeTable")
     endpoint_url = os.environ.get("DYNAMODB_ENDPOINT_URL")
-    
+
     if endpoint_url:
         # Local DynamoDB
         dynamodb = boto3.resource("dynamodb", endpoint_url=endpoint_url, region_name="us-east-1")
     else:
         # AWS DynamoDB
         dynamodb = boto3.resource("dynamodb")
-    
+
     return dynamodb.Table(table_name)
 
 
@@ -140,14 +140,14 @@ async def verify_api_key(
             status_code=401,
             detail="Missing API key. Provide X-API-Key header.",
         )
-    
+
     org_id = organizer_service.verify_api_key(api_key)
     if not org_id:
         raise HTTPException(
             status_code=401,
             detail="Invalid API key",
         )
-    
+
     return org_id
 
 
@@ -173,7 +173,7 @@ async def get_current_organizer(
             status_code=404,
             detail="Organizer not found",
         )
-    
+
     # Convert to dict for compatibility
     return organizer.model_dump()
 

@@ -1,6 +1,5 @@
 """Cost tracking for agent analysis."""
 
-from datetime import datetime
 
 from src.constants import MODEL_RATES
 from src.models.common import AgentName, ServiceTier
@@ -12,11 +11,11 @@ logger = get_logger(__name__)
 
 class CostTracker:
     """Track token usage and costs for agent analysis."""
-    
+
     def __init__(self):
         """Initialize cost tracker."""
         self.records: list[CostRecord] = []
-    
+
     def record_agent_cost(
         self,
         sub_id: str,
@@ -48,7 +47,7 @@ class CostTracker:
         input_cost = input_tokens * rates["input"]
         output_cost = output_tokens * rates["output"]
         total_cost = input_cost + output_cost
-        
+
         record = CostRecord(
             sub_id=sub_id,
             hack_id=hack_id,
@@ -63,9 +62,9 @@ class CostTracker:
             latency_ms=latency_ms,
             service_tier=service_tier,
         )
-        
+
         self.records.append(record)
-        
+
         logger.info(
             "cost_recorded",
             agent=agent_name,
@@ -73,9 +72,9 @@ class CostTracker:
             tokens=record.total_tokens,
             cost_usd=record.total_cost_usd,
         )
-        
+
         return record
-    
+
     def get_total_cost(self) -> float:
         """Get total cost across all recorded agents.
         
@@ -83,7 +82,7 @@ class CostTracker:
             Total cost in USD
         """
         return sum(r.total_cost_usd for r in self.records)
-    
+
     def get_total_tokens(self) -> int:
         """Get total tokens across all recorded agents.
         
@@ -91,7 +90,7 @@ class CostTracker:
             Total token count
         """
         return sum(r.total_tokens for r in self.records)
-    
+
     def get_cost_by_agent(self) -> dict[str, float]:
         """Get cost breakdown by agent.
         
@@ -103,7 +102,7 @@ class CostTracker:
             agent = record.agent_name
             costs[agent] = costs.get(agent, 0.0) + record.total_cost_usd
         return costs
-    
+
     def get_cost_by_model(self) -> dict[str, float]:
         """Get cost breakdown by model.
         
@@ -115,7 +114,7 @@ class CostTracker:
             model = record.model_id
             costs[model] = costs.get(model, 0.0) + record.total_cost_usd
         return costs
-    
+
     def get_records(self) -> list[CostRecord]:
         """Get all cost records.
         
@@ -123,7 +122,7 @@ class CostTracker:
             List of CostRecord instances
         """
         return self.records.copy()
-    
+
     def clear(self) -> None:
         """Clear all recorded costs."""
         self.records.clear()

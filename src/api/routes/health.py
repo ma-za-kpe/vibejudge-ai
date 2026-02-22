@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from src.api.dependencies import get_dynamodb_table
@@ -52,14 +52,14 @@ async def health_check(
     """
     services = {}
     overall_status = "healthy"
-    
+
     # Check DynamoDB - use table_name property instead of load()
     try:
         start = datetime.now()
         # Just check if we can access the table name (doesn't require DescribeTable permission)
         table_name = table.table_name
         latency = int((datetime.now() - start).total_seconds() * 1000)
-        
+
         services["dynamodb"] = ServiceStatus(
             available=True,
             latency_ms=latency,
@@ -72,10 +72,10 @@ async def health_check(
         )
         overall_status = "unhealthy"
         logger.error("health_check_dynamodb_failed", error=str(e))
-    
+
     # Get version from environment or default
     version = os.environ.get("API_VERSION", "1.0.0")
-    
+
     return HealthResponse(
         status=overall_status,
         version=version,

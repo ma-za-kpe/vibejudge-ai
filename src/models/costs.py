@@ -1,6 +1,6 @@
 """Cost tracking models for LLM billing intelligence."""
 
-from src.models.common import VibeJudgeBase, AgentName, ServiceTier
+from src.models.common import AgentName, ServiceTier, VibeJudgeBase
 
 
 class CostRecord(VibeJudgeBase):

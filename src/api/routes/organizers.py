@@ -1,11 +1,13 @@
 """Organizer account management endpoints."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 
-from src.api.dependencies import OrganizerServiceDep, CurrentOrganizer
+from src.api.dependencies import CurrentOrganizer, OrganizerServiceDep
 from src.models.organizer import (
-    OrganizerCreate, OrganizerCreateResponse,
-    OrganizerLogin, OrganizerLoginResponse,
+    OrganizerCreate,
+    OrganizerCreateResponse,
+    OrganizerLogin,
+    OrganizerLoginResponse,
     OrganizerResponse,
 )
 
@@ -47,7 +49,7 @@ async def login_organizer(
         organizer = service.get_organizer_by_email(data.email)
         if not organizer:
             raise HTTPException(status_code=404, detail="Organizer not found")
-        
+
         # Regenerate API key
         return service.regenerate_api_key(organizer.org_id)
     except HTTPException:

@@ -28,7 +28,7 @@ def build_context(
         Formatted context string
     """
     logger.info("building_context", team=team_name, repo=repo_data.repo_name)
-    
+
     # Format source files block
     source_files_block = ""
     for sf in repo_data.source_files:
@@ -36,7 +36,7 @@ def build_context(
         source_files_block += f"```{sf.language.lower() if sf.language else ''}\n"
         source_files_block += sf.content
         source_files_block += "\n```\n"
-    
+
     # Format commit history block
     commit_block = ""
     for c in repo_data.commit_history[:50]:  # Limit to 50 most recent
@@ -44,12 +44,12 @@ def build_context(
             f"  {c.short_hash} | {c.timestamp.strftime('%Y-%m-%d %H:%M')} | "
             f"{c.author} | +{c.insertions}/-{c.deletions} | {c.message}\n"
         )
-    
+
     # Format diff summary
     diff_block = ""
     for d in repo_data.diff_summary[:30]:  # Limit to 30
         diff_block += f"  [{d.commit_hash}] {d.change_type}: {d.file_path}\n"
-    
+
     # Format workflow runs
     runs_block = ""
     for r in repo_data.workflow_runs[:20]:  # Limit to 20 most recent
@@ -57,16 +57,16 @@ def build_context(
             f"  {r.name} | {r.status}/{r.conclusion or 'pending'} | "
             f"{r.created_at.strftime('%Y-%m-%d %H:%M')}\n"
         )
-    
+
     # Format workflow definitions
     wf_defs = "\n".join(repo_data.workflow_definitions) if repo_data.workflow_definitions else "[No workflow files found]"
-    
+
     # Calculate workflow stats
     total_runs = len(repo_data.workflow_runs)
     successful_runs = sum(1 for r in repo_data.workflow_runs if r.conclusion == "success")
     failed_runs = sum(1 for r in repo_data.workflow_runs if r.conclusion == "failure")
     success_rate = round(repo_data.meta.workflow_success_rate * 100, 1) if repo_data.meta.workflow_success_rate else 0.0
-    
+
     # Build complete context
     context = f"""## HACKATHON SUBMISSION FOR EVALUATION
 
@@ -169,6 +169,6 @@ Analyze this repository according to the rubric above. Consider:
 
 Provide specific evidence from the code, commits, and workflows to support your assessment.
 """
-    
+
     logger.info("context_built", length=len(context), team=team_name)
     return context

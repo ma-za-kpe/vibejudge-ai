@@ -1,10 +1,17 @@
 """Analysis job management endpoints."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 
-from src.api.dependencies import AnalysisServiceDep, HackathonServiceDep, CostServiceDep, SubmissionServiceDep
+from src.api.dependencies import (
+    AnalysisServiceDep,
+    CostServiceDep,
+    HackathonServiceDep,
+    SubmissionServiceDep,
+)
 from src.models.analysis import (
-    AnalysisTrigger, AnalysisJobResponse, AnalysisStatusResponse,
+    AnalysisJobResponse,
+    AnalysisStatusResponse,
+    AnalysisTrigger,
 )
 from src.models.costs import CostEstimate
 
@@ -29,7 +36,7 @@ async def trigger_analysis(
     hackathon = hackathon_service.get_hackathon(hack_id)
     if not hackathon:
         raise HTTPException(status_code=404, detail="Hackathon not found")
-    
+
     try:
         return analysis_service.trigger_analysis(hack_id, data.submission_ids)
     except Exception as e:
@@ -48,13 +55,13 @@ async def get_analysis_status(
     Returns the most recent analysis job status.
     """
     jobs = service.list_analysis_jobs(hack_id)
-    
+
     if not jobs:
         raise HTTPException(status_code=404, detail="No analysis jobs found for this hackathon")
-    
+
     # Return most recent job (jobs are sorted by created_at desc)
     latest_job = jobs[0]
-    
+
     # Build progress object
     from src.models.analysis import AnalysisProgress
     progress = AnalysisProgress(
@@ -64,7 +71,7 @@ async def get_analysis_status(
         remaining=latest_job.total_submissions - latest_job.completed_submissions - latest_job.failed_submissions,
         percent_complete=(latest_job.completed_submissions / latest_job.total_submissions * 100) if latest_job.total_submissions > 0 else 0,
     )
-    
+
     return AnalysisStatusResponse(
         job_id=latest_job.job_id,
         hack_id=latest_job.hack_id,
@@ -93,14 +100,14 @@ async def estimate_analysis_cost(
     hackathon = hackathon_service.get_hackathon(hack_id)
     if not hackathon:
         raise HTTPException(status_code=404, detail="Hackathon not found")
-    
+
     # Count pending submissions
     submissions = submission_service.list_submissions(hack_id)
     submission_count = len([s for s in submissions.submissions if s.status == "pending"])
-    
+
     if submission_count == 0:
         raise HTTPException(status_code=400, detail="No pending submissions to analyze")
-    
+
     try:
         agents = [a.value if hasattr(a, 'value') else a for a in hackathon.agents_enabled]
         return cost_service.estimate_analysis_cost_response(

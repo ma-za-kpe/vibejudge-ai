@@ -1,17 +1,16 @@
 """Submission service — Submission management."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from src.models.common import SubmissionStatus
 from src.models.submission import (
-    SubmissionInput,
+    RepoMeta,
     SubmissionBatchCreate,
-    SubmissionResponse,
+    SubmissionBatchCreateResponse,
     SubmissionListItem,
     SubmissionListResponse,
-    SubmissionBatchCreateResponse,
-    RepoMeta,
+    SubmissionResponse,
     WeightedDimensionScore,
 )
 from src.utils.dynamo import DynamoDBHelper
@@ -23,7 +22,7 @@ logger = get_logger(__name__)
 
 class SubmissionService:
     """Service for submission operations."""
-    
+
     def __init__(self, db: DynamoDBHelper):
         """Initialize submission service.
         
@@ -31,7 +30,7 @@ class SubmissionService:
             db: DynamoDB helper instance
         """
         self.db = db
-    
+
     def create_submissions(
         self,
         hack_id: str,
@@ -46,12 +45,12 @@ class SubmissionService:
         Returns:
             Batch creation response
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         created_items = []
-        
+
         for sub_input in data.submissions:
             sub_id = generate_sub_id()
-            
+
             # Create submission record
             record = {
                 "PK": f"HACK#{hack_id}",
@@ -79,7 +78,7 @@ class SubmissionService:
                 "created_at": now.isoformat(),
                 "updated_at": now.isoformat(),
             }
-            
+
             success = self.db.put_submission(record)
             if success:
                 created_items.append(
@@ -100,17 +99,17 @@ class SubmissionService:
                     hack_id=hack_id,
                     team=sub_input.team_name,
                 )
-        
+
         # Get updated hackathon submission count
         hackathon = self.db.get_hackathon(hack_id)
         submission_count = hackathon.get("submission_count", 0) if hackathon else 0
-        
+
         return SubmissionBatchCreateResponse(
             created=len(created_items),
             submissions=created_items,
             hackathon_submission_count=submission_count + len(created_items),
         )
-    
+
     def get_submission(self, sub_id: str) -> SubmissionResponse | None:
         """Get submission by ID.
         
@@ -123,12 +122,12 @@ class SubmissionService:
         record = self.db.get_submission_by_id(sub_id)
         if not record:
             return None
-        
+
         # Parse repo_meta if present
         repo_meta = None
         if record.get("repo_meta"):
             repo_meta = RepoMeta(**record["repo_meta"])
-        
+
         # Parse weighted_scores if present
         weighted_scores = None
         if record.get("weighted_scores"):
@@ -136,7 +135,7 @@ class SubmissionService:
                 k: WeightedDimensionScore(**v)
                 for k, v in record["weighted_scores"].items()
             }
-        
+
         return SubmissionResponse(
             sub_id=record["sub_id"],
             hack_id=record["hack_id"],
@@ -158,7 +157,7 @@ class SubmissionService:
             created_at=datetime.fromisoformat(record["created_at"]),
             updated_at=datetime.fromisoformat(record["updated_at"]),
         )
-    
+
     def list_submissions(self, hack_id: str) -> SubmissionListResponse:
         """List submissions for hackathon.
         
@@ -169,7 +168,7 @@ class SubmissionService:
             List of submissions
         """
         records = self.db.list_submissions(hack_id)
-        
+
         items = [
             SubmissionListItem(
                 sub_id=r["sub_id"],
@@ -183,13 +182,13 @@ class SubmissionService:
             )
             for r in records
         ]
-        
+
         return SubmissionListResponse(
             submissions=items,
             next_cursor=None,
             has_more=False,
         )
-    
+
     def update_submission_status(
         self,
         hack_id: str,
@@ -208,7 +207,7 @@ class SubmissionService:
         Returns:
             True if successful
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         return self.db.update_submission_status(
             hack_id=hack_id,
             sub_id=sub_id,
@@ -216,7 +215,7 @@ class SubmissionService:
             updated_at=now.isoformat(),
             **kwargs,
         )
-    
+
     def update_submission_results(
         self,
         hack_id: str,
@@ -251,8 +250,8 @@ class SubmissionService:
         Returns:
             True if successful
         """
-        now = datetime.now(timezone.utc)
-        
+        now = datetime.now(UTC)
+
         return self.update_submission_status(
             hack_id=hack_id,
             sub_id=sub_id,
@@ -269,7 +268,7 @@ class SubmissionService:
             analysis_duration_ms=analysis_duration_ms,
             analyzed_at=now.isoformat(),
         )
-    
+
     def update_submission_with_scores(
         self,
         hack_id: str,
@@ -319,12 +318,12 @@ class SubmissionService:
             confidence=confidence,
             cost_usd=total_cost_usd,
         )
-        
+
         # Convert floats to Decimals and datetimes to ISO strings for DynamoDB
         def convert_to_decimal(obj):
             """Recursively convert floats to Decimals and datetimes to ISO strings for DynamoDB."""
             from datetime import datetime
-            
+
             if isinstance(obj, float):
                 return Decimal(str(obj))
             elif isinstance(obj, datetime):
@@ -337,7 +336,7 @@ class SubmissionService:
                 # Handle Pydantic models - use mode='json' to serialize datetimes
                 return convert_to_decimal(obj.model_dump(mode='json'))
             return obj
-        
+
         # Call the main update method (dimension_scores and confidence not stored)
         return self.update_submission_results(
             hack_id=hack_id,
@@ -353,7 +352,7 @@ class SubmissionService:
             total_tokens=total_tokens,
             analysis_duration_ms=analysis_duration_ms,
         )
-    
+
     def delete_submission(self, hack_id: str, sub_id: str) -> bool:
         """Delete submission (soft delete by status).
         

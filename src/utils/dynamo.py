@@ -1,6 +1,5 @@
 """DynamoDB helper with all 16 access patterns."""
 
-from typing import Any, Optional
 
 import boto3
 from boto3.dynamodb.conditions import Key
@@ -13,7 +12,7 @@ logger = get_logger(__name__)
 
 class DynamoDBHelper:
     """Helper class for DynamoDB operations with all access patterns."""
-    
+
     def __init__(self, table_name: str):
         """Initialize DynamoDB helper.
         
@@ -23,22 +22,22 @@ class DynamoDBHelper:
         import os
         endpoint_url = os.environ.get("DYNAMODB_ENDPOINT_URL")
         region = os.environ.get("AWS_REGION", "us-east-1")
-        
+
         if endpoint_url:
             # Local DynamoDB
             dynamodb = boto3.resource("dynamodb", endpoint_url=endpoint_url, region_name=region)
         else:
             # AWS DynamoDB
             dynamodb = boto3.resource("dynamodb", region_name=region)
-        
+
         self.table = dynamodb.Table(table_name)
         self.table_name = table_name
-    
+
     # ============================================================
     # ORGANIZER ACCESS PATTERNS
     # ============================================================
-    
-    def get_organizer(self, org_id: str) -> Optional[dict]:
+
+    def get_organizer(self, org_id: str) -> dict | None:
         """AP1: Get organizer by ID.
         
         Args:
@@ -55,8 +54,8 @@ class DynamoDBHelper:
         except ClientError as e:
             logger.error("get_organizer_failed", org_id=org_id, error=str(e))
             return None
-    
-    def get_organizer_by_email(self, email: str) -> Optional[dict]:
+
+    def get_organizer_by_email(self, email: str) -> dict | None:
         """AP2: Get organizer by email.
         
         Args:
@@ -75,7 +74,7 @@ class DynamoDBHelper:
         except ClientError as e:
             logger.error("get_organizer_by_email_failed", email=email, error=str(e))
             return None
-    
+
     def put_organizer(self, organizer: dict) -> bool:
         """Create or update organizer record.
         
@@ -94,7 +93,7 @@ class DynamoDBHelper:
         except ClientError as e:
             logger.error("put_organizer_failed", error=str(e))
             return False
-    
+
     def _serialize_item(self, item: dict) -> dict:
         """Convert datetime objects to ISO strings and floats to Decimal for DynamoDB.
         
@@ -106,7 +105,7 @@ class DynamoDBHelper:
         """
         from datetime import datetime
         from decimal import Decimal
-        
+
         serialized = {}
         for key, value in item.items():
             if isinstance(value, datetime):
@@ -125,11 +124,11 @@ class DynamoDBHelper:
             else:
                 serialized[key] = value
         return serialized
-    
+
     # ============================================================
     # HACKATHON ACCESS PATTERNS
     # ============================================================
-    
+
     def list_organizer_hackathons(self, org_id: str) -> list[dict]:
         """AP3: List hackathons for organizer.
         
@@ -150,8 +149,8 @@ class DynamoDBHelper:
         except ClientError as e:
             logger.error("list_organizer_hackathons_failed", org_id=org_id, error=str(e))
             return []
-    
-    def get_hackathon(self, hack_id: str) -> Optional[dict]:
+
+    def get_hackathon(self, hack_id: str) -> dict | None:
         """AP4: Get hackathon config.
         
         Args:
@@ -168,8 +167,8 @@ class DynamoDBHelper:
         except ClientError as e:
             logger.error("get_hackathon_failed", hack_id=hack_id, error=str(e))
             return None
-    
-    def get_hackathon_by_id(self, hack_id: str) -> Optional[dict]:
+
+    def get_hackathon_by_id(self, hack_id: str) -> dict | None:
         """AP5: Get hackathon by ID (from any context).
         
         Args:
@@ -191,7 +190,7 @@ class DynamoDBHelper:
         except ClientError as e:
             logger.error("get_hackathon_by_id_failed", hack_id=hack_id, error=str(e))
             return None
-    
+
     def put_hackathon(self, hackathon: dict) -> bool:
         """Create or update hackathon record.
         
@@ -209,7 +208,7 @@ class DynamoDBHelper:
         except ClientError as e:
             logger.error("put_hackathon_failed", error=str(e))
             return False
-    
+
     def put_hackathon_detail(self, detail: dict) -> bool:
         """Create or update hackathon detail record.
         
@@ -227,11 +226,11 @@ class DynamoDBHelper:
         except ClientError as e:
             logger.error("put_hackathon_detail_failed", error=str(e))
             return False
-    
+
     # ============================================================
     # SUBMISSION ACCESS PATTERNS
     # ============================================================
-    
+
     def list_submissions(self, hack_id: str) -> list[dict]:
         """AP6: List all submissions for hackathon.
         
@@ -252,8 +251,8 @@ class DynamoDBHelper:
         except ClientError as e:
             logger.error("list_submissions_failed", hack_id=hack_id, error=str(e))
             return []
-    
-    def get_submission(self, hack_id: str, sub_id: str) -> Optional[dict]:
+
+    def get_submission(self, hack_id: str, sub_id: str) -> dict | None:
         """AP7: Get single submission.
         
         Args:
@@ -271,8 +270,8 @@ class DynamoDBHelper:
         except ClientError as e:
             logger.error("get_submission_failed", sub_id=sub_id, error=str(e))
             return None
-    
-    def get_submission_by_id(self, sub_id: str) -> Optional[dict]:
+
+    def get_submission_by_id(self, sub_id: str) -> dict | None:
         """AP8: Get submission by ID (from any context).
         
         Args:
@@ -291,7 +290,7 @@ class DynamoDBHelper:
         except ClientError as e:
             logger.error("get_submission_by_id_failed", sub_id=sub_id, error=str(e))
             return None
-    
+
     def put_submission(self, submission: dict) -> bool:
         """Create or update submission record.
         
@@ -309,7 +308,7 @@ class DynamoDBHelper:
         except ClientError as e:
             logger.error("put_submission_failed", error=str(e))
             return False
-    
+
     def update_submission_status(
         self, hack_id: str, sub_id: str, status: str, **kwargs
     ) -> bool:
@@ -326,14 +325,14 @@ class DynamoDBHelper:
         """
         try:
             from datetime import datetime
-            
+
             update_expr = "SET #status = :status, updated_at = :updated_at"
             expr_attr_names = {"#status": "status"}
             expr_attr_values = {
                 ":status": status,
                 ":updated_at": kwargs.get("updated_at").isoformat() if isinstance(kwargs.get("updated_at"), datetime) else kwargs.get("updated_at"),
             }
-            
+
             # Add optional fields
             for key, value in kwargs.items():
                 if key != "updated_at" and value is not None:
@@ -342,7 +341,7 @@ class DynamoDBHelper:
                         value = value.isoformat()
                     update_expr += f", {key} = :{key}"
                     expr_attr_values[f":{key}"] = value
-            
+
             self.table.update_item(
                 Key={"PK": f"HACK#{hack_id}", "SK": f"SUB#{sub_id}"},
                 UpdateExpression=update_expr,
@@ -354,11 +353,11 @@ class DynamoDBHelper:
         except ClientError as e:
             logger.error("update_submission_status_failed", sub_id=sub_id, error=str(e))
             return False
-    
+
     # ============================================================
     # SCORE ACCESS PATTERNS
     # ============================================================
-    
+
     def get_agent_scores(self, sub_id: str) -> list[dict]:
         """AP9: Get all agent scores for submission.
         
@@ -379,8 +378,8 @@ class DynamoDBHelper:
         except ClientError as e:
             logger.error("get_agent_scores_failed", sub_id=sub_id, error=str(e))
             return []
-    
-    def get_agent_score(self, sub_id: str, agent_name: str) -> Optional[dict]:
+
+    def get_agent_score(self, sub_id: str, agent_name: str) -> dict | None:
         """AP10: Get specific agent score.
         
         Args:
@@ -398,7 +397,7 @@ class DynamoDBHelper:
         except ClientError as e:
             logger.error("get_agent_score_failed", sub_id=sub_id, agent=agent_name, error=str(e))
             return None
-    
+
     def put_agent_score(self, score: dict) -> bool:
         """Create or update agent score record.
         
@@ -416,8 +415,8 @@ class DynamoDBHelper:
         except ClientError as e:
             logger.error("put_agent_score_failed", error=str(e))
             return False
-    
-    def get_submission_summary(self, sub_id: str) -> Optional[dict]:
+
+    def get_submission_summary(self, sub_id: str) -> dict | None:
         """AP11: Get submission summary.
         
         Args:
@@ -434,7 +433,7 @@ class DynamoDBHelper:
         except ClientError as e:
             logger.error("get_submission_summary_failed", sub_id=sub_id, error=str(e))
             return None
-    
+
     def put_submission_summary(self, summary: dict) -> bool:
         """Create or update submission summary.
         
@@ -452,11 +451,11 @@ class DynamoDBHelper:
         except ClientError as e:
             logger.error("put_submission_summary_failed", error=str(e))
             return False
-    
+
     # ============================================================
     # COST ACCESS PATTERNS
     # ============================================================
-    
+
     def get_submission_costs(self, sub_id: str) -> list[dict]:
         """AP12: Get all cost records for submission.
         
@@ -477,7 +476,7 @@ class DynamoDBHelper:
         except ClientError as e:
             logger.error("get_submission_costs_failed", sub_id=sub_id, error=str(e))
             return []
-    
+
     def put_cost_record(self, cost: dict) -> bool:
         """Create or update cost record.
         
@@ -495,8 +494,8 @@ class DynamoDBHelper:
         except ClientError as e:
             logger.error("put_cost_record_failed", error=str(e))
             return False
-    
-    def get_hackathon_cost_summary(self, hack_id: str) -> Optional[dict]:
+
+    def get_hackathon_cost_summary(self, hack_id: str) -> dict | None:
         """AP13: Get hackathon cost summary.
         
         Args:
@@ -513,7 +512,7 @@ class DynamoDBHelper:
         except ClientError as e:
             logger.error("get_hackathon_cost_summary_failed", hack_id=hack_id, error=str(e))
             return None
-    
+
     def put_hackathon_cost_summary(self, cost_summary: dict) -> bool:
         """Create or update hackathon cost summary.
         
@@ -531,11 +530,11 @@ class DynamoDBHelper:
         except ClientError as e:
             logger.error("put_hackathon_cost_summary_failed", error=str(e))
             return False
-    
+
     # ============================================================
     # ANALYSIS JOB ACCESS PATTERNS
     # ============================================================
-    
+
     def list_analysis_jobs(self, hack_id: str) -> list[dict]:
         """AP14: List analysis jobs for hackathon.
         
@@ -556,7 +555,7 @@ class DynamoDBHelper:
         except ClientError as e:
             logger.error("list_analysis_jobs_failed", hack_id=hack_id, error=str(e))
             return []
-    
+
     def list_jobs_by_status(self, status: str) -> list[dict]:
         """AP15: List jobs by status.
         
@@ -575,7 +574,7 @@ class DynamoDBHelper:
         except ClientError as e:
             logger.error("list_jobs_by_status_failed", status=status, error=str(e))
             return []
-    
+
     def put_analysis_job(self, job: dict) -> bool:
         """Create or update analysis job.
         
@@ -593,11 +592,11 @@ class DynamoDBHelper:
         except ClientError as e:
             logger.error("put_analysis_job_failed", error=str(e))
             return False
-    
+
     # ============================================================
     # LEADERBOARD
     # ============================================================
-    
+
     def get_leaderboard(self, hack_id: str) -> list[dict]:
         """AP16: Get submissions sorted by score (application-side sort).
         
@@ -612,11 +611,11 @@ class DynamoDBHelper:
         scored = [s for s in submissions if s.get("overall_score") is not None]
         # Sort by score descending
         return sorted(scored, key=lambda x: x.get("overall_score", 0), reverse=True)
-    
+
     # ============================================================
     # BATCH OPERATIONS
     # ============================================================
-    
+
     def batch_write(self, items: list[dict]) -> bool:
         """Batch write multiple items.
         

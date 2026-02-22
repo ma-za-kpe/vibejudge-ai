@@ -1,17 +1,21 @@
 """Hackathon management endpoints."""
 
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
-from src.api.dependencies import HackathonServiceDep, SubmissionServiceDep, CurrentOrganizer
+from src.api.dependencies import CurrentOrganizer, HackathonServiceDep, SubmissionServiceDep
+from src.models.common import Recommendation
 from src.models.hackathon import (
-    HackathonCreate, HackathonUpdate,
-    HackathonResponse, HackathonListResponse,
+    HackathonCreate,
+    HackathonListResponse,
+    HackathonResponse,
+    HackathonUpdate,
 )
 from src.models.leaderboard import (
-    LeaderboardResponse, LeaderboardEntry, LeaderboardStats,
+    LeaderboardEntry,
     LeaderboardHackathonInfo,
+    LeaderboardResponse,
+    LeaderboardStats,
 )
-from src.models.common import Recommendation
 
 router = APIRouter(prefix="/hackathons", tags=["hackathons"])
 
@@ -122,24 +126,24 @@ async def get_leaderboard(
     hackathon = hackathon_service.get_hackathon(hack_id)
     if not hackathon:
         raise HTTPException(status_code=404, detail="Hackathon not found")
-    
+
     # Get all submissions with scores
     all_submissions = submission_service.list_submissions(hack_id)
     scored_submissions = [
-        s for s in all_submissions.submissions 
+        s for s in all_submissions.submissions
         if s.overall_score is not None
     ]
-    
+
     if not scored_submissions:
         raise HTTPException(status_code=400, detail="No scored submissions available")
-    
+
     # Sort by overall_score descending
     sorted_submissions = sorted(
         scored_submissions,
         key=lambda x: x.overall_score or 0,
         reverse=True
     )
-    
+
     # Build leaderboard entries
     leaderboard_entries = []
     for rank, submission in enumerate(sorted_submissions, start=1):
@@ -151,20 +155,20 @@ async def get_leaderboard(
             dimension_scores={},  # Not available in list view - get full submission for details
             recommendation=Recommendation.SOLID_SUBMISSION,  # Default - not available in list view
         ))
-    
+
     # Calculate statistics
     scores = [s.overall_score or 0.0 for s in scored_submissions]
     mean_score = sum(scores) / len(scores) if scores else 0.0
     sorted_scores = sorted(scores)
     median_score = sorted_scores[len(sorted_scores) // 2] if sorted_scores else 0.0
-    
+
     # Calculate standard deviation
     if len(scores) > 1:
         variance = sum((x - mean_score) ** 2 for x in scores) / len(scores)
         std_dev = variance ** 0.5
     else:
         std_dev = 0.0
-    
+
     # Score distribution
     distribution = {
         "90-100": sum(1 for s in scores if 90 <= s <= 100),
@@ -173,7 +177,7 @@ async def get_leaderboard(
         "60-69": sum(1 for s in scores if 60 <= s < 70),
         "0-59": sum(1 for s in scores if s < 60),
     }
-    
+
     statistics = LeaderboardStats(
         mean_score=mean_score,
         median_score=median_score,
@@ -182,7 +186,7 @@ async def get_leaderboard(
         lowest_score=min(scores) if scores else 0.0,
         score_distribution=distribution,
     )
-    
+
     # Build hackathon info
     hackathon_info = LeaderboardHackathonInfo(
         hack_id=hack_id,
@@ -191,7 +195,7 @@ async def get_leaderboard(
         analyzed_count=len(scored_submissions),
         ai_policy_mode=hackathon.ai_policy_mode.value if hasattr(hackathon.ai_policy_mode, 'value') else str(hackathon.ai_policy_mode),
     )
-    
+
     return LeaderboardResponse(
         hackathon=hackathon_info,
         leaderboard=leaderboard_entries,

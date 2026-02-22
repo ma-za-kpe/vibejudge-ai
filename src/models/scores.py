@@ -2,8 +2,7 @@
 
 from pydantic import Field, field_validator
 
-from src.models.common import VibeJudgeBase, AgentName, Severity
-
+from src.models.common import Severity, VibeJudgeBase
 
 # ============================================================
 # EVIDENCE MODELS

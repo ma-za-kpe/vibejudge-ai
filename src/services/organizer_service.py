@@ -2,15 +2,15 @@
 
 import hashlib
 import secrets
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from src.models.common import Tier
 from src.models.organizer import (
     OrganizerCreate,
-    OrganizerResponse,
     OrganizerCreateResponse,
     OrganizerLoginResponse,
     OrganizerRecord,
+    OrganizerResponse,
 )
 from src.utils.dynamo import DynamoDBHelper
 from src.utils.id_gen import generate_org_id
@@ -21,7 +21,7 @@ logger = get_logger(__name__)
 
 class OrganizerService:
     """Service for organizer account operations."""
-    
+
     def __init__(self, db: DynamoDBHelper):
         """Initialize organizer service.
         
@@ -29,7 +29,7 @@ class OrganizerService:
             db: DynamoDB helper instance
         """
         self.db = db
-    
+
     def _generate_api_key(self) -> str:
         """Generate a secure API key.
         
@@ -37,7 +37,7 @@ class OrganizerService:
             API key string (32 bytes hex = 64 characters)
         """
         return secrets.token_hex(32)
-    
+
     def _hash_api_key(self, api_key: str) -> str:
         """Hash API key for storage.
         
@@ -48,7 +48,7 @@ class OrganizerService:
             SHA-256 hash of API key
         """
         return hashlib.sha256(api_key.encode()).hexdigest()
-    
+
     def create_organizer(self, data: OrganizerCreate) -> OrganizerCreateResponse:
         """Create new organizer account.
         
@@ -66,14 +66,14 @@ class OrganizerService:
         if existing:
             logger.warning("organizer_email_exists", email=data.email)
             raise ValueError(f"Email {data.email} is already registered")
-        
+
         # Generate IDs and API key
         org_id = generate_org_id()
         api_key = self._generate_api_key()
         api_key_hash = self._hash_api_key(api_key)
-        
-        now = datetime.now(timezone.utc)
-        
+
+        now = datetime.now(UTC)
+
         # Create DynamoDB record
         record = OrganizerRecord(
             PK=f"ORG#{org_id}",
@@ -91,20 +91,20 @@ class OrganizerService:
             created_at=now,
             updated_at=now,
         )
-        
+
         # Save to DynamoDB
         success = self.db.put_organizer(record.model_dump())
         if not success:
             logger.error("organizer_creation_failed", org_id=org_id)
             raise RuntimeError("Failed to create organizer")
-        
+
         logger.info(
             "organizer_created",
             org_id=org_id,
             email=data.email,
             tier=Tier.FREE,
         )
-        
+
         # Return response with API key (only time it's shown)
         return OrganizerCreateResponse(
             org_id=org_id,
@@ -117,7 +117,7 @@ class OrganizerService:
             created_at=now,
             updated_at=now,
         )
-    
+
     def get_organizer(self, org_id: str) -> OrganizerResponse | None:
         """Get organizer by ID.
         
@@ -130,7 +130,7 @@ class OrganizerService:
         record = self.db.get_organizer(org_id)
         if not record:
             return None
-        
+
         return OrganizerResponse(
             org_id=record["org_id"],
             email=record["email"],
@@ -141,7 +141,7 @@ class OrganizerService:
             created_at=record["created_at"],
             updated_at=record["updated_at"],
         )
-    
+
     def get_organizer_by_email(self, email: str) -> OrganizerResponse | None:
         """Get organizer by email.
         
@@ -154,7 +154,7 @@ class OrganizerService:
         record = self.db.get_organizer_by_email(email)
         if not record:
             return None
-        
+
         return OrganizerResponse(
             org_id=record["org_id"],
             email=record["email"],
@@ -165,7 +165,7 @@ class OrganizerService:
             created_at=record["created_at"],
             updated_at=record["updated_at"],
         )
-    
+
     def verify_api_key(self, api_key: str) -> str | None:
         """Verify API key and return organizer ID.
         
@@ -180,28 +180,28 @@ class OrganizerService:
             In production, add GSI3 with api_key_hash as PK for O(1) lookup.
         """
         api_key_hash = self._hash_api_key(api_key)
-        
+
         # Scan all organizers and filter in Python (DynamoDB Local has issues with FilterExpression)
         try:
             response = self.db.table.scan(
                 FilterExpression="entity_type = :type",
                 ExpressionAttributeValues={":type": "ORGANIZER"}
             )
-            
+
             items = response.get("Items", [])
             for item in items:
                 if item.get("api_key_hash") == api_key_hash:
                     org_id = item.get("org_id")
                     logger.info("api_key_verified", org_id=org_id)
                     return org_id
-            
+
             logger.warning("api_key_invalid", api_key_hash_prefix=api_key_hash[:16])
             return None
-            
+
         except Exception as e:
             logger.error("api_key_verification_failed", error=str(e))
             return None
-    
+
     def regenerate_api_key(self, org_id: str) -> OrganizerLoginResponse:
         """Regenerate API key for organizer (login).
         
@@ -218,27 +218,27 @@ class OrganizerService:
         record = self.db.get_organizer(org_id)
         if not record:
             raise ValueError(f"Organizer {org_id} not found")
-        
+
         # Generate new API key
         api_key = self._generate_api_key()
         api_key_hash = self._hash_api_key(api_key)
-        
+
         # Update record
         record["api_key_hash"] = api_key_hash
-        record["updated_at"] = datetime.now(timezone.utc)
-        
+        record["updated_at"] = datetime.now(UTC)
+
         success = self.db.put_organizer(record)
         if not success:
             logger.error("api_key_regeneration_failed", org_id=org_id)
             raise RuntimeError("Failed to regenerate API key")
-        
+
         logger.info("api_key_regenerated", org_id=org_id)
-        
+
         return OrganizerLoginResponse(
             org_id=org_id,
             api_key=api_key,
         )
-    
+
     def increment_hackathon_count(self, org_id: str) -> bool:
         """Increment hackathon count for organizer.
         
@@ -251,8 +251,8 @@ class OrganizerService:
         record = self.db.get_organizer(org_id)
         if not record:
             return False
-        
+
         record["hackathon_count"] = record.get("hackathon_count", 0) + 1
-        record["updated_at"] = datetime.now(timezone.utc)
-        
+        record["updated_at"] = datetime.now(UTC)
+
         return self.db.put_organizer(record)

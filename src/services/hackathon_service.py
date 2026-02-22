@@ -1,14 +1,14 @@
 """Hackathon service — CRUD operations and validation."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from src.models.common import HackathonStatus
 from src.models.hackathon import (
     HackathonCreate,
-    HackathonUpdate,
-    HackathonResponse,
     HackathonListItem,
     HackathonListResponse,
+    HackathonResponse,
+    HackathonUpdate,
 )
 from src.utils.dynamo import DynamoDBHelper
 from src.utils.id_gen import generate_hack_id
@@ -19,7 +19,7 @@ logger = get_logger(__name__)
 
 class HackathonService:
     """Service for hackathon operations."""
-    
+
     def __init__(self, db: DynamoDBHelper):
         """Initialize hackathon service.
         
@@ -27,7 +27,7 @@ class HackathonService:
             db: DynamoDB helper instance
         """
         self.db = db
-    
+
     def create_hackathon(
         self,
         org_id: str,
@@ -43,8 +43,8 @@ class HackathonService:
             Hackathon response
         """
         hack_id = generate_hack_id()
-        now = datetime.now(timezone.utc)
-        
+        now = datetime.now(UTC)
+
         # Create organizer's hackathon list item (PK=ORG#, SK=HACK#)
         org_hack_record = {
             "PK": f"ORG#{org_id}",
@@ -57,7 +57,7 @@ class HackathonService:
             "created_at": now.isoformat(),
             "updated_at": now.isoformat(),
         }
-        
+
         # Create hackathon detail record (PK=HACK#, SK=META)
         hack_detail_record = {
             "PK": f"HACK#{hack_id}",
@@ -81,22 +81,22 @@ class HackathonService:
             "created_at": now.isoformat(),
             "updated_at": now.isoformat(),
         }
-        
+
         # Save both records
         success1 = self.db.put_hackathon(org_hack_record)
         success2 = self.db.put_hackathon_detail(hack_detail_record)
-        
+
         if not (success1 and success2):
             logger.error("hackathon_creation_failed", hack_id=hack_id)
             raise RuntimeError("Failed to create hackathon")
-        
+
         logger.info(
             "hackathon_created",
             hack_id=hack_id,
             org_id=org_id,
             name=data.name,
         )
-        
+
         return HackathonResponse(
             hack_id=hack_id,
             name=data.name,
@@ -112,7 +112,7 @@ class HackathonService:
             created_at=now,
             updated_at=now,
         )
-    
+
     def get_hackathon(self, hack_id: str) -> HackathonResponse | None:
         """Get hackathon by ID.
         
@@ -125,10 +125,10 @@ class HackathonService:
         record = self.db.get_hackathon(hack_id)
         if not record:
             return None
-        
-        from src.models.hackathon import RubricConfig
+
         from src.models.common import AgentName, AIPolicyMode
-        
+        from src.models.hackathon import RubricConfig
+
         return HackathonResponse(
             hack_id=record["hack_id"],
             name=record["name"],
@@ -144,7 +144,7 @@ class HackathonService:
             created_at=datetime.fromisoformat(record["created_at"]),
             updated_at=datetime.fromisoformat(record["updated_at"]),
         )
-    
+
     def list_hackathons(self, org_id: str) -> HackathonListResponse:
         """List hackathons for organizer.
         
@@ -155,7 +155,7 @@ class HackathonService:
             List of hackathons
         """
         records = self.db.list_organizer_hackathons(org_id)
-        
+
         items = [
             HackathonListItem(
                 hack_id=r["hack_id"],
@@ -166,13 +166,13 @@ class HackathonService:
             )
             for r in records
         ]
-        
+
         return HackathonListResponse(
             hackathons=items,
             next_cursor=None,
             has_more=False,
         )
-    
+
     def update_hackathon(
         self,
         hack_id: str,
@@ -193,7 +193,7 @@ class HackathonService:
         record = self.db.get_hackathon(hack_id)
         if not record:
             raise ValueError(f"Hackathon {hack_id} not found")
-        
+
         # Update fields
         if data.name is not None:
             record["name"] = data.name
@@ -211,18 +211,18 @@ class HackathonService:
             record["ai_policy_mode"] = data.ai_policy_mode.value if hasattr(data.ai_policy_mode, 'value') else data.ai_policy_mode
         if data.budget_limit_usd is not None:
             record["budget_limit_usd"] = data.budget_limit_usd
-        
-        record["updated_at"] = datetime.now(timezone.utc).isoformat()
-        
+
+        record["updated_at"] = datetime.now(UTC).isoformat()
+
         success = self.db.put_hackathon_detail(record)
         if not success:
             logger.error("hackathon_update_failed", hack_id=hack_id)
             raise RuntimeError("Failed to update hackathon")
-        
+
         logger.info("hackathon_updated", hack_id=hack_id)
-        
+
         return self.get_hackathon(hack_id)
-    
+
     def delete_hackathon(self, hack_id: str, org_id: str) -> bool:
         """Delete hackathon (soft delete by status).
         
@@ -236,17 +236,17 @@ class HackathonService:
         record = self.db.get_hackathon(hack_id)
         if not record:
             return False
-        
+
         # Soft delete by setting status
         record["status"] = HackathonStatus.ARCHIVED.value
-        record["updated_at"] = datetime.now(timezone.utc).isoformat()
-        
+        record["updated_at"] = datetime.now(UTC).isoformat()
+
         success = self.db.put_hackathon_detail(record)
         if success:
             logger.info("hackathon_deleted", hack_id=hack_id)
-        
+
         return success
-    
+
     def increment_submission_count(self, hack_id: str) -> bool:
         """Increment submission count for hackathon.
         
@@ -259,8 +259,8 @@ class HackathonService:
         record = self.db.get_hackathon(hack_id)
         if not record:
             return False
-        
+
         record["submission_count"] = record.get("submission_count", 0) + 1
-        record["updated_at"] = datetime.now(timezone.utc).isoformat()
-        
+        record["updated_at"] = datetime.now(UTC).isoformat()
+
         return self.db.put_hackathon_detail(record)

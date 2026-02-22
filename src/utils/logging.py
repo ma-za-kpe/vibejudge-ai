@@ -10,14 +10,14 @@ from src.utils.config import settings
 
 def setup_logging() -> None:
     """Configure structured logging for the application."""
-    
+
     # Configure standard library logging
     logging.basicConfig(
         format="%(message)s",
         stream=sys.stdout,
         level=getattr(logging, settings.log_level.upper()),
     )
-    
+
     # Configure structlog processors
     processors = [
         structlog.contextvars.merge_contextvars,
@@ -25,7 +25,7 @@ def setup_logging() -> None:
         structlog.processors.TimeStamper(fmt="iso"),
         structlog.processors.StackInfoRenderer(),
     ]
-    
+
     if settings.structured_logging:
         # JSON output for production
         processors.append(structlog.processors.JSONRenderer())
@@ -34,7 +34,7 @@ def setup_logging() -> None:
         processors.extend([
             structlog.dev.ConsoleRenderer(),
         ])
-    
+
     structlog.configure(
         processors=processors,
         wrapper_class=structlog.make_filtering_bound_logger(

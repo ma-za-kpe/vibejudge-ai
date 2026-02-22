@@ -1,9 +1,8 @@
 """Organizer account models."""
 
-from pydantic import Field, EmailStr
+from pydantic import EmailStr, Field
 
-from src.models.common import VibeJudgeBase, TimestampMixin, Tier
-
+from src.models.common import Tier, TimestampMixin, VibeJudgeBase
 
 # --- Request Models ---
 

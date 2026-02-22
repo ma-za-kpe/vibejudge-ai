@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from mangum import Mangum
 
-from src.api.routes import health, organizers, hackathons, submissions, analysis, costs
+from src.api.routes import analysis, costs, hackathons, health, organizers, submissions
 
 # Configure structured logging
 structlog.configure(
@@ -79,5 +79,6 @@ async def shutdown_event():
 # Mangum handler for AWS Lambda
 # API Gateway adds stage prefix (/dev, /staging, /prod) which Mangum needs to strip
 import os
+
 stage = os.environ.get("ENVIRONMENT", "dev")
 handler = Mangum(app, lifespan="off", api_gateway_base_path=f"/{stage}")

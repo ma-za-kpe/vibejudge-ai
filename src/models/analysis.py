@@ -4,9 +4,8 @@ from datetime import datetime
 
 from pydantic import Field
 
-from src.models.common import VibeJudgeBase, JobStatus, AgentName
+from src.models.common import AgentName, JobStatus, VibeJudgeBase
 from src.models.submission import RepoMeta
-
 
 # --- Request Models ---
 

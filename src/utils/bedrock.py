@@ -2,18 +2,18 @@
 
 import json
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 import boto3
 from botocore.exceptions import ClientError
 from tenacity import (
     retry,
+    retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
-    retry_if_exception_type,
 )
 
-from src.constants import MODEL_RATES, BEDROCK_RETRY_ATTEMPTS
+from src.constants import BEDROCK_RETRY_ATTEMPTS, MODEL_RATES
 from src.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -21,7 +21,7 @@ logger = get_logger(__name__)
 
 class BedrockClient:
     """Wrapper for Amazon Bedrock Converse API with token tracking."""
-    
+
     def __init__(self, region_name: str = "us-east-1"):
         """Initialize Bedrock client.
         
@@ -30,7 +30,7 @@ class BedrockClient:
         """
         self.client = boto3.client("bedrock-runtime", region_name=region_name)
         self.region = region_name
-    
+
     @retry(
         stop=stop_after_attempt(BEDROCK_RETRY_ATTEMPTS),
         wait=wait_exponential(multiplier=2, min=2, max=10),
@@ -44,7 +44,7 @@ class BedrockClient:
         user_message: str,
         temperature: float = 0.3,
         max_tokens: int = 2048,
-        top_p: Optional[float] = None,
+        top_p: float | None = None,
     ) -> dict[str, Any]:
         """Call Bedrock Converse API with retry logic.
         
@@ -67,17 +67,17 @@ class BedrockClient:
             ClientError: If Bedrock API call fails after retries
         """
         start_time = datetime.utcnow()
-        
+
         # Build inference config - exclude top_p for Claude Sonnet 4
         inference_config = {
             "maxTokens": max_tokens,
             "temperature": temperature,
         }
-        
+
         # Only add top_p if specified and not Claude Sonnet 4
         if top_p is not None and "claude-sonnet-4" not in model_id:
             inference_config["topP"] = top_p
-        
+
         try:
             response = self.client.converse(
                 modelId=model_id,
@@ -90,18 +90,18 @@ class BedrockClient:
                 ],
                 inferenceConfig=inference_config,
             )
-            
+
             latency_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
-            
+
             # Extract response content
             output = response.get("output", {})
             message = output.get("message", {})
             content_blocks = message.get("content", [])
             content_text = content_blocks[0].get("text", "") if content_blocks else ""
-            
+
             # Extract usage
             usage = response.get("usage", {})
-            
+
             result = {
                 "content": content_text,
                 "usage": {
@@ -113,7 +113,7 @@ class BedrockClient:
                 "latency_ms": latency_ms,
                 "model_id": model_id,
             }
-            
+
             logger.info(
                 "bedrock_converse_success",
                 model_id=model_id,
@@ -121,9 +121,9 @@ class BedrockClient:
                 output_tokens=result["usage"]["output_tokens"],
                 latency_ms=latency_ms,
             )
-            
+
             return result
-            
+
         except ClientError as e:
             error_code = e.response.get("Error", {}).get("Code", "Unknown")
             logger.error(
@@ -133,7 +133,7 @@ class BedrockClient:
                 error=str(e),
             )
             raise
-    
+
     def calculate_cost(
         self,
         model_id: str,
@@ -158,18 +158,18 @@ class BedrockClient:
                 "output_cost_usd": 0.0,
                 "total_cost_usd": 0.0,
             }
-        
+
         input_cost = input_tokens * rates["input"]
         output_cost = output_tokens * rates["output"]
         total_cost = input_cost + output_cost
-        
+
         return {
             "input_cost_usd": round(input_cost, 6),
             "output_cost_usd": round(output_cost, 6),
             "total_cost_usd": round(total_cost, 6),
         }
-    
-    def parse_json_response(self, content: str) -> Optional[dict]:
+
+    def parse_json_response(self, content: str) -> dict | None:
         """Parse JSON from LLM response.
         
         Handles common issues:
@@ -191,19 +191,19 @@ class BedrockClient:
             content = content[3:]
         if content.endswith("```"):
             content = content[:-3]
-        
+
         content = content.strip()
-        
+
         # Try to find JSON object boundaries
         start = content.find("{")
         end = content.rfind("}") + 1
-        
+
         if start == -1 or end == 0:
             logger.error("json_parse_no_braces", content_preview=content[:200])
             return None
-        
+
         json_str = content[start:end]
-        
+
         try:
             return json.loads(json_str)
         except json.JSONDecodeError as e:
@@ -213,7 +213,7 @@ class BedrockClient:
                 content_preview=json_str[:200],
             )
             return None
-    
+
     def retry_with_correction(
         self,
         model_id: str,
@@ -251,9 +251,9 @@ No markdown code blocks, no text outside the JSON object.
 Original request:
 {original_message[:1000]}
 """
-        
+
         logger.info("bedrock_retry_with_correction", model_id=model_id)
-        
+
         return self.converse(
             model_id=model_id,
             system_prompt=system_prompt,

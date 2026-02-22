@@ -1,6 +1,6 @@
 """Leaderboard response models."""
 
-from src.models.common import VibeJudgeBase, Recommendation
+from src.models.common import Recommendation, VibeJudgeBase
 
 
 class LeaderboardEntry(VibeJudgeBase):

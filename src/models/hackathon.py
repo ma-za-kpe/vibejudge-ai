@@ -5,10 +5,12 @@ from datetime import datetime
 from pydantic import Field, field_validator
 
 from src.models.common import (
-    VibeJudgeBase, TimestampMixin, HackathonStatus,
-    AgentName, AIPolicyMode,
+    AgentName,
+    AIPolicyMode,
+    HackathonStatus,
+    TimestampMixin,
+    VibeJudgeBase,
 )
-
 
 # --- Rubric Models ---
 

@@ -1,6 +1,6 @@
 """Cost analytics endpoints."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 
 from src.api.dependencies import CostServiceDep, HackathonServiceDep
 from src.models.costs import HackathonCostResponse
@@ -22,7 +22,7 @@ async def get_hackathon_costs(
     hackathon = hackathon_service.get_hackathon(hack_id)
     if not hackathon:
         raise HTTPException(status_code=404, detail="Hackathon not found")
-    
+
     try:
         return cost_service.get_hackathon_costs_response(hack_id, hackathon.budget_limit_usd)
     except Exception as e:

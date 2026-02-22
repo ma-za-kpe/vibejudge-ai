@@ -1,13 +1,15 @@
 """Submission management endpoints."""
 
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
-from src.api.dependencies import SubmissionServiceDep, HackathonServiceDep, CostServiceDep
+from src.api.dependencies import CostServiceDep, HackathonServiceDep, SubmissionServiceDep
+from src.models.costs import CostRecord, SubmissionCostResponse
 from src.models.submission import (
-    SubmissionBatchCreate, SubmissionBatchCreateResponse,
-    SubmissionResponse, SubmissionListResponse,
+    SubmissionBatchCreate,
+    SubmissionBatchCreateResponse,
+    SubmissionListResponse,
+    SubmissionResponse,
 )
-from src.models.costs import SubmissionCostResponse, CostRecord
 
 router = APIRouter(tags=["submissions"])
 
@@ -27,14 +29,14 @@ async def create_submissions(
     hackathon = hackathon_service.get_hackathon(hack_id)
     if not hackathon:
         raise HTTPException(status_code=404, detail="Hackathon not found")
-    
+
     try:
         result = submission_service.create_submissions(hack_id, data)
-        
+
         # Update hackathon submission count
         for _ in range(result.created):
             hackathon_service.increment_submission_count(hack_id)
-        
+
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to create submissions: {str(e)}")
@@ -85,7 +87,7 @@ async def delete_submission(
     submission = service.get_submission(sub_id)
     if not submission:
         raise HTTPException(status_code=404, detail="Submission not found")
-    
+
     success = service.delete_submission(submission.hack_id, sub_id)
     if not success:
         raise HTTPException(status_code=500, detail="Failed to delete submission")
@@ -102,7 +104,7 @@ async def get_submission_costs(
     """
     try:
         cost_data = cost_service.get_submission_costs(sub_id)
-        
+
         # Convert dict records to CostRecord models
         agent_records = []
         for record in cost_data.get("agent_costs", []):
@@ -121,7 +123,7 @@ async def get_submission_costs(
                 cache_read_tokens=record.get("cache_read_tokens", 0),
                 cache_write_tokens=record.get("cache_write_tokens", 0),
             ))
-        
+
         return SubmissionCostResponse(
             sub_id=cost_data["sub_id"],
             total_cost_usd=cost_data["total_cost_usd"],

@@ -3,13 +3,16 @@
 import re
 import shutil
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import git
 
 from src.models.analysis import (
-    CommitInfo, DiffEntry, RepoData, SourceFile,
+    CommitInfo,
+    DiffEntry,
+    RepoData,
+    SourceFile,
 )
 from src.models.submission import RepoMeta
 from src.utils.logging import get_logger
@@ -183,11 +186,11 @@ def get_default_branch(repo: git.Repo) -> str:
     for branch_name in ["main", "master", "develop"]:
         if branch_name in [b.name for b in repo.branches]:
             return branch_name
-    
+
     # Fallback to first branch
     if repo.branches:
         return repo.branches[0].name
-    
+
     raise ValueError("Repository has no branches")
 
 
@@ -203,7 +206,7 @@ def extract_commits(repo: git.Repo, max_commits: int = 100) -> list[CommitInfo]:
     """
     branch = get_default_branch(repo)
     commits = []
-    
+
     try:
         for commit in repo.iter_commits(branch, max_count=max_commits):
             stats = commit.stats.total
@@ -212,14 +215,14 @@ def extract_commits(repo: git.Repo, max_commits: int = 100) -> list[CommitInfo]:
                 short_hash=commit.hexsha[:8],
                 message=commit.message.strip().split("\n")[0][:200],
                 author=commit.author.name or commit.author.email or "unknown",
-                timestamp=datetime.fromtimestamp(commit.committed_date, tz=timezone.utc),
+                timestamp=datetime.fromtimestamp(commit.committed_date, tz=UTC),
                 files_changed=stats.get("files", 0),
                 insertions=stats.get("insertions", 0),
                 deletions=stats.get("deletions", 0),
             ))
     except Exception as e:
         logger.warning("commit_extraction_failed", error=str(e))
-    
+
     logger.info("commits_extracted", count=len(commits))
     return commits
 
@@ -240,23 +243,23 @@ def extract_diff_summary(
         List of DiffEntry objects
     """
     diffs = []
-    
+
     # Sort commits by total changes
     sorted_commits = sorted(
         commits,
         key=lambda c: c.insertions + c.deletions,
         reverse=True,
     )
-    
+
     for commit_info in sorted_commits[:max_diffs]:
         try:
             commit = repo.commit(commit_info.hash)
             parent = commit.parents[0] if commit.parents else git.NULL_TREE
-            
+
             for diff_item in commit.diff(parent):
                 change_type = _diff_change_type(diff_item)
                 file_path = diff_item.b_path or diff_item.a_path or "unknown"
-                
+
                 diffs.append(DiffEntry(
                     commit_hash=commit_info.short_hash,
                     file_path=file_path,
@@ -265,13 +268,13 @@ def extract_diff_summary(
                     deletions=0,
                     summary=f"{change_type}: {file_path}",
                 ))
-            
+
             if len(diffs) >= max_diffs:
                 break
         except Exception as e:
             logger.warning("diff_extraction_failed", commit=commit_info.short_hash, error=str(e))
             continue
-    
+
     logger.info("diffs_extracted", count=len(diffs))
     return diffs[:max_diffs]
 
@@ -313,16 +316,16 @@ def _walk_tree(
     """Recursively walk directory tree."""
     if depth > max_depth:
         return
-    
+
     try:
         entries = sorted(path.iterdir(), key=lambda p: (not p.is_dir(), p.name))
         filtered = [e for e in entries if e.name not in IGNORE_PATTERNS]
-        
+
         for i, entry in enumerate(filtered):
             is_last = i == len(filtered) - 1
             connector = "└── " if is_last else "├── "
             lines.append(f"{prefix}{connector}{entry.name}")
-            
+
             if entry.is_dir():
                 extension = "    " if is_last else "│   "
                 _walk_tree(entry, lines, prefix + extension, depth + 1, max_depth)
@@ -346,20 +349,20 @@ def extract_source_files(
         List of SourceFile objects
     """
     candidates = []
-    
+
     for file_path in clone_path.rglob("*"):
         if not file_path.is_file():
             continue
         if any(p in file_path.parts for p in IGNORE_PATTERNS):
             continue
-        
+
         relative = file_path.relative_to(clone_path)
         ext = file_path.suffix.lower()
         name = file_path.name
-        
+
         # Determine priority
         priority = FILE_PRIORITIES.get(name, 0)
-        
+
         if ext in SOURCE_EXTENSIONS:
             priority = max(priority, 50)
         elif ext in CONFIG_EXTENSIONS:
@@ -370,7 +373,7 @@ def extract_source_files(
             priority = max(priority, 80)
         else:
             continue
-        
+
         # Read file content
         try:
             content = file_path.read_text(encoding="utf-8", errors="replace")
@@ -378,7 +381,7 @@ def extract_source_files(
             line_count = len(lines)
         except (OSError, UnicodeDecodeError):
             continue
-        
+
         # Handle large files
         if line_count > 5000:
             content = "\n".join(lines[:max_lines_per_file])
@@ -387,7 +390,7 @@ def extract_source_files(
         elif line_count > max_lines_per_file:
             content = "\n".join(lines[:max_lines_per_file])
             content += f"\n\n... [TRUNCATED: {line_count} total lines]"
-        
+
         candidates.append(SourceFile(
             path=str(relative),
             content=content,
@@ -395,7 +398,7 @@ def extract_source_files(
             language=_detect_language(ext),
             priority=priority,
         ))
-    
+
     # Sort by priority and size
     candidates.sort(key=lambda f: (-f.priority, -f.lines))
     logger.info("source_files_extracted", count=len(candidates[:max_files]))
@@ -431,7 +434,7 @@ def extract_readme(clone_path: Path, max_chars: int = 12000) -> str:
         "README.md", "README.MD", "readme.md",
         "README.rst", "README.txt", "README",
     ]
-    
+
     for name in readme_names:
         readme_path = clone_path / name
         if readme_path.exists():
@@ -443,7 +446,7 @@ def extract_readme(clone_path: Path, max_chars: int = 12000) -> str:
                 return content
             except OSError:
                 continue
-    
+
     logger.info("readme_not_found")
     return "[No README found]"
 
@@ -469,13 +472,13 @@ def extract_repo_meta(
     ext_counter = Counter()
     total_files = 0
     total_lines = 0
-    
+
     for file_path in clone_path.rglob("*"):
         if not file_path.is_file():
             continue
         if any(p in file_path.parts for p in IGNORE_PATTERNS):
             continue
-        
+
         ext = file_path.suffix.lower()
         if ext in SOURCE_EXTENSIONS or ext in CONFIG_EXTENSIONS:
             total_files += 1
@@ -487,7 +490,7 @@ def extract_repo_meta(
                     ext_counter[lang] += line_count
             except OSError:
                 pass
-    
+
     # Calculate language percentages
     total_lang_lines = sum(ext_counter.values()) or 1
     languages = {
@@ -495,7 +498,7 @@ def extract_repo_meta(
         for lang, count in ext_counter.most_common(10)
     }
     primary_language = ext_counter.most_common(1)[0][0] if ext_counter else None
-    
+
     # Development duration
     first_commit_at = commits[-1].timestamp if commits else None
     last_commit_at = commits[0].timestamp if commits else None
@@ -503,21 +506,21 @@ def extract_repo_meta(
     if first_commit_at and last_commit_at:
         delta = last_commit_at - first_commit_at
         dev_hours = round(delta.total_seconds() / 3600, 2)
-    
+
     # Contributors
     authors = set(c.author for c in commits)
-    
+
     # Detect features
     has_readme = any((clone_path / name).exists() for name in ["README.md", "readme.md", "README"])
     has_tests = _has_test_files(clone_path)
     has_ci = (clone_path / ".github" / "workflows").exists()
     has_dockerfile = (clone_path / "Dockerfile").exists()
-    
+
     # Workflow stats
     wf_count = len(workflow_runs) if workflow_runs else 0
     wf_success = sum(1 for r in (workflow_runs or []) if r.conclusion == "success")
     wf_rate = round(wf_success / wf_count, 2) if wf_count > 0 else 0.0
-    
+
     logger.info(
         "repo_meta_extracted",
         files=total_files,
@@ -525,7 +528,7 @@ def extract_repo_meta(
         commits=len(commits),
         contributors=len(authors),
     )
-    
+
     return RepoMeta(
         commit_count=len(commits),
         branch_count=len(list(repo.branches)),
@@ -549,20 +552,20 @@ def extract_repo_meta(
 def _has_test_files(clone_path: Path) -> bool:
     """Check if repository contains test files."""
     test_dirs = ["tests", "test", "__tests__", "spec"]
-    
+
     for test_dir in test_dirs:
         if (clone_path / test_dir).exists():
             return True
-    
+
     test_patterns = [
         "test_*.py", "*_test.py", "*_test.go", "*.test.js", "*.test.ts",
         "*.spec.js", "*.spec.ts", "*Test.java", "*_test.rs",
     ]
-    
+
     for pattern in test_patterns:
         if list(clone_path.rglob(pattern)):
             return True
-    
+
     return False
 
 
@@ -589,26 +592,26 @@ def clone_and_extract(
     """
     owner, repo_name = parse_github_url(repo_url)
     clone_path = get_clone_path(submission_id)
-    
+
     try:
         # Clone repository
         repo = clone_repo(repo_url, clone_path)
-        
+
         # Extract git history
         commits = extract_commits(repo, max_commits=100)
         diffs = extract_diff_summary(repo, commits, max_diffs=30)
-        
+
         # Extract files
         file_tree = extract_file_tree(clone_path)
         source_files = extract_source_files(clone_path)
         readme = extract_readme(clone_path)
-        
+
         # Build metadata
         meta = extract_repo_meta(repo, clone_path, commits, workflow_runs)
-        
+
         # Get default branch
         default_branch = get_default_branch(repo)
-        
+
         logger.info(
             "repo_extraction_complete",
             sub_id=submission_id,
@@ -617,7 +620,7 @@ def clone_and_extract(
             commits=len(commits),
             files=len(source_files),
         )
-        
+
         return RepoData(
             repo_url=repo_url,
             repo_owner=owner,
@@ -632,7 +635,7 @@ def clone_and_extract(
             workflow_definitions=workflow_definitions or [],
             workflow_runs=workflow_runs or [],
         )
-    
+
     finally:
         # Always cleanup
         cleanup_clone(submission_id)

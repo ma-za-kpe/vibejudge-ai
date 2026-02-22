@@ -8,14 +8,14 @@ from src.prompts import ai_detection_v1
 
 class AIDetectionAgent(BaseAgent):
     """Agent for analyzing development patterns and AI usage indicators."""
-    
+
     def __init__(self, bedrock_client=None):
         super().__init__("ai_detection", bedrock_client)
-    
+
     def get_system_prompt(self) -> str:
         """Get AIDetection system prompt."""
         return ai_detection_v1.SYSTEM_PROMPT
-    
+
     def build_user_message(
         self,
         repo_data: RepoData,
@@ -25,13 +25,13 @@ class AIDetectionAgent(BaseAgent):
         **kwargs
     ) -> str:
         """Build user message for AIDetection."""
-        
+
         # Calculate velocity metrics
         if repo_data.meta.development_duration_hours > 0:
             lines_per_hour = repo_data.meta.total_lines / repo_data.meta.development_duration_hours
         else:
             lines_per_hour = 0
-        
+
         # Format detailed commit log
         detailed_git_log = ""
         for c in repo_data.commit_history:
@@ -42,12 +42,12 @@ class AIDetectionAgent(BaseAgent):
                 f"Message: {c.message}\n"
                 f"Files changed: {c.files_changed}, +{c.insertions}/-{c.deletions}\n\n"
             )
-        
+
         # Sample files for style analysis
         sample_files = ""
         for sf in repo_data.source_files[:3]:
             sample_files += f"\n#### File: {sf.path}\n```\n{sf.content[:1000]}\n```\n"
-        
+
         message = f"""## HACKATHON SUBMISSION FOR EVALUATION
 
 **Hackathon:** {hackathon_name}
@@ -82,7 +82,7 @@ Success rate: {repo_data.meta.workflow_success_rate * 100:.1f}%
 Evaluate per your dimensions and the AI policy mode. Return ONLY valid JSON.
 """
         return message
-    
+
     def parse_response(self, response_dict: dict) -> AIDetectionResponse:
         """Parse AIDetection response."""
         # Filter out evidence items with None file values (invalid)
