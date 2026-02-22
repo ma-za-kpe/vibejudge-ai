@@ -20,9 +20,9 @@ async def create_organizer(
     service: OrganizerServiceDep,
 ) -> OrganizerCreateResponse:
     """Create a new organizer account.
-    
+
     POST /api/v1/organizers
-    
+
     Returns API key - store it securely, it won't be shown again.
     """
     try:
@@ -39,9 +39,9 @@ async def login_organizer(
     service: OrganizerServiceDep,
 ) -> OrganizerLoginResponse:
     """Login and regenerate API key.
-    
+
     POST /api/v1/organizers/login
-    
+
     Invalidates previous API key and returns a new one.
     """
     try:
@@ -64,9 +64,9 @@ async def get_current_organizer_profile(
     current_organizer: CurrentOrganizer,
 ) -> OrganizerResponse:
     """Get current organizer profile (requires authentication).
-    
+
     GET /api/v1/organizers/me
-    
+
     Requires X-API-Key header.
     """
     return OrganizerResponse(**current_organizer)

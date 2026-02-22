@@ -16,7 +16,7 @@ class GitHubClient:
 
     def __init__(self, token: str | None = None):
         """Initialize GitHub client.
-        
+
         Args:
             token: GitHub personal access token (optional)
         """
@@ -39,12 +39,12 @@ class GitHubClient:
         self, owner: str, repo: str, max_runs: int = 50
     ) -> list[WorkflowRun]:
         """Fetch workflow run history.
-        
+
         Args:
             owner: Repository owner
             repo: Repository name
             max_runs: Maximum number of runs to fetch
-            
+
         Returns:
             List of WorkflowRun objects
         """
@@ -94,11 +94,11 @@ class GitHubClient:
 
     def fetch_workflow_files(self, owner: str, repo: str) -> list[str]:
         """Fetch workflow definition YAML files.
-        
+
         Args:
             owner: Repository owner
             repo: Repository name
-            
+
         Returns:
             List of workflow definition strings
         """

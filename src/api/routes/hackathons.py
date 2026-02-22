@@ -27,9 +27,9 @@ async def create_hackathon(
     current_organizer: CurrentOrganizer,
 ) -> HackathonResponse:
     """Create a new hackathon.
-    
+
     POST /api/v1/hackathons
-    
+
     Requires X-API-Key header for authentication.
     """
     try:
@@ -49,9 +49,9 @@ async def list_hackathons(
     cursor: str | None = None,
 ) -> HackathonListResponse:
     """List organizer's hackathons.
-    
+
     GET /api/v1/hackathons
-    
+
     Requires X-API-Key header for authentication.
     """
     try:
@@ -67,7 +67,7 @@ async def get_hackathon(
     service: HackathonServiceDep,
 ) -> HackathonResponse:
     """Get hackathon details.
-    
+
     GET /api/v1/hackathons/{hack_id}
     """
     hackathon = service.get_hackathon(hack_id)
@@ -83,7 +83,7 @@ async def update_hackathon(
     service: HackathonServiceDep,
 ) -> HackathonResponse:
     """Update hackathon configuration.
-    
+
     PUT /api/v1/hackathons/{hack_id}
     """
     try:
@@ -101,9 +101,9 @@ async def delete_hackathon(
     current_organizer: CurrentOrganizer,
 ) -> None:
     """Delete hackathon (archive).
-    
+
     DELETE /api/v1/hackathons/{hack_id}
-    
+
     Requires X-API-Key header for authentication.
     """
     org_id = current_organizer["org_id"]
@@ -119,7 +119,7 @@ async def get_leaderboard(
     submission_service: SubmissionServiceDep,
 ) -> LeaderboardResponse:
     """Get hackathon leaderboard.
-    
+
     GET /api/v1/hackathons/{hack_id}/leaderboard
     """
     # Get hackathon details

@@ -67,13 +67,13 @@ GITHUB_URL_PATTERN = re.compile(
 
 def parse_github_url(url: str) -> tuple[str, str]:
     """Extract owner and repo name from GitHub URL.
-    
+
     Args:
         url: GitHub repository URL
-        
+
     Returns:
         Tuple of (owner, repo_name)
-        
+
     Raises:
         ValueError: If URL is invalid
     """
@@ -85,10 +85,10 @@ def parse_github_url(url: str) -> tuple[str, str]:
 
 def get_clone_path(submission_id: str) -> Path:
     """Get deterministic clone path for submission.
-    
+
     Args:
         submission_id: Submission ID
-        
+
     Returns:
         Path for cloning
     """
@@ -99,7 +99,7 @@ def get_clone_path(submission_id: str) -> Path:
 
 def cleanup_clone(submission_id: str) -> None:
     """Remove cloned repository.
-    
+
     Args:
         submission_id: Submission ID
     """
@@ -114,15 +114,15 @@ def cleanup_clone(submission_id: str) -> None:
 
 def clone_repo(repo_url: str, clone_path: Path, timeout: int = CLONE_TIMEOUT) -> git.Repo:
     """Clone repository with full history.
-    
+
     Args:
         repo_url: GitHub HTTPS URL
         clone_path: Local path for clone
         timeout: Git operation timeout in seconds
-        
+
     Returns:
         GitPython Repo object
-        
+
     Raises:
         git.GitCommandError: Clone failed
     """
@@ -150,14 +150,14 @@ def clone_repo(repo_url: str, clone_path: Path, timeout: int = CLONE_TIMEOUT) ->
 
 def clone_repo_shallow(repo_url: str, clone_path: Path) -> git.Repo:
     """Shallow clone as fallback for large repos.
-    
+
     Args:
         repo_url: GitHub HTTPS URL
         clone_path: Local path for clone
-        
+
     Returns:
         GitPython Repo object
-        
+
     Raises:
         git.GitCommandError: Clone failed
     """
@@ -176,10 +176,10 @@ def clone_repo_shallow(repo_url: str, clone_path: Path) -> git.Repo:
 
 def get_default_branch(repo: git.Repo) -> str:
     """Determine the default branch.
-    
+
     Args:
         repo: GitPython Repo object
-        
+
     Returns:
         Default branch name
     """
@@ -196,11 +196,11 @@ def get_default_branch(repo: git.Repo) -> str:
 
 def extract_commits(repo: git.Repo, max_commits: int = 100) -> list[CommitInfo]:
     """Extract commit history from default branch.
-    
+
     Args:
         repo: GitPython Repo object
         max_commits: Maximum number of commits to extract
-        
+
     Returns:
         List of CommitInfo objects
     """
@@ -233,12 +233,12 @@ def extract_diff_summary(
     max_diffs: int = 30
 ) -> list[DiffEntry]:
     """Extract significant diffs from commit history.
-    
+
     Args:
         repo: GitPython Repo object
         commits: List of commits
         max_diffs: Maximum number of diffs to extract
-        
+
     Returns:
         List of DiffEntry objects
     """
@@ -293,11 +293,11 @@ def _diff_change_type(diff_item) -> str:
 
 def extract_file_tree(clone_path: Path, max_depth: int = 4) -> str:
     """Generate file tree string.
-    
+
     Args:
         clone_path: Path to cloned repository
         max_depth: Maximum depth to traverse
-        
+
     Returns:
         File tree string
     """
@@ -339,12 +339,12 @@ def extract_source_files(
     max_lines_per_file: int = 200,
 ) -> list[SourceFile]:
     """Select and extract important source files.
-    
+
     Args:
         clone_path: Path to cloned repository
         max_files: Maximum number of files to extract
         max_lines_per_file: Maximum lines per file
-        
+
     Returns:
         List of SourceFile objects
     """
@@ -422,11 +422,11 @@ def _detect_language(ext: str) -> str:
 
 def extract_readme(clone_path: Path, max_chars: int = 12000) -> str:
     """Find and extract README content.
-    
+
     Args:
         clone_path: Path to cloned repository
         max_chars: Maximum characters to extract
-        
+
     Returns:
         README content or placeholder
     """
@@ -458,13 +458,13 @@ def extract_repo_meta(
     workflow_runs: list = None,
 ) -> RepoMeta:
     """Build comprehensive repository metadata.
-    
+
     Args:
         repo: GitPython Repo object
         clone_path: Path to cloned repository
         commits: List of commits
         workflow_runs: Optional list of workflow runs
-        
+
     Returns:
         RepoMeta object
     """
@@ -576,16 +576,16 @@ def clone_and_extract(
     workflow_definitions: list[str] = None,
 ) -> RepoData:
     """Complete extraction pipeline for a repository.
-    
+
     Args:
         repo_url: GitHub repository URL
         submission_id: Submission ID for clone path
         workflow_runs: Optional pre-fetched workflow runs
         workflow_definitions: Optional pre-fetched workflow definitions
-        
+
     Returns:
         RepoData object with all extracted information
-        
+
     Raises:
         ValueError: Invalid URL
         git.GitCommandError: Clone failed

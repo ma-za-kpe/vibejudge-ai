@@ -25,7 +25,7 @@ class SubmissionService:
 
     def __init__(self, db: DynamoDBHelper):
         """Initialize submission service.
-        
+
         Args:
             db: DynamoDB helper instance
         """
@@ -37,11 +37,11 @@ class SubmissionService:
         data: SubmissionBatchCreate,
     ) -> SubmissionBatchCreateResponse:
         """Create multiple submissions.
-        
+
         Args:
             hack_id: Hackathon ID
             data: Batch submission data
-            
+
         Returns:
             Batch creation response
         """
@@ -112,10 +112,10 @@ class SubmissionService:
 
     def get_submission(self, sub_id: str) -> SubmissionResponse | None:
         """Get submission by ID.
-        
+
         Args:
             sub_id: Submission ID
-            
+
         Returns:
             Submission response or None if not found
         """
@@ -160,10 +160,10 @@ class SubmissionService:
 
     def list_submissions(self, hack_id: str) -> SubmissionListResponse:
         """List submissions for hackathon.
-        
+
         Args:
             hack_id: Hackathon ID
-            
+
         Returns:
             List of submissions
         """
@@ -197,13 +197,13 @@ class SubmissionService:
         **kwargs,
     ) -> bool:
         """Update submission status and optional fields.
-        
+
         Args:
             hack_id: Hackathon ID
             sub_id: Submission ID
             status: New status
             **kwargs: Additional fields to update
-            
+
         Returns:
             True if successful
         """
@@ -232,7 +232,7 @@ class SubmissionService:
         analysis_duration_ms: int,
     ) -> bool:
         """Update submission with analysis results.
-        
+
         Args:
             hack_id: Hackathon ID
             sub_id: Submission ID
@@ -246,7 +246,7 @@ class SubmissionService:
             total_cost_usd: Total analysis cost
             total_tokens: Total tokens used
             analysis_duration_ms: Analysis duration
-            
+
         Returns:
             True if successful
         """
@@ -287,11 +287,11 @@ class SubmissionService:
         analysis_duration_ms: int,
     ) -> bool:
         """Update submission with analysis scores (alias for update_submission_results).
-        
+
         This method is called by the analyzer Lambda and includes additional
         parameters like dimension_scores and confidence that are logged but
         not stored in the main submission record.
-        
+
         Args:
             hack_id: Hackathon ID
             sub_id: Submission ID
@@ -307,7 +307,7 @@ class SubmissionService:
             total_cost_usd: Total analysis cost
             total_tokens: Total tokens used
             analysis_duration_ms: Analysis duration
-            
+
         Returns:
             True if successful
         """
@@ -355,11 +355,11 @@ class SubmissionService:
 
     def delete_submission(self, hack_id: str, sub_id: str) -> bool:
         """Delete submission (soft delete by status).
-        
+
         Args:
             hack_id: Hackathon ID
             sub_id: Submission ID
-            
+
         Returns:
             True if successful
         """

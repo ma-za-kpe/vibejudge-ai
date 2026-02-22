@@ -15,7 +15,7 @@ class DynamoDBHelper:
 
     def __init__(self, table_name: str):
         """Initialize DynamoDB helper.
-        
+
         Args:
             table_name: Name of the DynamoDB table
         """
@@ -39,10 +39,10 @@ class DynamoDBHelper:
 
     def get_organizer(self, org_id: str) -> dict | None:
         """AP1: Get organizer by ID.
-        
+
         Args:
             org_id: Organizer ID
-            
+
         Returns:
             Organizer record or None
         """
@@ -57,10 +57,10 @@ class DynamoDBHelper:
 
     def get_organizer_by_email(self, email: str) -> dict | None:
         """AP2: Get organizer by email.
-        
+
         Args:
             email: Organizer email
-            
+
         Returns:
             Organizer record or None
         """
@@ -77,10 +77,10 @@ class DynamoDBHelper:
 
     def put_organizer(self, organizer: dict) -> bool:
         """Create or update organizer record.
-        
+
         Args:
             organizer: Organizer record dict
-            
+
         Returns:
             True if successful
         """
@@ -96,10 +96,10 @@ class DynamoDBHelper:
 
     def _serialize_item(self, item: dict) -> dict:
         """Convert datetime objects to ISO strings and floats to Decimal for DynamoDB.
-        
+
         Args:
             item: Dictionary that may contain datetime objects or floats
-            
+
         Returns:
             Dictionary with datetime objects converted to ISO strings and floats to Decimal
         """
@@ -131,10 +131,10 @@ class DynamoDBHelper:
 
     def list_organizer_hackathons(self, org_id: str) -> list[dict]:
         """AP3: List hackathons for organizer.
-        
+
         Args:
             org_id: Organizer ID
-            
+
         Returns:
             List of hackathon records
         """
@@ -152,10 +152,10 @@ class DynamoDBHelper:
 
     def get_hackathon(self, hack_id: str) -> dict | None:
         """AP4: Get hackathon config.
-        
+
         Args:
             hack_id: Hackathon ID
-            
+
         Returns:
             Hackathon detail record or None
         """
@@ -170,10 +170,10 @@ class DynamoDBHelper:
 
     def get_hackathon_by_id(self, hack_id: str) -> dict | None:
         """AP5: Get hackathon by ID (from any context).
-        
+
         Args:
             hack_id: Hackathon ID
-            
+
         Returns:
             Hackathon record or None
         """
@@ -193,10 +193,10 @@ class DynamoDBHelper:
 
     def put_hackathon(self, hackathon: dict) -> bool:
         """Create or update hackathon record.
-        
+
         Args:
             hackathon: Hackathon record dict
-            
+
         Returns:
             True if successful
         """
@@ -211,10 +211,10 @@ class DynamoDBHelper:
 
     def put_hackathon_detail(self, detail: dict) -> bool:
         """Create or update hackathon detail record.
-        
+
         Args:
             detail: Hackathon detail record dict
-            
+
         Returns:
             True if successful
         """
@@ -233,10 +233,10 @@ class DynamoDBHelper:
 
     def list_submissions(self, hack_id: str) -> list[dict]:
         """AP6: List all submissions for hackathon.
-        
+
         Args:
             hack_id: Hackathon ID
-            
+
         Returns:
             List of submission records
         """
@@ -254,11 +254,11 @@ class DynamoDBHelper:
 
     def get_submission(self, hack_id: str, sub_id: str) -> dict | None:
         """AP7: Get single submission.
-        
+
         Args:
             hack_id: Hackathon ID
             sub_id: Submission ID
-            
+
         Returns:
             Submission record or None
         """
@@ -273,10 +273,10 @@ class DynamoDBHelper:
 
     def get_submission_by_id(self, sub_id: str) -> dict | None:
         """AP8: Get submission by ID (from any context).
-        
+
         Args:
             sub_id: Submission ID
-            
+
         Returns:
             Submission record or None
         """
@@ -293,10 +293,10 @@ class DynamoDBHelper:
 
     def put_submission(self, submission: dict) -> bool:
         """Create or update submission record.
-        
+
         Args:
             submission: Submission record dict
-            
+
         Returns:
             True if successful
         """
@@ -313,13 +313,13 @@ class DynamoDBHelper:
         self, hack_id: str, sub_id: str, status: str, **kwargs
     ) -> bool:
         """Update submission status and optional fields.
-        
+
         Args:
             hack_id: Hackathon ID
             sub_id: Submission ID
             status: New status
             **kwargs: Additional fields to update
-            
+
         Returns:
             True if successful
         """
@@ -360,10 +360,10 @@ class DynamoDBHelper:
 
     def get_agent_scores(self, sub_id: str) -> list[dict]:
         """AP9: Get all agent scores for submission.
-        
+
         Args:
             sub_id: Submission ID
-            
+
         Returns:
             List of agent score records
         """
@@ -381,11 +381,11 @@ class DynamoDBHelper:
 
     def get_agent_score(self, sub_id: str, agent_name: str) -> dict | None:
         """AP10: Get specific agent score.
-        
+
         Args:
             sub_id: Submission ID
             agent_name: Agent name
-            
+
         Returns:
             Agent score record or None
         """
@@ -400,10 +400,10 @@ class DynamoDBHelper:
 
     def put_agent_score(self, score: dict) -> bool:
         """Create or update agent score record.
-        
+
         Args:
             score: Agent score record dict
-            
+
         Returns:
             True if successful
         """
@@ -418,10 +418,10 @@ class DynamoDBHelper:
 
     def get_submission_summary(self, sub_id: str) -> dict | None:
         """AP11: Get submission summary.
-        
+
         Args:
             sub_id: Submission ID
-            
+
         Returns:
             Submission summary record or None
         """
@@ -436,10 +436,10 @@ class DynamoDBHelper:
 
     def put_submission_summary(self, summary: dict) -> bool:
         """Create or update submission summary.
-        
+
         Args:
             summary: Submission summary record dict
-            
+
         Returns:
             True if successful
         """
@@ -458,10 +458,10 @@ class DynamoDBHelper:
 
     def get_submission_costs(self, sub_id: str) -> list[dict]:
         """AP12: Get all cost records for submission.
-        
+
         Args:
             sub_id: Submission ID
-            
+
         Returns:
             List of cost records
         """
@@ -479,10 +479,10 @@ class DynamoDBHelper:
 
     def put_cost_record(self, cost: dict) -> bool:
         """Create or update cost record.
-        
+
         Args:
             cost: Cost record dict
-            
+
         Returns:
             True if successful
         """
@@ -497,10 +497,10 @@ class DynamoDBHelper:
 
     def get_hackathon_cost_summary(self, hack_id: str) -> dict | None:
         """AP13: Get hackathon cost summary.
-        
+
         Args:
             hack_id: Hackathon ID
-            
+
         Returns:
             Hackathon cost summary or None
         """
@@ -515,10 +515,10 @@ class DynamoDBHelper:
 
     def put_hackathon_cost_summary(self, cost_summary: dict) -> bool:
         """Create or update hackathon cost summary.
-        
+
         Args:
             cost_summary: Hackathon cost summary dict
-            
+
         Returns:
             True if successful
         """
@@ -537,10 +537,10 @@ class DynamoDBHelper:
 
     def list_analysis_jobs(self, hack_id: str) -> list[dict]:
         """AP14: List analysis jobs for hackathon.
-        
+
         Args:
             hack_id: Hackathon ID
-            
+
         Returns:
             List of analysis job records
         """
@@ -558,10 +558,10 @@ class DynamoDBHelper:
 
     def list_jobs_by_status(self, status: str) -> list[dict]:
         """AP15: List jobs by status.
-        
+
         Args:
             status: Job status
-            
+
         Returns:
             List of job records
         """
@@ -577,10 +577,10 @@ class DynamoDBHelper:
 
     def put_analysis_job(self, job: dict) -> bool:
         """Create or update analysis job.
-        
+
         Args:
             job: Analysis job record dict
-            
+
         Returns:
             True if successful
         """
@@ -599,10 +599,10 @@ class DynamoDBHelper:
 
     def get_leaderboard(self, hack_id: str) -> list[dict]:
         """AP16: Get submissions sorted by score (application-side sort).
-        
+
         Args:
             hack_id: Hackathon ID
-            
+
         Returns:
             List of submissions sorted by overall_score descending
         """
@@ -618,10 +618,10 @@ class DynamoDBHelper:
 
     def batch_write(self, items: list[dict]) -> bool:
         """Batch write multiple items.
-        
+
         Args:
             items: List of items to write
-            
+
         Returns:
             True if successful
         """

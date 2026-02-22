@@ -42,11 +42,11 @@ async def health_check(
     table=Depends(get_dynamodb_table),
 ) -> HealthResponse:
     """Health check endpoint.
-    
+
     Checks:
     - DynamoDB table accessibility
     - Returns API version and timestamp
-    
+
     Returns:
         HealthResponse with service statuses
     """

@@ -28,7 +28,7 @@ class CostTracker:
         service_tier: ServiceTier = ServiceTier.STANDARD,
     ) -> CostRecord:
         """Record cost for a single agent execution.
-        
+
         Args:
             sub_id: Submission ID
             hack_id: Hackathon ID
@@ -38,7 +38,7 @@ class CostTracker:
             output_tokens: Output token count
             latency_ms: Response latency in milliseconds
             service_tier: Service tier (standard or flex)
-            
+
         Returns:
             CostRecord instance
         """
@@ -77,7 +77,7 @@ class CostTracker:
 
     def get_total_cost(self) -> float:
         """Get total cost across all recorded agents.
-        
+
         Returns:
             Total cost in USD
         """
@@ -85,7 +85,7 @@ class CostTracker:
 
     def get_total_tokens(self) -> int:
         """Get total tokens across all recorded agents.
-        
+
         Returns:
             Total token count
         """
@@ -93,7 +93,7 @@ class CostTracker:
 
     def get_cost_by_agent(self) -> dict[str, float]:
         """Get cost breakdown by agent.
-        
+
         Returns:
             Dict mapping agent name to cost
         """
@@ -105,7 +105,7 @@ class CostTracker:
 
     def get_cost_by_model(self) -> dict[str, float]:
         """Get cost breakdown by model.
-        
+
         Returns:
             Dict mapping model ID to cost
         """
@@ -117,7 +117,7 @@ class CostTracker:
 
     def get_records(self) -> list[CostRecord]:
         """Get all cost records.
-        
+
         Returns:
             List of CostRecord instances
         """

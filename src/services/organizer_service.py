@@ -24,7 +24,7 @@ class OrganizerService:
 
     def __init__(self, db: DynamoDBHelper):
         """Initialize organizer service.
-        
+
         Args:
             db: DynamoDB helper instance
         """
@@ -32,7 +32,7 @@ class OrganizerService:
 
     def _generate_api_key(self) -> str:
         """Generate a secure API key.
-        
+
         Returns:
             API key string (32 bytes hex = 64 characters)
         """
@@ -40,10 +40,10 @@ class OrganizerService:
 
     def _hash_api_key(self, api_key: str) -> str:
         """Hash API key for storage.
-        
+
         Args:
             api_key: Plain text API key
-            
+
         Returns:
             SHA-256 hash of API key
         """
@@ -51,13 +51,13 @@ class OrganizerService:
 
     def create_organizer(self, data: OrganizerCreate) -> OrganizerCreateResponse:
         """Create new organizer account.
-        
+
         Args:
             data: Organizer creation data
-            
+
         Returns:
             Organizer response with API key
-            
+
         Raises:
             ValueError: If email already exists
         """
@@ -120,10 +120,10 @@ class OrganizerService:
 
     def get_organizer(self, org_id: str) -> OrganizerResponse | None:
         """Get organizer by ID.
-        
+
         Args:
             org_id: Organizer ID
-            
+
         Returns:
             Organizer response or None if not found
         """
@@ -144,10 +144,10 @@ class OrganizerService:
 
     def get_organizer_by_email(self, email: str) -> OrganizerResponse | None:
         """Get organizer by email.
-        
+
         Args:
             email: Organizer email
-            
+
         Returns:
             Organizer response or None if not found
         """
@@ -168,13 +168,13 @@ class OrganizerService:
 
     def verify_api_key(self, api_key: str) -> str | None:
         """Verify API key and return organizer ID.
-        
+
         Args:
             api_key: Plain text API key
-            
+
         Returns:
             Organizer ID if valid, None otherwise
-            
+
         Note:
             For MVP, scans all organizers and filters in Python (acceptable for small datasets).
             In production, add GSI3 with api_key_hash as PK for O(1) lookup.
@@ -204,13 +204,13 @@ class OrganizerService:
 
     def regenerate_api_key(self, org_id: str) -> OrganizerLoginResponse:
         """Regenerate API key for organizer (login).
-        
+
         Args:
             org_id: Organizer ID
-            
+
         Returns:
             Login response with new API key
-            
+
         Raises:
             ValueError: If organizer not found
         """
@@ -241,10 +241,10 @@ class OrganizerService:
 
     def increment_hackathon_count(self, org_id: str) -> bool:
         """Increment hackathon count for organizer.
-        
+
         Args:
             org_id: Organizer ID
-            
+
         Returns:
             True if successful
         """

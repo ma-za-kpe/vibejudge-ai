@@ -22,11 +22,11 @@ logger = get_logger(__name__)
 
 def handler(event: dict, context: Any) -> dict:
     """Lambda handler for analysis jobs.
-    
+
     Args:
         event: Lambda event dict with job_id, hack_id, submission_ids
         context: Lambda context
-        
+
     Returns:
         Response dict with job status
     """
@@ -229,12 +229,12 @@ def analyze_single_submission(
     db: DynamoDBHelper,
 ) -> dict:
     """Analyze a single submission.
-    
+
     Args:
         submission: Submission object
         hackathon: Hackathon object
         db: DynamoDB helper
-        
+
     Returns:
         Dict with analysis results or error
     """

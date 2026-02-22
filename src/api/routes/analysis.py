@@ -26,9 +26,9 @@ async def trigger_analysis(
     hackathon_service: HackathonServiceDep,
 ) -> AnalysisJobResponse:
     """Trigger batch analysis for submissions.
-    
+
     POST /api/v1/hackathons/{hack_id}/analyze
-    
+
     Creates an analysis job and invokes the Analyzer Lambda asynchronously.
     Returns immediately with job details. Use /analyze/status to check progress.
     """
@@ -49,9 +49,9 @@ async def get_analysis_status(
     service: AnalysisServiceDep,
 ) -> AnalysisStatusResponse:
     """Get analysis job status for hackathon.
-    
+
     GET /api/v1/hackathons/{hack_id}/analyze/status
-    
+
     Returns the most recent analysis job status.
     """
     jobs = service.list_analysis_jobs(hack_id)
@@ -93,7 +93,7 @@ async def estimate_analysis_cost(
     submission_service: SubmissionServiceDep,
 ) -> CostEstimate:
     """Estimate analysis cost before triggering.
-    
+
     POST /api/v1/hackathons/{hack_id}/analyze/estimate
     """
     # Get hackathon to check agents and budget

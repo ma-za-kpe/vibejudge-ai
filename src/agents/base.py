@@ -16,7 +16,7 @@ class BaseAgent(ABC):
 
     def __init__(self, agent_name: str, bedrock_client: BedrockClient | None = None):
         """Initialize base agent.
-        
+
         Args:
             agent_name: Name of the agent (bug_hunter, performance, etc.)
             bedrock_client: Optional Bedrock client (creates new if None)
@@ -35,7 +35,7 @@ class BaseAgent(ABC):
     @abstractmethod
     def get_system_prompt(self) -> str:
         """Get the system prompt for this agent.
-        
+
         Returns:
             System prompt text
         """
@@ -50,13 +50,13 @@ class BaseAgent(ABC):
         **kwargs
     ) -> str:
         """Build the user message for this agent.
-        
+
         Args:
             repo_data: Extracted repository data
             hackathon_name: Name of the hackathon
             team_name: Name of the team
             **kwargs: Additional agent-specific parameters
-            
+
         Returns:
             User message text
         """
@@ -65,10 +65,10 @@ class BaseAgent(ABC):
     @abstractmethod
     def parse_response(self, response_dict: dict) -> BaseAgentResponse:
         """Parse and validate agent response.
-        
+
         Args:
             response_dict: Parsed JSON response from LLM
-            
+
         Returns:
             Validated agent response model
         """
@@ -82,16 +82,16 @@ class BaseAgent(ABC):
         **kwargs
     ) -> tuple[BaseAgentResponse, dict]:
         """Run agent analysis on repository data.
-        
+
         Args:
             repo_data: Extracted repository data
             hackathon_name: Name of the hackathon
             team_name: Name of the team
             **kwargs: Additional agent-specific parameters
-            
+
         Returns:
             Tuple of (agent_response, usage_dict)
-            
+
         Raises:
             Exception: If analysis fails after retries
         """
@@ -186,14 +186,14 @@ class BaseAgent(ABC):
         repo_data: RepoData,
     ) -> BaseAgentResponse:
         """Validate evidence citations against actual repo data.
-        
+
         This is the anti-hallucination safeguard. Marks evidence as
         unverified if it references files/commits that don't exist.
-        
+
         Args:
             response: Agent response with evidence
             repo_data: Actual repository data
-            
+
         Returns:
             Response with verified evidence flags
         """

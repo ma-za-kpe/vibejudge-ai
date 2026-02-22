@@ -24,7 +24,7 @@ class BedrockClient:
 
     def __init__(self, region_name: str = "us-east-1"):
         """Initialize Bedrock client.
-        
+
         Args:
             region_name: AWS region for Bedrock
         """
@@ -47,7 +47,7 @@ class BedrockClient:
         top_p: float | None = None,
     ) -> dict[str, Any]:
         """Call Bedrock Converse API with retry logic.
-        
+
         Args:
             model_id: Bedrock model ID
             system_prompt: System prompt text
@@ -55,14 +55,14 @@ class BedrockClient:
             temperature: Sampling temperature
             max_tokens: Maximum tokens to generate
             top_p: Nucleus sampling parameter (optional, not compatible with Claude Sonnet 4)
-            
+
         Returns:
             Response dict with:
                 - content: Generated text
                 - usage: Token usage dict
                 - stop_reason: Why generation stopped
                 - latency_ms: Response latency
-                
+
         Raises:
             ClientError: If Bedrock API call fails after retries
         """
@@ -141,12 +141,12 @@ class BedrockClient:
         output_tokens: int,
     ) -> dict[str, float]:
         """Calculate cost for a Bedrock API call.
-        
+
         Args:
             model_id: Bedrock model ID
             input_tokens: Number of input tokens
             output_tokens: Number of output tokens
-            
+
         Returns:
             Dict with input_cost_usd, output_cost_usd, total_cost_usd
         """
@@ -171,15 +171,15 @@ class BedrockClient:
 
     def parse_json_response(self, content: str) -> dict | None:
         """Parse JSON from LLM response.
-        
+
         Handles common issues:
         - Markdown code blocks
         - Leading/trailing whitespace
         - Text before/after JSON
-        
+
         Args:
             content: Raw LLM response text
-            
+
         Returns:
             Parsed JSON dict or None if parsing fails
         """
@@ -225,7 +225,7 @@ class BedrockClient:
         max_tokens: int = 2048,
     ) -> dict[str, Any]:
         """Retry API call with correction prompt.
-        
+
         Args:
             model_id: Bedrock model ID
             system_prompt: Original system prompt
@@ -234,7 +234,7 @@ class BedrockClient:
             parse_error: Error message from parsing
             temperature: Sampling temperature
             max_tokens: Maximum tokens
-            
+
         Returns:
             Response dict from converse()
         """

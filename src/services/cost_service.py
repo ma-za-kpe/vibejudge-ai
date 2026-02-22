@@ -24,7 +24,7 @@ class CostService:
 
     def __init__(self, db: DynamoDBHelper):
         """Initialize cost service.
-        
+
         Args:
             db: DynamoDB helper instance
         """
@@ -39,14 +39,14 @@ class CostService:
         output_tokens: int,
     ) -> CostRecord:
         """Record cost for a single agent execution.
-        
+
         Args:
             sub_id: Submission ID
             agent_name: Agent name
             model_id: Model ID used
             input_tokens: Input tokens
             output_tokens: Output tokens
-            
+
         Returns:
             Cost record
         """
@@ -92,10 +92,10 @@ class CostService:
 
     def get_submission_costs(self, sub_id: str) -> dict:
         """Get cost breakdown for submission.
-        
+
         Args:
             sub_id: Submission ID
-            
+
         Returns:
             Dict with cost details
         """
@@ -117,10 +117,10 @@ class CostService:
 
     def get_hackathon_costs(self, hack_id: str) -> dict:
         """Get cost summary for hackathon.
-        
+
         Args:
             hack_id: Hackathon ID
-            
+
         Returns:
             Dict with cost summary
         """
@@ -172,11 +172,11 @@ class CostService:
         estimated_tokens_per_agent: int = 35000,
     ) -> dict:
         """Estimate cost for analysis.
-        
+
         Args:
             agents_enabled: List of agent names
             estimated_tokens_per_agent: Estimated tokens per agent
-            
+
         Returns:
             Dict with cost estimate
         """
@@ -214,10 +214,10 @@ class CostService:
 
     def update_hackathon_cost_summary(self, hack_id: str) -> bool:
         """Update hackathon cost summary record.
-        
+
         Args:
             hack_id: Hackathon ID
-            
+
         Returns:
             True if successful
         """
@@ -244,11 +244,11 @@ class CostService:
         budget_limit_usd: float | None = None,
     ) -> HackathonCostResponse:
         """Get hackathon costs as API response model.
-        
+
         Args:
             hack_id: Hackathon ID
             budget_limit_usd: Optional budget limit
-            
+
         Returns:
             HackathonCostResponse for API
         """
@@ -308,13 +308,13 @@ class CostService:
         budget_limit_usd: float | None = None,
     ) -> CostEstimate:
         """Estimate analysis cost as API response model.
-        
+
         Args:
             hack_id: Hackathon ID
             submission_count: Number of submissions
             agents_enabled: List of agent names
             budget_limit_usd: Optional budget limit
-            
+
         Returns:
             CostEstimate for API
         """

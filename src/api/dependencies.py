@@ -124,14 +124,14 @@ async def verify_api_key(
     api_key: str | None = Depends(api_key_header),
 ) -> str:
     """Verify API key and return organizer ID.
-    
+
     Args:
         api_key: API key from X-API-Key header
         organizer_service: Organizer service instance
-        
+
     Returns:
         org_id: Organizer ID
-        
+
     Raises:
         HTTPException: 401 if API key is invalid or missing
     """
@@ -156,14 +156,14 @@ async def get_current_organizer(
     org_id: str = Depends(verify_api_key),
 ) -> dict:
     """Get current organizer from database.
-    
+
     Args:
         org_id: Organizer ID from verified API key
         organizer_service: Organizer service instance
-        
+
     Returns:
         Organizer record dict
-        
+
     Raises:
         HTTPException: 404 if organizer not found
     """

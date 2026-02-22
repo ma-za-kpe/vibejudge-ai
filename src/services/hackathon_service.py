@@ -22,7 +22,7 @@ class HackathonService:
 
     def __init__(self, db: DynamoDBHelper):
         """Initialize hackathon service.
-        
+
         Args:
             db: DynamoDB helper instance
         """
@@ -34,11 +34,11 @@ class HackathonService:
         data: HackathonCreate,
     ) -> HackathonResponse:
         """Create new hackathon.
-        
+
         Args:
             org_id: Organizer ID
             data: Hackathon creation data
-            
+
         Returns:
             Hackathon response
         """
@@ -115,10 +115,10 @@ class HackathonService:
 
     def get_hackathon(self, hack_id: str) -> HackathonResponse | None:
         """Get hackathon by ID.
-        
+
         Args:
             hack_id: Hackathon ID
-            
+
         Returns:
             Hackathon response or None if not found
         """
@@ -147,10 +147,10 @@ class HackathonService:
 
     def list_hackathons(self, org_id: str) -> HackathonListResponse:
         """List hackathons for organizer.
-        
+
         Args:
             org_id: Organizer ID
-            
+
         Returns:
             List of hackathons
         """
@@ -179,14 +179,14 @@ class HackathonService:
         data: HackathonUpdate,
     ) -> HackathonResponse:
         """Update hackathon.
-        
+
         Args:
             hack_id: Hackathon ID
             data: Update data
-            
+
         Returns:
             Updated hackathon response
-            
+
         Raises:
             ValueError: If hackathon not found
         """
@@ -225,11 +225,11 @@ class HackathonService:
 
     def delete_hackathon(self, hack_id: str, org_id: str) -> bool:
         """Delete hackathon (soft delete by status).
-        
+
         Args:
             hack_id: Hackathon ID
             org_id: Organizer ID
-            
+
         Returns:
             True if successful
         """
@@ -249,10 +249,10 @@ class HackathonService:
 
     def increment_submission_count(self, hack_id: str) -> bool:
         """Increment submission count for hackathon.
-        
+
         Args:
             hack_id: Hackathon ID
-            
+
         Returns:
             True if successful
         """

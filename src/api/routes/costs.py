@@ -15,7 +15,7 @@ async def get_hackathon_costs(
     cost_service: CostServiceDep,
 ) -> HackathonCostResponse:
     """Get aggregated cost analytics for hackathon.
-    
+
     GET /api/v1/hackathons/{hack_id}/costs
     """
     # Verify hackathon exists

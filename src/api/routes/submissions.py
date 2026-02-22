@@ -22,7 +22,7 @@ async def create_submissions(
     hackathon_service: HackathonServiceDep,
 ) -> SubmissionBatchCreateResponse:
     """Add submissions to hackathon (batch).
-    
+
     POST /api/v1/hackathons/{hack_id}/submissions
     """
     # Verify hackathon exists
@@ -50,7 +50,7 @@ async def list_submissions(
     cursor: str | None = None,
 ) -> SubmissionListResponse:
     """List hackathon submissions.
-    
+
     GET /api/v1/hackathons/{hack_id}/submissions
     """
     try:
@@ -65,7 +65,7 @@ async def get_submission(
     service: SubmissionServiceDep,
 ) -> SubmissionResponse:
     """Get submission details with scores.
-    
+
     GET /api/v1/submissions/{sub_id}
     """
     submission = service.get_submission(sub_id)
@@ -80,7 +80,7 @@ async def delete_submission(
     service: SubmissionServiceDep,
 ) -> None:
     """Delete submission.
-    
+
     DELETE /api/v1/submissions/{sub_id}
     """
     # Get submission to extract hack_id
@@ -99,7 +99,7 @@ async def get_submission_costs(
     cost_service: CostServiceDep,
 ) -> SubmissionCostResponse:
     """Get detailed cost breakdown for submission.
-    
+
     GET /api/v1/submissions/{sub_id}/costs
     """
     try:

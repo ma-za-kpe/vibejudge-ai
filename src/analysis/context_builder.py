@@ -16,14 +16,14 @@ def build_context(
     rubric_json: str,
 ) -> str:
     """Assemble full repo context string for agent consumption.
-    
+
     Args:
         repo_data: Extracted repository data
         hackathon_name: Name of the hackathon
         team_name: Name of the team
         ai_policy_mode: AI policy mode
         rubric_json: Rubric as JSON string
-        
+
     Returns:
         Formatted context string
     """

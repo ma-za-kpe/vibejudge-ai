@@ -20,7 +20,7 @@ class AnalysisService:
 
     def __init__(self, db: DynamoDBHelper):
         """Initialize analysis service.
-        
+
         Args:
             db: DynamoDB helper instance
         """
@@ -41,11 +41,11 @@ class AnalysisService:
         submission_ids: list[str] | None = None,
     ) -> AnalysisJobResponse:
         """Trigger analysis for submissions.
-        
+
         Args:
             hack_id: Hackathon ID
             submission_ids: Optional list of submission IDs (None = all pending)
-            
+
         Returns:
             Analysis job response
         """
@@ -149,11 +149,11 @@ class AnalysisService:
 
     def get_analysis_status(self, hack_id: str, job_id: str) -> AnalysisJobResponse | None:
         """Get analysis job status.
-        
+
         Args:
             hack_id: Hackathon ID
             job_id: Job ID
-            
+
         Returns:
             Analysis job response or None if not found
         """
@@ -184,10 +184,10 @@ class AnalysisService:
 
     def list_analysis_jobs(self, hack_id: str) -> list[AnalysisJobResponse]:
         """List analysis jobs for hackathon.
-        
+
         Args:
             hack_id: Hackathon ID
-            
+
         Returns:
             List of analysis job responses
         """
@@ -219,13 +219,13 @@ class AnalysisService:
         **kwargs,
     ) -> bool:
         """Update analysis job status.
-        
+
         Args:
             hack_id: Hackathon ID
             job_id: Job ID
             status: New status
             **kwargs: Additional fields to update
-            
+
         Returns:
             True if successful
         """

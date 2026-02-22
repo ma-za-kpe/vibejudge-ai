@@ -26,7 +26,7 @@ class AnalysisOrchestrator:
 
     def __init__(self, bedrock_client: BedrockClient | None = None):
         """Initialize orchestrator.
-        
+
         Args:
             bedrock_client: Optional shared Bedrock client
         """
@@ -53,7 +53,7 @@ class AnalysisOrchestrator:
         ai_policy_mode: str = "ai_assisted",
     ) -> dict[str, Any]:
         """Analyze a submission with multiple agents in parallel.
-        
+
         Args:
             repo_data: Extracted repository data
             hackathon_name: Name of the hackathon
@@ -63,7 +63,7 @@ class AnalysisOrchestrator:
             rubric: Rubric configuration
             agents_enabled: List of enabled agents
             ai_policy_mode: AI policy mode
-            
+
         Returns:
             Dict with:
                 - agent_responses: Dict of agent responses
@@ -178,7 +178,7 @@ class AnalysisOrchestrator:
         ai_policy_mode: str,
     ) -> BaseAgentResponse:
         """Run a single agent asynchronously.
-        
+
         Args:
             agent_name: Agent to run
             repo_data: Repository data
@@ -187,7 +187,7 @@ class AnalysisOrchestrator:
             hack_id: Hackathon ID
             sub_id: Submission ID
             ai_policy_mode: AI policy mode
-            
+
         Returns:
             Agent response
         """
@@ -225,11 +225,11 @@ class AnalysisOrchestrator:
         rubric: RubricConfig,
     ) -> dict[str, Any]:
         """Aggregate agent scores using rubric weights.
-        
+
         Args:
             agent_responses: Dict of agent responses
             rubric: Rubric configuration
-            
+
         Returns:
             Dict with overall_score, weighted_scores, recommendation, confidence
         """
@@ -295,10 +295,10 @@ class AnalysisOrchestrator:
 
     def _classify_score(self, score: float) -> Recommendation:
         """Classify score into recommendation category.
-        
+
         Args:
             score: Overall score (0-100)
-            
+
         Returns:
             Recommendation enum
         """

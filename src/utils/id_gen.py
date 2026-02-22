@@ -5,14 +5,14 @@ from ulid import ULID
 
 def generate_id() -> str:
     """Generate a new ULID.
-    
+
     ULIDs are:
     - Lexicographically sortable by timestamp
     - 128-bit (26 character string)
     - URL-safe
     - Case-insensitive
     - Monotonic within same millisecond
-    
+
     Returns:
         ULID string (e.g., "01ARZ3NDEKTSV4RRFFQ69G5FAV")
     """

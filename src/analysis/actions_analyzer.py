@@ -11,7 +11,7 @@ class ActionsAnalyzer:
 
     def __init__(self, github_token: str | None = None):
         """Initialize Actions analyzer.
-        
+
         Args:
             github_token: GitHub personal access token (optional)
         """
@@ -19,11 +19,11 @@ class ActionsAnalyzer:
 
     def analyze(self, owner: str, repo: str) -> dict:
         """Analyze GitHub Actions for a repository.
-        
+
         Args:
             owner: Repository owner
             repo: Repository name
-            
+
         Returns:
             Dict with workflow_runs and workflow_definitions
         """
