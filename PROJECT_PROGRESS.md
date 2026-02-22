@@ -232,7 +232,7 @@ API Route → AnalysisService.trigger_analysis()
 ```
 
 ---
- 
+
 
 
 ---
@@ -449,11 +449,11 @@ for cost_record in result["cost_records"]:
     agent_name_str = "unknown"
     try:
         agent_name_str = (
-            cost_record.agent_name.value 
-            if hasattr(cost_record.agent_name, 'value') 
+            cost_record.agent_name.value
+            if hasattr(cost_record.agent_name, 'value')
             else str(cost_record.agent_name)
         )
-        
+
         logger.debug("recording_cost", sub_id=sub_id, agent=agent_name_str, ...)
         cost_service.record_agent_cost(...)
     except Exception as e:
@@ -559,6 +559,39 @@ Follows the bugfix requirements-first workflow:
 ### Next Steps
 
 Ready for implementation when needed. The spec provides a clear roadmap for fixing the cost tracking bug with proper testing and validation.
+
+---
+
+---
+
+## Pre-commit Hook Fix
+
+**Date:** February 22, 2026  
+**Status:** ✅ Fixed
+
+### Issue
+Pre-commit hook was failing with "python: command not found" error when running mypy.
+
+### Root Cause
+The mypy hook was configured to use `language: system` with entry point `mypy`, which tried to find mypy in the system PATH. However, mypy is installed in the virtual environment at `.venv/bin/mypy`.
+
+### Fix
+Updated `.pre-commit-config.yaml` to use the full path to mypy in the virtual environment:
+```yaml
+entry: .venv/bin/mypy  # Changed from: entry: mypy
+```
+
+### Installation
+Pre-commit was not installed in the virtual environment. Added installation:
+```bash
+.venv/bin/pip install pre-commit
+.venv/bin/pre-commit install
+```
+
+### Impact
+- Pre-commit hooks now run successfully without errors
+- Developers can commit code with automated quality checks
+- Consistent with project's virtual environment approach
 
 ---
 
