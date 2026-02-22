@@ -208,16 +208,14 @@ class BaseAgent(ABC):
             verification_notes = []
 
             # Check file exists
-            if hasattr(evidence, 'file') and evidence.file:
-                if evidence.file not in valid_files:
-                    verified = False
-                    verification_notes.append(f"File '{evidence.file}' not found in repo")
+            if hasattr(evidence, 'file') and evidence.file and evidence.file not in valid_files:
+                verified = False
+                verification_notes.append(f"File '{evidence.file}' not found in repo")
 
             # Check commit exists
-            if hasattr(evidence, 'commit') and evidence.commit:
-                if evidence.commit not in valid_commits:
-                    verified = False
-                    verification_notes.append(f"Commit '{evidence.commit}' not in history")
+            if hasattr(evidence, 'commit') and evidence.commit and evidence.commit not in valid_commits:
+                verified = False
+                verification_notes.append(f"Commit '{evidence.commit}' not in history")
 
             # Add verification metadata
             if hasattr(evidence, '__dict__'):
