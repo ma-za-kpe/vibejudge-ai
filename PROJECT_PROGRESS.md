@@ -1535,9 +1535,9 @@ Fixed endpoint URL mismatches in the comprehensive test script to align with act
 
 **2. Fixed Swagger Docs Endpoint**
 - Issue: `/docs` page couldn't load OpenAPI schema (404 on `/openapi.json`)
-- Root cause: Missing API Gateway stage prefix in `openapi_url`
-- Fix: Changed `openapi_url="/openapi.json"` to `openapi_url=f"/{stage}/openapi.json"`
-- Result: Swagger docs now work at `https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev/docs`
+- Root cause: Mangum strips stage prefix from requests, so FastAPI's `openapi_url` should not include it
+- Fix: Changed `openapi_url=f"/{stage}/openapi.json"` to `openapi_url="/openapi.json"`
+- Result: Swagger docs now fully functional at `https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev/docs`
 
 **3. Repository Cleanup**
 - Removed temporary test scripts moved to `scripts/` directory
