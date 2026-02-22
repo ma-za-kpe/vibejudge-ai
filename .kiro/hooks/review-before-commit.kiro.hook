@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "Review Before Commit",
+  "description": "Review code changes and suggest improvements before committing",
+  "version": "1",
+  "when": {
+    "type": "preToolUse",
+    "toolTypes": [
+      "write"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Review the staged changes and check for:\n1. Code quality issues\n2. Missing type hints\n3. Missing docstrings\n4. Potential bugs\n5. Security concerns\n6. Performance issues\n\nIf everything looks good, approve the commit. If issues found, suggest fixes."
+  }
+}

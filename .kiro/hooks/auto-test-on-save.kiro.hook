@@ -1,0 +1,17 @@
+{
+  "enabled": true,
+  "name": "Auto Test on Save",
+  "description": "Automatically run tests when Python source files are modified to catch issues early",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "src/**/*.py"
+    ]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "pytest tests/ -v --tb=short -x",
+    "timeout": 60
+  }
+}

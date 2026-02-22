@@ -2,10 +2,15 @@
 
 > AI-powered hackathon judging platform using Amazon Bedrock
 
+[![Tests](https://github.com/ma-za-kpe/vibejudge-ai/actions/workflows/tests.yml/badge.svg)](https://github.com/ma-za-kpe/vibejudge-ai/actions)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.109+-green.svg)](https://fastapi.tiangolo.com/)
 [![AWS SAM](https://img.shields.io/badge/AWS%20SAM-Serverless-orange.svg)](https://aws.amazon.com/serverless/sam/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+**🔗 Repository:** https://github.com/ma-za-kpe/vibejudge-ai  
+**🚀 Live API:** https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev/  
+**📚 API Docs:** https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev/docs
 
 ## 🎯 Overview
 
@@ -231,6 +236,14 @@ This project was built for the AWS 10,000 AIdeas competition. Contributions welc
 
 MIT License - see [LICENSE](LICENSE) file for details.
 
+## 🤝 Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for:
+- Development setup instructions
+- Code style guidelines
+- Testing requirements
+- Pull request process
+
 ## 🙏 Acknowledgments
 
 - Built with [Kiro](https://kiro.dev) AI IDE
@@ -242,7 +255,8 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - **Author:** Maku Mazakpe
 - **Organization:** Vibe Coders
 - **Email:** maku@vibecoders.com
-- **GitHub:** [@vibecoders](https://github.com/vibecoders)
+- **GitHub:** [@ma-za-kpe](https://github.com/ma-za-kpe)
+- **Repository:** [vibejudge-ai](https://github.com/ma-za-kpe/vibejudge-ai)
 
 ---
 

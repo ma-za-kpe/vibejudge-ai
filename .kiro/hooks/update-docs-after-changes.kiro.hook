@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Update Docs After Changes",
+  "description": "Update README and documentation when significant changes are made",
+  "version": "1",
+  "when": {
+    "type": "agentStop"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Review the changes made in this session. If any significant features were added or modified, update the relevant documentation:\n1. README.md - if new features or setup steps changed\n2. TESTING.md - if new tests or test procedures added\n3. PROJECT_PROGRESS.md - if major milestones reached\n\nKeep documentation concise and up-to-date."
+  }
+}

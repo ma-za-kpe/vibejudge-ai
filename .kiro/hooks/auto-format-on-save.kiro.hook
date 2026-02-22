@@ -1,0 +1,18 @@
+{
+  "enabled": true,
+  "name": "Auto Format on Save",
+  "description": "Automatically fix code style issues when Python files are saved",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "src/**/*.py",
+      "tests/**/*.py"
+    ]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "ruff check --fix src/ tests/",
+    "timeout": 30
+  }
+}
