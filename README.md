@@ -233,7 +233,9 @@ VibeJudge AI is designed to stay within AWS Free Tier:
 - [QUICK_START.md](QUICK_START.md) — 5-minute deployment guide
 - [DEPLOYMENT.md](DEPLOYMENT.md) — Complete deployment guide
 - [TESTING.md](TESTING.md) — Local development and testing
-- [PROJECT_STATUS.md](PROJECT_STATUS.md) — Current project status
+- [PROJECT_PROGRESS.md](PROJECT_PROGRESS.md) — Complete development history
+- [REALITY_CHECK.md](REALITY_CHECK.md) — Platform audit report
+- [COST_TRACKING_FIX.md](COST_TRACKING_FIX.md) — Cost tracking bugfix documentation
 - [docs/](docs/) — Technical specifications
 
 ## 🤝 Contributing

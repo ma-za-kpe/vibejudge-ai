@@ -49,6 +49,9 @@ class CostService:
 
         Returns:
             Cost record
+
+        Raises:
+            ValueError: If cost record cannot be saved
         """
         # Calculate cost
         rates = MODEL_RATES.get(model_id, {"input": 0, "output": 0})
@@ -75,9 +78,26 @@ class CostService:
             "timestamp": now.isoformat(),
         }
 
+        logger.info(
+            "cost_record_saving",
+            sub_id=sub_id,
+            agent=agent_name,
+            pk=record["PK"],
+            sk=record["SK"],
+            cost_usd=total_cost,
+            tokens=input_tokens + output_tokens,
+        )
+
         success = self.db.put_cost_record(record)
         if not success:
-            logger.error("cost_record_failed", sub_id=sub_id, agent=agent_name)
+            error_msg = f"Failed to save cost record for {sub_id}/{agent_name}"
+            logger.error(
+                "cost_record_failed",
+                sub_id=sub_id,
+                agent=agent_name,
+                error=error_msg,
+            )
+            raise ValueError(error_msg)
 
         logger.info(
             "cost_recorded",

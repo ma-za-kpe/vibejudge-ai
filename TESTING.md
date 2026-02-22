@@ -432,8 +432,10 @@ For issues or questions:
 2. Review logs: `make logs-api` or `make logs-analyzer`
 3. Check AWS CloudWatch for detailed error traces
 4. Review Bedrock quotas in AWS Console
+5. See [REALITY_CHECK.md](REALITY_CHECK.md) for platform audit findings
+6. See [COST_TRACKING_FIX.md](COST_TRACKING_FIX.md) for cost tracking bugfix details
 
 ---
 
-**Last Updated:** February 21, 2026  
+**Last Updated:** February 22, 2026  
 **Version:** 1.0.0

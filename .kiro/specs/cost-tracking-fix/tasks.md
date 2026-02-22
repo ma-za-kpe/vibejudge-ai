@@ -1,0 +1,104 @@
+# Implementation Plan
+
+- [-] 1. Write bug condition exploration test
+  - **Property 1: Fault Condition** - Cost Recording Failures Are Silent
+  - **CRITICAL**: This test MUST FAIL on unfixed code - failure confirms the bug exists
+  - **DO NOT attempt to fix the test or the code when it fails**
+  - **NOTE**: This test encodes the expected behavior - it will validate the fix when it passes after implementation
+  - **GOAL**: Surface counterexamples that demonstrate DynamoDB write failures are not raising exceptions
+  - **Scoped PBT Approach**: Scope the property to concrete failing cases: `put_cost_record()` returns `False` with various agent names and token counts
+  - Test that `record_agent_cost()` raises `ValueError` when `db.put_cost_record()` returns `False` (from Fault Condition in design)
+  - Test that enum `AgentName` values are properly converted to strings before DynamoDB writes
+  - Test that diagnostic logging includes PK, SK, cost, tokens, and model ID before write attempts
+  - Test that Lambda handler catches cost recording exceptions and continues batch processing
+  - Run test on UNFIXED code
+  - **EXPECTED OUTCOME**: Test FAILS (this is correct - it proves the bug exists)
+  - Document counterexamples found:
+    - `record_agent_cost()` logs error but does not raise exception
+    - Enum values not converted to strings cause DynamoDB type errors
+    - Insufficient diagnostic logging prevents debugging
+  - Mark task complete when test is written, run, and failure is documented
+  - _Requirements: 1.1, 1.2, 1.3, 2.1, 2.2, 2.3, 2.4, 2.5_
+
+- [~] 2. Write preservation property tests (BEFORE implementing fix)
+  - **Property 2: Preservation** - Successful Cost Recording Behavior
+  - **IMPORTANT**: Follow observation-first methodology
+  - Observe: `record_agent_cost()` with successful `put_cost_record()` returns cost record dict on unfixed code
+  - Observe: Cost aggregation via `get_submission_costs()` produces correct totals on unfixed code
+  - Observe: Batch processing continues independently when one submission's cost recording fails on unfixed code
+  - Observe: Hackathon cost summary updates correctly aggregate costs on unfixed code
+  - Write property-based tests capturing observed behavior patterns from Preservation Requirements:
+    - For all successful cost writes (where `put_cost_record()` returns `True`), verify same record dict and logging
+    - For all cost aggregation queries, verify same aggregated results
+    - For all batch processing scenarios, verify same independence behavior
+    - For all hackathon cost summaries, verify same aggregation totals
+  - Property-based testing generates many test cases for stronger guarantees
+  - Run tests on UNFIXED code
+  - **EXPECTED OUTCOME**: Tests PASS (this confirms baseline behavior to preserve)
+  - Mark task complete when tests are written, run, and passing on unfixed code
+  - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
+
+- [ ] 3. Fix cost tracking error handling and logging
+
+  - [~] 3.1 Enhance `src/services/cost_service.py`
+    - Add enum-to-string conversion for `agent_name` parameter
+      - Check if `agent_name` has `.value` attribute (enum)
+      - Convert: `agent_name_str = agent_name.value if hasattr(agent_name, 'value') else str(agent_name)`
+      - Use `agent_name_str` throughout function
+    - Enhance diagnostic logging before `db.put_cost_record()` call
+      - Ensure logging includes PK, SK, cost amount, input/output tokens, model ID
+      - Verify existing logging (lines 87-95) includes all relevant fields
+    - Improve error message in `ValueError` exception
+      - Include model ID, token counts, and cost amount in error message
+      - Ensure error message includes submission ID and agent name
+    - _Bug_Condition: isBugCondition(input) where input.db_write_result == False AND input.exception_raised == False_
+    - _Expected_Behavior: Raise ValueError with descriptive context, log diagnostic details (Property 1, 2, 3 from design)_
+    - _Preservation: Successful cost recording behavior unchanged (Property 4 from design)_
+    - _Requirements: 2.1, 2.2, 2.3, 3.1, 3.2, 3.3_
+
+  - [~] 3.2 Enhance `src/analysis/lambda_handler.py`
+    - Add detailed diagnostic logging BEFORE `cost_service.record_agent_cost()` call
+      - Log submission ID, agent name, model ID, input/output tokens, total cost
+      - Move logging before try block (currently at lines 163-168)
+    - Improve exception handling for cost recording failures
+      - Log full cost record details (model ID, tokens, cost) when recording fails
+      - Log exception type and traceback for better debugging
+      - Ensure submission analysis still completes successfully (already present)
+    - Add success logging after successful cost recording
+      - Log submission ID, agent name, and confirmation of successful write
+    - _Bug_Condition: isBugCondition(input) where input.diagnostic_logging_insufficient == True_
+    - _Expected_Behavior: Detailed diagnostic logging, proper exception handling (Property 3 from design)_
+    - _Preservation: Batch processing independence maintained (Property 4 from design)_
+    - _Requirements: 2.4, 2.5, 3.4, 3.5, 3.6_
+
+  - [~] 3.3 Verify bug condition exploration test now passes
+    - **Property 1: Expected Behavior** - Cost Recording Failures Raise Exceptions
+    - **IMPORTANT**: Re-run the SAME test from task 1 - do NOT write a new test
+    - The test from task 1 encodes the expected behavior
+    - When this test passes, it confirms the expected behavior is satisfied
+    - Run bug condition exploration test from step 1
+    - **EXPECTED OUTCOME**: Test PASSES (confirms bug is fixed)
+    - Verify `ValueError` is raised when `put_cost_record()` returns `False`
+    - Verify enum values are converted to strings
+    - Verify diagnostic logging includes all required fields
+    - Verify Lambda handler catches exceptions and continues batch processing
+    - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
+
+  - [~] 3.4 Verify preservation tests still pass
+    - **Property 2: Preservation** - Successful Cost Recording Unchanged
+    - **IMPORTANT**: Re-run the SAME tests from task 2 - do NOT write new tests
+    - Run preservation property tests from step 2
+    - **EXPECTED OUTCOME**: Tests PASS (confirms no regressions)
+    - Confirm successful cost recording produces same results
+    - Confirm cost aggregation produces same totals
+    - Confirm batch processing independence maintained
+    - Confirm hackathon cost summary aggregation unchanged
+    - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
+
+- [~] 4. Checkpoint - Ensure all tests pass
+  - Run full test suite: `pytest tests/`
+  - Verify all unit tests pass
+  - Verify all property-based tests pass
+  - Verify all integration tests pass
+  - Ensure no regressions in existing functionality
+  - Ask the user if questions arise

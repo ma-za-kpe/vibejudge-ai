@@ -1,38 +1,37 @@
 """Shared pytest fixtures for VibeJudge AI tests."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock
 
 import pytest
 
 from src.models.analysis import (
+    CommitInfo,
     RepoData,
     SourceFile,
-    CommitInfo,
 )
-from src.models.submission import RepoMeta
 from src.models.common import AgentName
 from src.models.hackathon import RubricConfig, RubricDimension
 from src.models.scores import (
-    BugHunterResponse,
-    PerformanceResponse,
-    InnovationResponse,
-    AIDetectionResponse,
-    BugHunterEvidence,
-    PerformanceEvidence,
-    InnovationEvidence,
     AIDetectionEvidence,
-    BugHunterScores,
-    PerformanceScores,
-    InnovationScores,
+    AIDetectionResponse,
     AIDetectionScores,
+    BugHunterEvidence,
+    BugHunterResponse,
+    BugHunterScores,
     CIObservations,
-    PerformanceCIObservations,
-    TechStackAssessment,
     CommitAnalysis,
+    InnovationEvidence,
+    InnovationResponse,
+    InnovationScores,
+    PerformanceCIObservations,
+    PerformanceEvidence,
+    PerformanceResponse,
+    PerformanceScores,
+    TechStackAssessment,
 )
-
+from src.models.submission import RepoMeta
 
 # ============================================================
 # MOCK BEDROCK CLIENT
@@ -42,7 +41,7 @@ from src.models.scores import (
 def mock_bedrock_client():
     """Mock Bedrock client with configurable responses."""
     client = MagicMock()
-    
+
     # Default successful response
     client.converse.return_value = {
         "content": '{"overall_score": 8.5, "confidence": 0.9, "evidence": []}',
@@ -55,13 +54,13 @@ def mock_bedrock_client():
         "latency_ms": 1200,
         "model_id": "amazon.nova-lite-v1:0",
     }
-    
+
     client.calculate_cost.return_value = {
         "input_cost_usd": 0.00006,
         "output_cost_usd": 0.00012,
         "total_cost_usd": 0.00018,
     }
-    
+
     client.parse_json_response.return_value = {
         "agent": "bug_hunter",
         "prompt_version": "v1.0",
@@ -77,7 +76,7 @@ def mock_bedrock_client():
         "evidence": [],
         "ci_observations": {},
     }
-    
+
     return client
 
 
@@ -99,8 +98,8 @@ def sample_repo_data() -> RepoData:
             total_files=25,
             total_lines=6000,
             commit_count=50,
-            first_commit_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
-            last_commit_at=datetime(2024, 2, 1, tzinfo=timezone.utc),
+            first_commit_at=datetime(2024, 1, 1, tzinfo=UTC),
+            last_commit_at=datetime(2024, 2, 1, tzinfo=UTC),
             development_duration_hours=120.0,
             workflow_run_count=10,
             workflow_success_rate=0.9,
@@ -130,7 +129,7 @@ def sample_repo_data() -> RepoData:
                 hash="abc123def456",
                 short_hash="abc123d",
                 author="John Doe",
-                timestamp=datetime(2024, 1, 15, tzinfo=timezone.utc),
+                timestamp=datetime(2024, 1, 15, tzinfo=UTC),
                 message="Initial commit",
                 files_changed=5,
                 insertions=100,
@@ -140,7 +139,7 @@ def sample_repo_data() -> RepoData:
                 hash="def456ghi789",
                 short_hash="def456g",
                 author="Jane Smith",
-                timestamp=datetime(2024, 1, 20, tzinfo=timezone.utc),
+                timestamp=datetime(2024, 1, 20, tzinfo=UTC),
                 message="Add API endpoints",
                 files_changed=3,
                 insertions=200,

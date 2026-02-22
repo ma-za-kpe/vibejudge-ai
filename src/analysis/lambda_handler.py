@@ -132,14 +132,39 @@ def handler(event: dict, context: Any) -> dict:
 
                     # Record costs
                     for cost_record in result["cost_records"]:
-                        # cost_record is a CostRecord Pydantic model, not a dict
-                        cost_service.record_agent_cost(
-                            sub_id=sub_id,
-                            agent_name=cost_record.agent_name.value if hasattr(cost_record.agent_name, 'value') else str(cost_record.agent_name),
-                            model_id=cost_record.model_id,
-                            input_tokens=cost_record.input_tokens,
-                            output_tokens=cost_record.output_tokens,
-                        )
+                        agent_name_str = "unknown"
+                        try:
+                            # cost_record is a CostRecord Pydantic model
+                            # Extract agent_name as string (handle both enum and string)
+                            agent_name_str = (
+                                cost_record.agent_name.value
+                                if hasattr(cost_record.agent_name, 'value')
+                                else str(cost_record.agent_name)
+                            )
+
+                            logger.debug(
+                                "recording_cost",
+                                sub_id=sub_id,
+                                agent=agent_name_str,
+                                model=cost_record.model_id,
+                                tokens=cost_record.total_tokens,
+                            )
+
+                            cost_service.record_agent_cost(
+                                sub_id=sub_id,
+                                agent_name=agent_name_str,
+                                model_id=cost_record.model_id,
+                                input_tokens=cost_record.input_tokens,
+                                output_tokens=cost_record.output_tokens,
+                            )
+                        except Exception as e:
+                            # Don't fail the entire analysis if cost recording fails
+                            logger.error(
+                                "cost_recording_failed",
+                                sub_id=sub_id,
+                                agent=agent_name_str,
+                                error=str(e),
+                            )
 
                     logger.info(
                         "submission_analyzed",
