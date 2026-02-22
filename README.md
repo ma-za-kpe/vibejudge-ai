@@ -82,6 +82,9 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 # Install dependencies
 make install-dev
 
+# Install pre-commit hooks (optional but recommended)
+pre-commit install
+
 # Create environment file
 make env
 # Edit .env with your AWS configuration
@@ -178,7 +181,12 @@ make type-check
 
 # Run all quality checks
 make quality
+
+# Run pre-commit hooks manually
+pre-commit run --all-files
 ```
+
+**Pre-commit Hooks:** Automatically run linting, formatting, and validation before each commit. Install with `pre-commit install` (included in dev dependencies).
 
 ### Project Structure
 
