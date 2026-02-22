@@ -94,10 +94,13 @@ Resources:
     Properties:
       FunctionName: !Sub "vibejudge-api-${Environment}"
       Description: FastAPI application handling all API routes
-      CodeUri: src/
-      Handler: api.main.handler
+      CodeUri: ./
+      Handler: src.api.main.handler
       MemorySize: 1024
       Timeout: 30
+      Environment:
+        Variables:
+          ANALYZER_LAMBDA_FUNCTION_NAME: !Ref AnalyzerFunction
       Events:
         # Catch-all proxy route — FastAPI handles internal routing
         ApiProxy:
@@ -144,8 +147,10 @@ Resources:
     Properties:
       FunctionName: !Sub "vibejudge-analyzer-${Environment}"
       Description: Batch analysis engine — clones repos, runs AI agents, writes scores
-      CodeUri: src/
-      Handler: analysis.lambda_handler.handler
+      CodeUri: ./
+      Handler: src.analysis.lambda_handler.handler
+      Layers:
+        - arn:aws:lambda:us-east-1:553035198032:layer:git-lambda2:8
       MemorySize: 2048
       Timeout: 900               # 15 minutes — max Lambda timeout
       EphemeralStorage:

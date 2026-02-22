@@ -20,7 +20,17 @@ class DynamoDBHelper:
         Args:
             table_name: Name of the DynamoDB table
         """
-        dynamodb = boto3.resource("dynamodb")
+        import os
+        endpoint_url = os.environ.get("DYNAMODB_ENDPOINT_URL")
+        region = os.environ.get("AWS_REGION", "us-east-1")
+        
+        if endpoint_url:
+            # Local DynamoDB
+            dynamodb = boto3.resource("dynamodb", endpoint_url=endpoint_url, region_name=region)
+        else:
+            # AWS DynamoDB
+            dynamodb = boto3.resource("dynamodb", region_name=region)
+        
         self.table = dynamodb.Table(table_name)
         self.table_name = table_name
     
@@ -76,12 +86,45 @@ class DynamoDBHelper:
             True if successful
         """
         try:
-            self.table.put_item(Item=organizer)
+            # Convert datetime objects to ISO strings for DynamoDB
+            item = self._serialize_item(organizer)
+            self.table.put_item(Item=item)
             logger.info("organizer_created", org_id=organizer.get("org_id"))
             return True
         except ClientError as e:
             logger.error("put_organizer_failed", error=str(e))
             return False
+    
+    def _serialize_item(self, item: dict) -> dict:
+        """Convert datetime objects to ISO strings and floats to Decimal for DynamoDB.
+        
+        Args:
+            item: Dictionary that may contain datetime objects or floats
+            
+        Returns:
+            Dictionary with datetime objects converted to ISO strings and floats to Decimal
+        """
+        from datetime import datetime
+        from decimal import Decimal
+        
+        serialized = {}
+        for key, value in item.items():
+            if isinstance(value, datetime):
+                serialized[key] = value.isoformat()
+            elif isinstance(value, float):
+                serialized[key] = Decimal(str(value))
+            elif isinstance(value, dict):
+                serialized[key] = self._serialize_item(value)
+            elif isinstance(value, list):
+                serialized[key] = [
+                    self._serialize_item(v) if isinstance(v, dict) else
+                    v.isoformat() if isinstance(v, datetime) else
+                    Decimal(str(v)) if isinstance(v, float) else v
+                    for v in value
+                ]
+            else:
+                serialized[key] = value
+        return serialized
     
     # ============================================================
     # HACKATHON ACCESS PATTERNS
@@ -159,7 +202,8 @@ class DynamoDBHelper:
             True if successful
         """
         try:
-            self.table.put_item(Item=hackathon)
+            item = self._serialize_item(hackathon)
+            self.table.put_item(Item=item)
             logger.info("hackathon_created", hack_id=hackathon.get("hack_id"))
             return True
         except ClientError as e:
@@ -176,7 +220,8 @@ class DynamoDBHelper:
             True if successful
         """
         try:
-            self.table.put_item(Item=detail)
+            item = self._serialize_item(detail)
+            self.table.put_item(Item=item)
             logger.info("hackathon_detail_created", hack_id=detail.get("hack_id"))
             return True
         except ClientError as e:
@@ -257,7 +302,8 @@ class DynamoDBHelper:
             True if successful
         """
         try:
-            self.table.put_item(Item=submission)
+            item = self._serialize_item(submission)
+            self.table.put_item(Item=item)
             logger.info("submission_created", sub_id=submission.get("sub_id"))
             return True
         except ClientError as e:
@@ -279,16 +325,21 @@ class DynamoDBHelper:
             True if successful
         """
         try:
+            from datetime import datetime
+            
             update_expr = "SET #status = :status, updated_at = :updated_at"
             expr_attr_names = {"#status": "status"}
             expr_attr_values = {
                 ":status": status,
-                ":updated_at": kwargs.get("updated_at"),
+                ":updated_at": kwargs.get("updated_at").isoformat() if isinstance(kwargs.get("updated_at"), datetime) else kwargs.get("updated_at"),
             }
             
             # Add optional fields
             for key, value in kwargs.items():
                 if key != "updated_at" and value is not None:
+                    # Serialize datetime values
+                    if isinstance(value, datetime):
+                        value = value.isoformat()
                     update_expr += f", {key} = :{key}"
                     expr_attr_values[f":{key}"] = value
             
@@ -358,7 +409,8 @@ class DynamoDBHelper:
             True if successful
         """
         try:
-            self.table.put_item(Item=score)
+            item = self._serialize_item(score)
+            self.table.put_item(Item=item)
             logger.info("agent_score_saved", sub_id=score.get("sub_id"), agent=score.get("agent_name"))
             return True
         except ClientError as e:
@@ -393,7 +445,8 @@ class DynamoDBHelper:
             True if successful
         """
         try:
-            self.table.put_item(Item=summary)
+            item = self._serialize_item(summary)
+            self.table.put_item(Item=item)
             logger.info("submission_summary_saved", sub_id=summary.get("sub_id"))
             return True
         except ClientError as e:
@@ -435,7 +488,8 @@ class DynamoDBHelper:
             True if successful
         """
         try:
-            self.table.put_item(Item=cost)
+            item = self._serialize_item(cost)
+            self.table.put_item(Item=item)
             logger.info("cost_record_saved", sub_id=cost.get("sub_id"), agent=cost.get("agent_name"))
             return True
         except ClientError as e:
@@ -470,7 +524,8 @@ class DynamoDBHelper:
             True if successful
         """
         try:
-            self.table.put_item(Item=cost_summary)
+            item = self._serialize_item(cost_summary)
+            self.table.put_item(Item=item)
             logger.info("hackathon_cost_summary_saved", hack_id=cost_summary.get("hack_id"))
             return True
         except ClientError as e:
@@ -531,7 +586,8 @@ class DynamoDBHelper:
             True if successful
         """
         try:
-            self.table.put_item(Item=job)
+            item = self._serialize_item(job)
+            self.table.put_item(Item=item)
             logger.info("analysis_job_created", job_id=job.get("job_id"))
             return True
         except ClientError as e:
@@ -573,7 +629,8 @@ class DynamoDBHelper:
         try:
             with self.table.batch_writer() as batch:
                 for item in items:
-                    batch.put_item(Item=item)
+                    serialized = self._serialize_item(item)
+                    batch.put_item(Item=serialized)
             logger.info("batch_write_completed", count=len(items))
             return True
         except ClientError as e:

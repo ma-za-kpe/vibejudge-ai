@@ -77,4 +77,7 @@ async def shutdown_event():
 # ============================================================
 
 # Mangum handler for AWS Lambda
-handler = Mangum(app, lifespan="off")
+# API Gateway adds stage prefix (/dev, /staging, /prod) which Mangum needs to strip
+import os
+stage = os.environ.get("ENVIRONMENT", "dev")
+handler = Mangum(app, lifespan="off", api_gateway_base_path=f"/{stage}")

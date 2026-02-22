@@ -24,7 +24,8 @@ MODEL_RATES = {
         "input": 0.000000250,
         "output": 0.000001250,
     },
-    "anthropic.claude-sonnet-4-20250514": {
+    # Claude Sonnet 4.6 - Latest version (Feb 2026), optimized for coding and agents
+    "us.anthropic.claude-sonnet-4-6": {
         "input": 0.000003000,
         "output": 0.000015000,
     },
@@ -37,7 +38,7 @@ MODEL_RATES = {
 AGENT_MODELS = {
     "bug_hunter": "amazon.nova-lite-v1:0",
     "performance": "amazon.nova-lite-v1:0",
-    "innovation": "anthropic.claude-sonnet-4-20250514",
+    "innovation": "us.anthropic.claude-sonnet-4-6",  # Latest Claude Sonnet 4.6 (Feb 2026)
     "ai_detection": "amazon.nova-micro-v1:0",
 }
 
@@ -61,7 +62,7 @@ AGENT_CONFIGS = {
         "timeout_seconds": 120,
     },
     "innovation": {
-        "model_id": "anthropic.claude-sonnet-4-20250514",
+        "model_id": "us.anthropic.claude-sonnet-4-6",  # Latest Claude Sonnet 4.6 (Feb 2026)
         "temperature": 0.3,
         "max_tokens": 3000,
         "top_p": 0.95,
@@ -207,8 +208,8 @@ CONTEXT_BUDGETS = {
         "response": 2048,
         "repo_data": 295952,
     },
-    "anthropic.claude-sonnet-4-20250514": {
-        "total": 200000,
+    "us.anthropic.claude-sonnet-4-6": {  # Latest Claude Sonnet 4.6 with 1M context
+        "total": 200000,  # Conservative limit for cost control
         "system_prompt": 2500,
         "response": 3000,
         "repo_data": 194500,

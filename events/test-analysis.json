@@ -1,0 +1,40 @@
+{
+  "sub_id": "SUB#01JCTEST123456789",
+  "hack_id": "HACK#01JCTEST987654321",
+  "repo_url": "https://github.com/anthropics/anthropic-quickstarts",
+  "hackathon_name": "Test Hackathon 2026",
+  "team_name": "Anthropic Team",
+  "rubric": {
+    "name": "Default Rubric",
+    "version": "1.0",
+    "max_score": 100.0,
+    "dimensions": [
+      {
+        "name": "Code Quality",
+        "agent": "bug_hunter",
+        "weight": 0.3,
+        "description": "Code quality, security, and testing"
+      },
+      {
+        "name": "Architecture",
+        "agent": "performance",
+        "weight": 0.3,
+        "description": "Architecture, scalability, and performance"
+      },
+      {
+        "name": "Innovation",
+        "agent": "innovation",
+        "weight": 0.3,
+        "description": "Creativity, novelty, and documentation"
+      },
+      {
+        "name": "Authenticity",
+        "agent": "ai_detection",
+        "weight": 0.1,
+        "description": "Development authenticity and AI usage"
+      }
+    ]
+  },
+  "agents_enabled": ["bug_hunter", "performance", "innovation", "ai_detection"],
+  "ai_policy_mode": "ai_assisted"
+}

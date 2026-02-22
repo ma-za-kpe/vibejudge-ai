@@ -74,4 +74,10 @@ Evaluate this submission. Return ONLY valid JSON.
     
     def parse_response(self, response_dict: dict) -> BugHunterResponse:
         """Parse BugHunter response."""
+        # Filter out evidence items with None file values (invalid)
+        if "evidence" in response_dict and isinstance(response_dict["evidence"], list):
+            response_dict["evidence"] = [
+                e for e in response_dict["evidence"]
+                if isinstance(e, dict) and e.get("file") is not None
+            ]
         return BugHunterResponse(**response_dict)

@@ -1,13 +1,17 @@
 """Hackathon management endpoints."""
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 
-from src.api.dependencies import DynamoDBTable, CurrentOrganizer
+from src.api.dependencies import HackathonServiceDep, SubmissionServiceDep, CurrentOrganizer
 from src.models.hackathon import (
     HackathonCreate, HackathonUpdate,
     HackathonResponse, HackathonListResponse,
 )
-from src.models.leaderboard import LeaderboardResponse
+from src.models.leaderboard import (
+    LeaderboardResponse, LeaderboardEntry, LeaderboardStats,
+    LeaderboardHackathonInfo,
+)
+from src.models.common import Recommendation
 
 router = APIRouter(prefix="/hackathons", tags=["hackathons"])
 
@@ -15,78 +19,181 @@ router = APIRouter(prefix="/hackathons", tags=["hackathons"])
 @router.post("", response_model=HackathonResponse, status_code=201)
 async def create_hackathon(
     data: HackathonCreate,
-    organizer: CurrentOrganizer,
-    table: DynamoDBTable,
-) -> dict:
+    service: HackathonServiceDep,
+    current_organizer: CurrentOrganizer,
+) -> HackathonResponse:
     """Create a new hackathon.
     
     POST /api/v1/hackathons
+    
+    Requires X-API-Key header for authentication.
     """
-    return {"status": "not implemented"}
+    try:
+        org_id = current_organizer["org_id"]
+        return service.create_hackathon(org_id, data)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create hackathon: {str(e)}")
 
 
 @router.get("", response_model=HackathonListResponse)
 async def list_hackathons(
-    organizer: CurrentOrganizer,
-    table: DynamoDBTable,
+    service: HackathonServiceDep,
+    current_organizer: CurrentOrganizer,
     limit: int = Query(20, ge=1, le=100),
     cursor: str | None = None,
-) -> dict:
+) -> HackathonListResponse:
     """List organizer's hackathons.
     
     GET /api/v1/hackathons
+    
+    Requires X-API-Key header for authentication.
     """
-    return {"status": "not implemented"}
+    try:
+        org_id = current_organizer["org_id"]
+        return service.list_hackathons(org_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to list hackathons: {str(e)}")
 
 
 @router.get("/{hack_id}", response_model=HackathonResponse)
 async def get_hackathon(
     hack_id: str,
-    organizer: CurrentOrganizer,
-    table: DynamoDBTable,
-) -> dict:
+    service: HackathonServiceDep,
+) -> HackathonResponse:
     """Get hackathon details.
     
     GET /api/v1/hackathons/{hack_id}
     """
-    return {"status": "not implemented"}
+    hackathon = service.get_hackathon(hack_id)
+    if not hackathon:
+        raise HTTPException(status_code=404, detail="Hackathon not found")
+    return hackathon
 
 
 @router.put("/{hack_id}", response_model=HackathonResponse)
 async def update_hackathon(
     hack_id: str,
     data: HackathonUpdate,
-    organizer: CurrentOrganizer,
-    table: DynamoDBTable,
-) -> dict:
+    service: HackathonServiceDep,
+) -> HackathonResponse:
     """Update hackathon configuration.
     
     PUT /api/v1/hackathons/{hack_id}
     """
-    return {"status": "not implemented"}
+    try:
+        return service.update_hackathon(hack_id, data)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update hackathon: {str(e)}")
 
 
 @router.delete("/{hack_id}", status_code=204)
 async def delete_hackathon(
     hack_id: str,
-    organizer: CurrentOrganizer,
-    table: DynamoDBTable,
+    service: HackathonServiceDep,
+    current_organizer: CurrentOrganizer,
 ) -> None:
     """Delete hackathon (archive).
     
     DELETE /api/v1/hackathons/{hack_id}
+    
+    Requires X-API-Key header for authentication.
     """
-    return {"status": "not implemented"}
+    org_id = current_organizer["org_id"]
+    success = service.delete_hackathon(hack_id, org_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Hackathon not found")
 
 
 @router.get("/{hack_id}/leaderboard", response_model=LeaderboardResponse)
 async def get_leaderboard(
     hack_id: str,
-    organizer: CurrentOrganizer,
-    table: DynamoDBTable,
-) -> dict:
+    hackathon_service: HackathonServiceDep,
+    submission_service: SubmissionServiceDep,
+) -> LeaderboardResponse:
     """Get hackathon leaderboard.
     
     GET /api/v1/hackathons/{hack_id}/leaderboard
     """
-    return {"status": "not implemented"}
+    # Get hackathon details
+    hackathon = hackathon_service.get_hackathon(hack_id)
+    if not hackathon:
+        raise HTTPException(status_code=404, detail="Hackathon not found")
+    
+    # Get all submissions with scores
+    all_submissions = submission_service.list_submissions(hack_id)
+    scored_submissions = [
+        s for s in all_submissions.submissions 
+        if s.overall_score is not None
+    ]
+    
+    if not scored_submissions:
+        raise HTTPException(status_code=400, detail="No scored submissions available")
+    
+    # Sort by overall_score descending
+    sorted_submissions = sorted(
+        scored_submissions,
+        key=lambda x: x.overall_score or 0,
+        reverse=True
+    )
+    
+    # Build leaderboard entries
+    leaderboard_entries = []
+    for rank, submission in enumerate(sorted_submissions, start=1):
+        leaderboard_entries.append(LeaderboardEntry(
+            rank=rank,
+            sub_id=submission.sub_id,
+            team_name=submission.team_name,
+            overall_score=submission.overall_score or 0.0,
+            dimension_scores={},  # Not available in list view - get full submission for details
+            recommendation=Recommendation.SOLID_SUBMISSION,  # Default - not available in list view
+        ))
+    
+    # Calculate statistics
+    scores = [s.overall_score or 0.0 for s in scored_submissions]
+    mean_score = sum(scores) / len(scores) if scores else 0.0
+    sorted_scores = sorted(scores)
+    median_score = sorted_scores[len(sorted_scores) // 2] if sorted_scores else 0.0
+    
+    # Calculate standard deviation
+    if len(scores) > 1:
+        variance = sum((x - mean_score) ** 2 for x in scores) / len(scores)
+        std_dev = variance ** 0.5
+    else:
+        std_dev = 0.0
+    
+    # Score distribution
+    distribution = {
+        "90-100": sum(1 for s in scores if 90 <= s <= 100),
+        "80-89": sum(1 for s in scores if 80 <= s < 90),
+        "70-79": sum(1 for s in scores if 70 <= s < 80),
+        "60-69": sum(1 for s in scores if 60 <= s < 70),
+        "0-59": sum(1 for s in scores if s < 60),
+    }
+    
+    statistics = LeaderboardStats(
+        mean_score=mean_score,
+        median_score=median_score,
+        std_dev=std_dev,
+        highest_score=max(scores) if scores else 0.0,
+        lowest_score=min(scores) if scores else 0.0,
+        score_distribution=distribution,
+    )
+    
+    # Build hackathon info
+    hackathon_info = LeaderboardHackathonInfo(
+        hack_id=hack_id,
+        name=hackathon.name,
+        submission_count=len(all_submissions.submissions),
+        analyzed_count=len(scored_submissions),
+        ai_policy_mode=hackathon.ai_policy_mode.value if hasattr(hackathon.ai_policy_mode, 'value') else str(hackathon.ai_policy_mode),
+    )
+    
+    return LeaderboardResponse(
+        hackathon=hackathon_info,
+        leaderboard=leaderboard_entries,
+        statistics=statistics,
+    )

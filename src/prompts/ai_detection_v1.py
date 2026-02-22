@@ -65,7 +65,7 @@ ONLY valid JSON. No markdown.
 
 {
   "agent": "ai_detection",
-  "version": "1.0",
+  "prompt_version": "1.0",
   "scores": {
     "commit_authenticity": <float>,
     "development_velocity": <float>,
@@ -75,14 +75,31 @@ ONLY valid JSON. No markdown.
   },
   "overall_score": <float>,
   "confidence": <float>,
-  "evidence": [{"finding":"","file":"","line":null,"commit":"","severity":"","category":""}],
-  "ai_usage_estimate": "none|minimal|moderate|heavy|full",
-  "development_pattern": "organic|ai_assisted_iterative|ai_assisted_bulk|ai_generated",
-  "summary": "<2-4 sentences describing development pattern>",
-  "strengths": [],
-  "improvements": [],
-  "flags": []
+  "evidence": [
+    {
+      "finding": "Description of the pattern observed",
+      "source": "commit_history",
+      "detail": "Specific details supporting the finding",
+      "signal": "human",
+      "confidence": 0.8
+    }
+  ],
+  "commit_analysis": {
+    "total_commits": 0,
+    "avg_lines_per_commit": 0.0,
+    "largest_commit_lines": 0,
+    "commit_frequency_pattern": "steady",
+    "meaningful_message_ratio": 0.0,
+    "fix_commit_count": 0,
+    "refactor_commit_count": 0
+  },
+  "ai_policy_observation": "",
+  "summary": "<2-4 sentences describing development pattern>"
 }
+
+SOURCE VALUES: "commit_history", "file_analysis", "actions_data", "timing_analysis"
+SIGNAL VALUES: "human", "ai_generated", "ai_assisted", "ambiguous"
+COMMIT_FREQUENCY_PATTERN: "steady", "burst", "front_loaded", "back_loaded", "sporadic"
 
 overall_score = commit_authenticity(0.30) + development_velocity(0.20) + authorship_consistency(0.20) + iteration_depth(0.20) + ai_generation_indicators(0.10)
 """

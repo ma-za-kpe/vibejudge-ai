@@ -1,0 +1,8 @@
+{
+  "repo_url": "https://github.com/anthropics/anthropic-quickstarts",
+  "hackathon_id": "HACK#01JCTEST987654321",
+  "submission_id": "SUB#01JCTEST123456789",
+  "team_name": "Anthropic Team",
+  "agents_enabled": ["bug_hunter", "performance", "innovation", "ai_detection"],
+  "ai_policy_mode": "ai_assisted"
+}

@@ -1,7 +1,7 @@
 """Multi-agent orchestration with parallel execution."""
 
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 from src.agents.ai_detection import AIDetectionAgent
@@ -75,7 +75,7 @@ class AnalysisOrchestrator:
                 - total_cost_usd: Total cost
                 - analysis_duration_ms: Total duration
         """
-        start_time = datetime.utcnow()
+        start_time = datetime.now(timezone.utc)
         
         logger.info(
             "orchestrator_analysis_started",
@@ -140,7 +140,7 @@ class AnalysisOrchestrator:
         )
         
         # Calculate duration
-        duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+        duration_ms = int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000)
         
         result = {
             "agent_responses": agent_responses,
@@ -195,13 +195,15 @@ class AnalysisOrchestrator:
         loop = asyncio.get_event_loop()
         agent = self.agents[agent_name]
         
+        # Build kwargs for agent
+        kwargs = {}
+        if agent_name == AgentName.AI_DETECTION:
+            kwargs["ai_policy_mode"] = ai_policy_mode
+        
+        # Use lambda to pass kwargs to analyze
         response, usage = await loop.run_in_executor(
             None,
-            agent.analyze,
-            repo_data,
-            hackathon_name,
-            team_name,
-            {"ai_policy_mode": ai_policy_mode} if agent_name == AgentName.AI_DETECTION else {},
+            lambda: agent.analyze(repo_data, hackathon_name, team_name, **kwargs),
         )
         
         # Record cost

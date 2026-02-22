@@ -28,11 +28,27 @@ class ActionsAnalyzer:
         Returns:
             Dict with workflow_runs and workflow_definitions
         """
-        # TODO: Implement Actions analysis
-        # Reference: docs/08-git-analysis-spec.md section 6
-        logger.warning("actions_analyzer_not_implemented", method="analyze")
+        logger.info("actions_analysis_started", owner=owner, repo=repo)
+        
+        # Fetch workflow runs
+        workflow_runs = self.client.fetch_workflow_runs(owner, repo, max_runs=50)
+        
+        # Fetch workflow definition files
+        workflow_definitions = self.client.fetch_workflow_files(owner, repo)
+        
+        logger.info(
+            "actions_analysis_complete",
+            owner=owner,
+            repo=repo,
+            runs=len(workflow_runs),
+            definitions=len(workflow_definitions),
+        )
         
         return {
-            "workflow_runs": [],
-            "workflow_definitions": [],
+            "workflow_runs": workflow_runs,
+            "workflow_definitions": workflow_definitions,
         }
+    
+    def close(self):
+        """Close the GitHub client."""
+        self.client.close()

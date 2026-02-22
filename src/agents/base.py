@@ -242,6 +242,7 @@ class BaseAgent(ABC):
                     agent=self.agent_name,
                     unverified_count=unverified_count,
                     total=len(response.evidence),
+                    unverified_ratio=unverified_ratio,
                 )
         
         return response

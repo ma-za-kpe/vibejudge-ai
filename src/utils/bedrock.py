@@ -44,7 +44,7 @@ class BedrockClient:
         user_message: str,
         temperature: float = 0.3,
         max_tokens: int = 2048,
-        top_p: float = 0.9,
+        top_p: Optional[float] = None,
     ) -> dict[str, Any]:
         """Call Bedrock Converse API with retry logic.
         
@@ -54,7 +54,7 @@ class BedrockClient:
             user_message: User message text
             temperature: Sampling temperature
             max_tokens: Maximum tokens to generate
-            top_p: Nucleus sampling parameter
+            top_p: Nucleus sampling parameter (optional, not compatible with Claude Sonnet 4)
             
         Returns:
             Response dict with:
@@ -68,6 +68,16 @@ class BedrockClient:
         """
         start_time = datetime.utcnow()
         
+        # Build inference config - exclude top_p for Claude Sonnet 4
+        inference_config = {
+            "maxTokens": max_tokens,
+            "temperature": temperature,
+        }
+        
+        # Only add top_p if specified and not Claude Sonnet 4
+        if top_p is not None and "claude-sonnet-4" not in model_id:
+            inference_config["topP"] = top_p
+        
         try:
             response = self.client.converse(
                 modelId=model_id,
@@ -78,11 +88,7 @@ class BedrockClient:
                         "content": [{"text": user_message}],
                     }
                 ],
-                inferenceConfig={
-                    "maxTokens": max_tokens,
-                    "temperature": temperature,
-                    "topP": top_p,
-                },
+                inferenceConfig=inference_config,
             )
             
             latency_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)

@@ -48,10 +48,49 @@ class GitHubClient:
         Returns:
             List of WorkflowRun objects
         """
-        # TODO: Implement workflow runs fetching
-        # Reference: docs/08-git-analysis-spec.md section 6
-        logger.warning("github_client_not_implemented", method="fetch_workflow_runs")
-        return []
+        from datetime import datetime
+        
+        runs = []
+        try:
+            resp = self.client.get(
+                f"/repos/{owner}/{repo}/actions/runs",
+                params={"per_page": min(max_runs, 100)},
+            )
+            
+            if resp.status_code == 404:
+                logger.info("github_actions_not_found", owner=owner, repo=repo)
+                return []  # No Actions or private repo without auth
+            
+            resp.raise_for_status()
+            
+            for run in resp.json().get("workflow_runs", []):
+                runs.append(WorkflowRun(
+                    run_id=run["id"],
+                    name=run.get("name", "unknown"),
+                    status=run.get("status", "unknown"),
+                    conclusion=run.get("conclusion"),
+                    created_at=datetime.fromisoformat(run["created_at"].replace("Z", "+00:00")),
+                    updated_at=datetime.fromisoformat(run["updated_at"].replace("Z", "+00:00")),
+                    run_attempt=run.get("run_attempt", 1),
+                ))
+            
+            logger.info(
+                "github_workflow_runs_fetched",
+                owner=owner,
+                repo=repo,
+                count=len(runs),
+            )
+            
+        except httpx.HTTPError as e:
+            logger.warning(
+                "github_workflow_runs_failed",
+                owner=owner,
+                repo=repo,
+                error=str(e),
+            )
+            # Actions data is supplementary; failure is non-fatal
+        
+        return runs[:max_runs]
     
     def fetch_workflow_files(self, owner: str, repo: str) -> list[str]:
         """Fetch workflow definition YAML files.
@@ -63,7 +102,42 @@ class GitHubClient:
         Returns:
             List of workflow definition strings
         """
-        # TODO: Implement workflow file fetching
-        # Reference: docs/08-git-analysis-spec.md section 6
-        logger.warning("github_client_not_implemented", method="fetch_workflow_files")
-        return []
+        definitions = []
+        try:
+            resp = self.client.get(
+                f"/repos/{owner}/{repo}/contents/.github/workflows"
+            )
+            
+            if resp.status_code != 200:
+                logger.info("github_workflows_not_found", owner=owner, repo=repo)
+                return []
+            
+            for item in resp.json():
+                if item["name"].endswith((".yml", ".yaml")):
+                    file_resp = self.client.get(item["download_url"])
+                    if file_resp.status_code == 200:
+                        content = file_resp.text[:3000]  # Truncate to 3000 chars
+                        definitions.append(
+                            f"### {item['name']}\n```yaml\n{content}\n```"
+                        )
+            
+            logger.info(
+                "github_workflow_files_fetched",
+                owner=owner,
+                repo=repo,
+                count=len(definitions),
+            )
+            
+        except httpx.HTTPError as e:
+            logger.warning(
+                "github_workflow_files_failed",
+                owner=owner,
+                repo=repo,
+                error=str(e),
+            )
+        
+        return definitions
+    
+    def close(self):
+        """Close the HTTP client."""
+        self.client.close()

@@ -81,7 +81,7 @@ ONLY valid JSON. No markdown.
 
 {
   "agent": "innovation",
-  "version": "1.0",
+  "prompt_version": "1.0",
   "scores": {
     "technical_novelty": <float>,
     "creative_problem_solving": <float>,
@@ -91,12 +91,26 @@ ONLY valid JSON. No markdown.
   },
   "overall_score": <float>,
   "confidence": <float>,
-  "evidence": [{"finding":"","file":"","line":null,"commit":null,"severity":"","category":""}],
   "summary": "<2-4 sentences — write as if pitching team to judge panel>",
-  "strengths": [],
-  "improvements": [],
-  "flags": []
+  "evidence": [
+    {
+      "finding": "Description of innovative aspect",
+      "file": "path/to/file.py",
+      "line": 42,
+      "impact": "significant",
+      "category": "novelty",
+      "detail": "Explanation of why this is innovative"
+    }
+  ],
+  "innovation_highlights": ["highlight 1", "highlight 2", "highlight 3"],
+  "development_story": "",
+  "hackathon_context_assessment": ""
 }
+
+IMPACT VALUES: "breakthrough", "significant", "notable", "minor"
+CATEGORY VALUES: "novelty", "creativity", "elegance", "documentation", "demo"
+MAX EVIDENCE ITEMS: 8
+MAX INNOVATION_HIGHLIGHTS: 3
 
 overall_score = technical_novelty(0.30) + creative_problem_solving(0.25) + architecture_elegance(0.20) + readme_quality(0.15) + demo_potential(0.10)
 """

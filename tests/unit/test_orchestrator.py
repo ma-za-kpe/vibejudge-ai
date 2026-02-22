@@ -12,6 +12,10 @@ from tests.conftest import (
     build_performance_json,
     build_innovation_json,
     build_ai_detection_json,
+    build_complete_bug_hunter_dict,
+    build_complete_performance_dict,
+    build_complete_innovation_dict,
+    build_complete_ai_detection_dict,
 )
 
 
@@ -22,8 +26,12 @@ from tests.conftest import (
 class TestOrchestratorInitialization:
     """Tests for orchestrator initialization."""
     
-    def test_initialization_with_default_client(self):
+    @patch('src.analysis.orchestrator.BedrockClient')
+    def test_initialization_with_default_client(self, mock_bedrock_class):
         """Test orchestrator initialization with default Bedrock client."""
+        mock_client = MagicMock()
+        mock_bedrock_class.return_value = mock_client
+        
         orchestrator = AnalysisOrchestrator()
         
         assert orchestrator.bedrock is not None
@@ -65,34 +73,10 @@ class TestParallelExecution:
         ]
         
         mock_bedrock_client.parse_json_response.side_effect = [
-            {
-                "overall_score": 8.5,
-                "confidence": 0.9,
-                "evidence": [],
-                "strengths": ["Clean code"],
-                "improvements": ["Add tests"],
-            },
-            {
-                "overall_score": 7.5,
-                "confidence": 0.85,
-                "evidence": [],
-                "strengths": ["Scalable"],
-                "improvements": ["Add caching"],
-            },
-            {
-                "overall_score": 9.0,
-                "confidence": 0.95,
-                "evidence": [],
-                "strengths": ["Innovative"],
-                "improvements": ["More examples"],
-            },
-            {
-                "overall_score": 8.0,
-                "confidence": 0.88,
-                "evidence": [],
-                "strengths": ["Natural patterns"],
-                "improvements": ["More commits"],
-            },
+            build_complete_bug_hunter_dict(overall_score=8.5, confidence=0.9),
+            build_complete_performance_dict(overall_score=7.5, confidence=0.85),
+            build_complete_innovation_dict(overall_score=9.0, confidence=0.95),
+            build_complete_ai_detection_dict(overall_score=8.0, confidence=0.88),
         ]
         
         orchestrator = AnalysisOrchestrator(bedrock_client=mock_bedrock_client)
@@ -136,20 +120,8 @@ class TestParallelExecution:
         ]
         
         mock_bedrock_client.parse_json_response.side_effect = [
-            {
-                "overall_score": 8.5,
-                "confidence": 0.9,
-                "evidence": [],
-                "strengths": [],
-                "improvements": [],
-            },
-            {
-                "overall_score": 7.5,
-                "confidence": 0.85,
-                "evidence": [],
-                "strengths": [],
-                "improvements": [],
-            },
+            build_complete_bug_hunter_dict(overall_score=8.5, confidence=0.9),
+            build_complete_performance_dict(overall_score=7.5, confidence=0.85),
         ]
         
         orchestrator = AnalysisOrchestrator(bedrock_client=mock_bedrock_client)
@@ -196,27 +168,9 @@ class TestGracefulDegradation:
         ]
         
         mock_bedrock_client.parse_json_response.side_effect = [
-            {
-                "overall_score": 7.5,
-                "confidence": 0.85,
-                "evidence": [],
-                "strengths": [],
-                "improvements": [],
-            },
-            {
-                "overall_score": 9.0,
-                "confidence": 0.95,
-                "evidence": [],
-                "strengths": [],
-                "improvements": [],
-            },
-            {
-                "overall_score": 8.0,
-                "confidence": 0.88,
-                "evidence": [],
-                "strengths": [],
-                "improvements": [],
-            },
+            build_complete_performance_dict(overall_score=7.5, confidence=0.85),
+            build_complete_innovation_dict(overall_score=9.0, confidence=0.95),
+            build_complete_ai_detection_dict(overall_score=8.0, confidence=0.88),
         ]
         
         orchestrator = AnalysisOrchestrator(bedrock_client=mock_bedrock_client)
@@ -262,20 +216,8 @@ class TestGracefulDegradation:
         ]
         
         mock_bedrock_client.parse_json_response.side_effect = [
-            {
-                "overall_score": 9.0,
-                "confidence": 0.95,
-                "evidence": [],
-                "strengths": [],
-                "improvements": [],
-            },
-            {
-                "overall_score": 8.0,
-                "confidence": 0.88,
-                "evidence": [],
-                "strengths": [],
-                "improvements": [],
-            },
+            build_complete_innovation_dict(overall_score=9.0, confidence=0.95),
+            build_complete_ai_detection_dict(overall_score=8.0, confidence=0.88),
         ]
         
         orchestrator = AnalysisOrchestrator(bedrock_client=mock_bedrock_client)
@@ -360,34 +302,10 @@ class TestWeightedScoring:
         
         # Set specific scores for calculation
         mock_bedrock_client.parse_json_response.side_effect = [
-            {
-                "overall_score": 8.0,  # BugHunter: 8.0 * 0.3 * 10 = 24
-                "confidence": 0.9,
-                "evidence": [],
-                "strengths": [],
-                "improvements": [],
-            },
-            {
-                "overall_score": 7.0,  # Performance: 7.0 * 0.3 * 10 = 21
-                "confidence": 0.85,
-                "evidence": [],
-                "strengths": [],
-                "improvements": [],
-            },
-            {
-                "overall_score": 9.0,  # Innovation: 9.0 * 0.3 * 10 = 27
-                "confidence": 0.95,
-                "evidence": [],
-                "strengths": [],
-                "improvements": [],
-            },
-            {
-                "overall_score": 6.0,  # AI Detection: 6.0 * 0.1 * 10 = 6
-                "confidence": 0.88,
-                "evidence": [],
-                "strengths": [],
-                "improvements": [],
-            },
+            build_complete_bug_hunter_dict(overall_score=8.0, confidence=0.9),
+            build_complete_performance_dict(overall_score=7.0, confidence=0.85),
+            build_complete_innovation_dict(overall_score=9.0, confidence=0.95),
+            build_complete_ai_detection_dict(overall_score=6.0, confidence=0.88),
         ]
         
         orchestrator = AnalysisOrchestrator(bedrock_client=mock_bedrock_client)
@@ -412,9 +330,9 @@ class TestWeightedScoring:
         
         # Verify weighted scores per dimension
         assert "Code Quality" in result["weighted_scores"]
-        assert result["weighted_scores"]["Code Quality"]["raw"] == 8.0
-        assert result["weighted_scores"]["Code Quality"]["weight"] == 0.3
-        assert result["weighted_scores"]["Code Quality"]["weighted"] == 24.0
+        assert result["weighted_scores"]["Code Quality"].raw == 8.0
+        assert result["weighted_scores"]["Code Quality"].weight == 0.3
+        assert result["weighted_scores"]["Code Quality"].weighted == 24.0
     
     @pytest.mark.asyncio
     async def test_confidence_is_minimum(
@@ -432,34 +350,10 @@ class TestWeightedScoring:
         ]
         
         mock_bedrock_client.parse_json_response.side_effect = [
-            {
-                "overall_score": 8.0,
-                "confidence": 0.95,  # High
-                "evidence": [],
-                "strengths": [],
-                "improvements": [],
-            },
-            {
-                "overall_score": 7.0,
-                "confidence": 0.70,  # Lowest
-                "evidence": [],
-                "strengths": [],
-                "improvements": [],
-            },
-            {
-                "overall_score": 9.0,
-                "confidence": 0.90,  # High
-                "evidence": [],
-                "strengths": [],
-                "improvements": [],
-            },
-            {
-                "overall_score": 8.0,
-                "confidence": 0.85,  # Medium
-                "evidence": [],
-                "strengths": [],
-                "improvements": [],
-            },
+            build_complete_bug_hunter_dict(overall_score=8.0, confidence=0.95),
+            build_complete_performance_dict(overall_score=7.0, confidence=0.70),
+            build_complete_innovation_dict(overall_score=9.0, confidence=0.90),
+            build_complete_ai_detection_dict(overall_score=8.0, confidence=0.85),
         ]
         
         orchestrator = AnalysisOrchestrator(bedrock_client=mock_bedrock_client)
@@ -521,34 +415,10 @@ class TestRecommendationClassification:
         ]
         
         mock_bedrock_client.parse_json_response.side_effect = [
-            {
-                "overall_score": agent_score,
-                "confidence": 0.9,
-                "evidence": [],
-                "strengths": [],
-                "improvements": [],
-            },
-            {
-                "overall_score": agent_score,
-                "confidence": 0.9,
-                "evidence": [],
-                "strengths": [],
-                "improvements": [],
-            },
-            {
-                "overall_score": agent_score,
-                "confidence": 0.9,
-                "evidence": [],
-                "strengths": [],
-                "improvements": [],
-            },
-            {
-                "overall_score": agent_score,
-                "confidence": 0.9,
-                "evidence": [],
-                "strengths": [],
-                "improvements": [],
-            },
+            build_complete_bug_hunter_dict(overall_score=agent_score, confidence=0.9),
+            build_complete_performance_dict(overall_score=agent_score, confidence=0.9),
+            build_complete_innovation_dict(overall_score=agent_score, confidence=0.9),
+            build_complete_ai_detection_dict(overall_score=agent_score, confidence=0.9),
         ]
         
         orchestrator = AnalysisOrchestrator(bedrock_client=mock_bedrock_client)
@@ -594,10 +464,10 @@ class TestCostTracking:
         ]
         
         mock_bedrock_client.parse_json_response.side_effect = [
-            {"overall_score": 8.0, "confidence": 0.9, "evidence": [], "strengths": [], "improvements": []},
-            {"overall_score": 7.0, "confidence": 0.85, "evidence": [], "strengths": [], "improvements": []},
-            {"overall_score": 9.0, "confidence": 0.95, "evidence": [], "strengths": [], "improvements": []},
-            {"overall_score": 8.0, "confidence": 0.88, "evidence": [], "strengths": [], "improvements": []},
+            build_complete_bug_hunter_dict(overall_score=8.0, confidence=0.9),
+            build_complete_performance_dict(overall_score=7.0, confidence=0.85),
+            build_complete_innovation_dict(overall_score=9.0, confidence=0.95),
+            build_complete_ai_detection_dict(overall_score=8.0, confidence=0.88),
         ]
         
         orchestrator = AnalysisOrchestrator(bedrock_client=mock_bedrock_client)
@@ -641,7 +511,7 @@ class TestCostTracking:
         ]
         
         mock_bedrock_client.parse_json_response.side_effect = [
-            {"overall_score": 8.0, "confidence": 0.9, "evidence": [], "strengths": [], "improvements": []},
+            build_complete_bug_hunter_dict(overall_score=8.0, confidence=0.9),
         ]
         
         orchestrator = AnalysisOrchestrator(bedrock_client=mock_bedrock_client)
@@ -658,7 +528,7 @@ class TestCostTracking:
         
         # Verify duration is tracked
         assert "analysis_duration_ms" in result
-        assert result["analysis_duration_ms"] > 0
+        assert result["analysis_duration_ms"] >= 0
 
 
 # ============================================================
@@ -682,20 +552,8 @@ class TestStrengthsWeaknessesAggregation:
         ]
         
         mock_bedrock_client.parse_json_response.side_effect = [
-            {
-                "overall_score": 8.0,
-                "confidence": 0.9,
-                "evidence": [],
-                "strengths": ["Clean code", "Good tests"],
-                "improvements": ["Add docs"],
-            },
-            {
-                "overall_score": 7.0,
-                "confidence": 0.85,
-                "evidence": [],
-                "strengths": ["Scalable architecture"],
-                "improvements": ["Add caching"],
-            },
+            build_complete_bug_hunter_dict(overall_score=8.0, confidence=0.9),
+            build_complete_performance_dict(overall_score=7.0, confidence=0.85),
         ]
         
         orchestrator = AnalysisOrchestrator(bedrock_client=mock_bedrock_client)

@@ -70,7 +70,7 @@ ONLY valid JSON. No markdown.
 
 {
   "agent": "performance",
-  "version": "1.0",
+  "prompt_version": "1.0",
   "scores": {
     "architecture": <float>,
     "database_design": <float>,
@@ -80,12 +80,34 @@ ONLY valid JSON. No markdown.
   },
   "overall_score": <float>,
   "confidence": <float>,
-  "evidence": [{"finding":"","file":"","line":null,"commit":null,"severity":"","category":""}],
-  "summary": "<2-4 sentences>",
-  "strengths": [],
-  "improvements": [],
-  "flags": []
+  "evidence": [
+    {
+      "finding": "Description of the observation",
+      "file": "path/to/file.py",
+      "line": 42,
+      "severity": "medium",
+      "category": "architecture",
+      "recommendation": "Specific improvement suggestion"
+    }
+  ],
+  "ci_observations": {
+    "has_ci": false,
+    "build_optimization": null,
+    "deployment_sophistication": "none",
+    "infrastructure_as_code": false,
+    "notable_findings": null
+  },
+  "tech_stack_assessment": {
+    "technologies_identified": [],
+    "stack_appropriateness": "",
+    "notable_choices": ""
+  },
+  "summary": "<2-4 sentences>"
 }
+
+SEVERITY VALUES: "critical", "high", "medium", "low", "info" (lowercase only)
+CATEGORY VALUES: "architecture", "database", "api", "scalability", "efficiency"
+DEPLOYMENT_SOPHISTICATION: "none", "basic", "intermediate", "advanced"
 
 overall_score = architecture(0.30) + database_design(0.20) + api_design(0.20) + scalability(0.20) + resource_efficiency(0.10)
 """

@@ -89,14 +89,26 @@ deploy-prod: build ## Deploy to production environment
 # LOCAL DEVELOPMENT
 # ============================================================
 
-local: ## Run API locally with uvicorn
+run-local: ## Run API locally with uvicorn (recommended for development)
+	@echo "Starting FastAPI with uvicorn on http://localhost:8000"
+	@echo "API docs available at http://localhost:8000/docs"
 	uvicorn src.api.main:app --reload --host 0.0.0.0 --port 8000
 
 local-api: ## Run API locally with SAM
 	sam local start-api --env-vars env.json
 
-local-lambda: ## Invoke Lambda function locally
-	sam local invoke ApiFunction --event events/test-event.json
+local-invoke-api: ## Invoke API Lambda function locally
+	sam local invoke ApiFunction --event events/test-api-event.json
+
+local-invoke-analyzer: ## Invoke Analyzer Lambda function locally
+	sam local invoke AnalyzerFunction --event events/test-analysis.json
+
+test-analysis: ## Test analysis endpoint with sample repo
+	@echo "Testing analysis endpoint with anthropic-quickstarts repo..."
+	curl -X POST http://localhost:8000/api/v1/analysis/analyze \
+		-H "Content-Type: application/json" \
+		-H "X-API-Key: test-api-key" \
+		-d @events/test-analysis-request.json
 
 # ============================================================
 # DATABASE

@@ -71,7 +71,7 @@ Respond with ONLY valid JSON. No markdown, no explanation, no preamble.
 
 {
   "agent": "bug_hunter",
-  "version": "1.0",
+  "prompt_version": "1.0",
   "scores": {
     "code_quality": <float>,
     "security": <float>,
@@ -81,16 +81,34 @@ Respond with ONLY valid JSON. No markdown, no explanation, no preamble.
   },
   "overall_score": <float>,
   "confidence": <float>,
-  "evidence": [{"finding":"","file":"","line":null,"commit":null,"severity":"","category":""}],
-  "summary": "<2-4 sentences>",
-  "strengths": [],
-  "improvements": [],
-  "flags": []
+  "summary": "<2-4 sentences summarizing findings>",
+  "evidence": [
+    {
+      "finding": "Description of the issue",
+      "file": "path/to/file.py",
+      "line": 42,
+      "severity": "critical",
+      "category": "security",
+      "recommendation": "Specific action to fix"
+    }
+  ],
+  "ci_observations": {
+    "has_ci": false,
+    "has_automated_tests": false,
+    "has_linting": false,
+    "has_security_scanning": false,
+    "build_success_rate": null,
+    "notable_findings": null
+  }
 }
+
+SEVERITY VALUES: "critical", "high", "medium", "low", "info" (lowercase only)
+CATEGORY VALUES: "security", "bug", "code_smell", "testing", "dependency"
+MAX EVIDENCE ITEMS: 10
 
 overall_score = code_quality(0.30) + security(0.30) + test_coverage(0.15) + error_handling(0.15) + dependency_hygiene(0.10)
 
-CRITICAL: If you find hardcoded API keys/secrets, add flag: "HARDCODED_SECRETS_DETECTED"
+CRITICAL: If you find hardcoded API keys/secrets, add to ci_observations.notable_findings: "HARDCODED_SECRETS_DETECTED"
 """
 
 PROMPT_VERSION = "1.0"

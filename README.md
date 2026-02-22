@@ -33,12 +33,35 @@ VibeJudge AI automates hackathon judging using 4 specialized AI agents on Amazon
 
 ## 🚀 Quick Start
 
+### 🎉 NEW: Ready to Deploy!
+
+**All development complete!** 48/48 tests passing, all features implemented.
+
+**Deploy in 5 minutes:**
+
+```bash
+# 1. Deploy to AWS
+make deploy-dev
+
+# 2. Test deployment (replace with your API URL)
+export API_URL="https://xxxxxxxxxx.execute-api.us-east-1.amazonaws.com"
+./test_deployment.sh
+```
+
+**See [NEXT_STEPS.md](NEXT_STEPS.md) for detailed deployment instructions.**
+
+**Documentation:**
+- [READY_FOR_DEPLOYMENT.md](READY_FOR_DEPLOYMENT.md) — Complete deployment checklist
+- [DEPLOYMENT.md](DEPLOYMENT.md) — Detailed deployment guide
+- [QUICK_START.md](QUICK_START.md) — 5-minute quick start
+
 ### Prerequisites
 
 - Python 3.12+
 - AWS CLI configured
 - AWS SAM CLI
 - Docker (for local testing)
+- Bedrock model access enabled (see deployment guide)
 
 ### Installation
 
@@ -84,8 +107,10 @@ make test-unit
 
 ### Deployment
 
+See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment guide.
+
 ```bash
-# Deploy to dev environment
+# Quick deploy to dev environment
 make deploy-dev
 
 # Deploy to staging
@@ -94,6 +119,8 @@ make deploy-staging
 # Deploy to production
 make deploy-prod
 ```
+
+**Important:** Enable Bedrock model access before deploying! See deployment guide for details.
 
 ## 📚 API Documentation
 
@@ -187,6 +214,14 @@ VibeJudge AI is designed to stay within AWS Free Tier:
 - ✅ 95%+ evidence verification rate
 - ✅ Zero Lambda timeouts
 - ✅ API response time < 200ms
+
+## 📖 Documentation
+
+- [QUICK_START.md](QUICK_START.md) — 5-minute deployment guide
+- [DEPLOYMENT.md](DEPLOYMENT.md) — Complete deployment guide
+- [TESTING.md](TESTING.md) — Local development and testing
+- [PROJECT_STATUS.md](PROJECT_STATUS.md) — Current project status
+- [docs/](docs/) — Technical specifications
 
 ## 🤝 Contributing
 
