@@ -43,19 +43,15 @@ class Settings(BaseSettings):
     structured_logging: bool = True
 
     # GitHub API
-    github_token: str
+    github_token: str | None = None
 
     @field_validator("github_token")
     @classmethod
-    def validate_github_token(cls, v: str) -> str:
-        """Validate GitHub token is not empty and has valid prefix."""
-        if not v or v.strip() == "":
-            raise ValueError(
-                "GITHUB_TOKEN is required but not provided. "
-                "Set GITHUB_TOKEN environment variable to avoid rate limit exhaustion. "
-                "Without authentication, GitHub API limits requests to 60/hour, "
-                "causing cascading failures when analyzing multiple repositories."
-            )
+    def validate_github_token(cls, v: str | None) -> str | None:
+        """Validate GitHub token format if provided."""
+        # Allow None - validation will happen at usage time in git_analyzer
+        if v is None or v.strip() == "":
+            return None
 
         # Check for valid GitHub token prefixes
         valid_prefixes = ("ghp_", "github_pat_", "gho_", "ghu_", "ghs_", "ghr_")
