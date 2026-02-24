@@ -84,7 +84,7 @@ pytest tests/unit/test_agents.py::test_bug_hunter_initialization -v
 - Team dynamics analysis (workload distribution, red flags, collaboration patterns)
 - Individual contributor assessment (role detection, expertise, hiring signals)
 
-**Current status:** 169+ tests passing ✅ (includes 14 property-based tests for security vulnerabilities, 26 tests for team dynamics models, 30+ tests for TeamAnalyzer, 20 tests for DashboardAggregator, 13 property-based tests for team dynamics properties, 4 property-based tests for dashboard properties, 14 tests for performance monitoring)
+**Current status:** 385 tests passing ✅ (includes 142 property-based tests for human-centric intelligence features)
 
 ### 3. Security Vulnerability Tests
 Tests that verify critical security vulnerabilities are fixed:
