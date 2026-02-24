@@ -217,12 +217,14 @@ def organizer_dashboard_strategy(draw: Any) -> OrganizerDashboard:
         hack_id=f"HACK#{draw(st.integers(min_value=100, max_value=999))}",
         hackathon_name=draw(st.text(min_size=5, max_size=50)),
         total_submissions=submission_count,
-        top_performers=draw(st.lists(top_performer_strategy(), max_size=10)),
+        top_performers=draw(st.lists(top_performer_strategy(), max_size=min(10, submission_count))),
         hiring_intelligence=draw(hiring_intelligence_strategy()),
         technology_trends=draw(technology_trends_strategy()),
         common_issues=draw(st.lists(common_issue_strategy(), max_size=10)),
         standout_moments=draw(st.lists(st.text(min_size=10, max_size=100), max_size=10)),
-        prize_recommendations=draw(st.lists(prize_recommendation_strategy(), max_size=10)),
+        prize_recommendations=draw(
+            st.lists(prize_recommendation_strategy(), max_size=min(10, submission_count))
+        ),
         next_hackathon_recommendations=draw(
             st.lists(st.text(min_size=10, max_size=100), max_size=5)
         ),
