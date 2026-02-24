@@ -1,6 +1,5 @@
 """DynamoDB helper with all 16 access patterns."""
 
-
 import boto3
 from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
@@ -20,6 +19,7 @@ class DynamoDBHelper:
             table_name: Name of the DynamoDB table
         """
         import os
+
         endpoint_url = os.environ.get("DYNAMODB_ENDPOINT_URL")
         region = os.environ.get("AWS_REGION", "us-east-1")
 
@@ -47,9 +47,7 @@ class DynamoDBHelper:
             Organizer record or None
         """
         try:
-            response = self.table.get_item(
-                Key={"PK": f"ORG#{org_id}", "SK": "PROFILE"}
-            )
+            response = self.table.get_item(Key={"PK": f"ORG#{org_id}", "SK": "PROFILE"})
             return response.get("Item")
         except ClientError as e:
             logger.error("get_organizer_failed", org_id=org_id, error=str(e))
@@ -66,8 +64,7 @@ class DynamoDBHelper:
         """
         try:
             response = self.table.query(
-                IndexName="GSI1",
-                KeyConditionExpression=Key("GSI1PK").eq(f"EMAIL#{email}")
+                IndexName="GSI1", KeyConditionExpression=Key("GSI1PK").eq(f"EMAIL#{email}")
             )
             items = response.get("Items", [])
             return items[0] if items else None
@@ -116,9 +113,13 @@ class DynamoDBHelper:
                 serialized[key] = self._serialize_item(value)
             elif isinstance(value, list):
                 serialized[key] = [
-                    self._serialize_item(v) if isinstance(v, dict) else
-                    v.isoformat() if isinstance(v, datetime) else
-                    Decimal(str(v)) if isinstance(v, float) else v
+                    self._serialize_item(v)
+                    if isinstance(v, dict)
+                    else v.isoformat()
+                    if isinstance(v, datetime)
+                    else Decimal(str(v))
+                    if isinstance(v, float)
+                    else v
                     for v in value
                 ]
             else:
@@ -141,8 +142,7 @@ class DynamoDBHelper:
         try:
             response = self.table.query(
                 KeyConditionExpression=(
-                    Key("PK").eq(f"ORG#{org_id}") &
-                    Key("SK").begins_with("HACK#")
+                    Key("PK").eq(f"ORG#{org_id}") & Key("SK").begins_with("HACK#")
                 )
             )
             return response.get("Items", [])
@@ -160,9 +160,7 @@ class DynamoDBHelper:
             Hackathon detail record or None
         """
         try:
-            response = self.table.get_item(
-                Key={"PK": f"HACK#{hack_id}", "SK": "META"}
-            )
+            response = self.table.get_item(Key={"PK": f"HACK#{hack_id}", "SK": "META"})
             return response.get("Item")
         except ClientError as e:
             logger.error("get_hackathon_failed", hack_id=hack_id, error=str(e))
@@ -181,9 +179,8 @@ class DynamoDBHelper:
             response = self.table.query(
                 IndexName="GSI1",
                 KeyConditionExpression=(
-                    Key("GSI1PK").eq(f"HACK#{hack_id}") &
-                    Key("GSI1SK").eq("META")
-                )
+                    Key("GSI1PK").eq(f"HACK#{hack_id}") & Key("GSI1SK").eq("META")
+                ),
             )
             items = response.get("Items", [])
             return items[0] if items else None
@@ -243,8 +240,7 @@ class DynamoDBHelper:
         try:
             response = self.table.query(
                 KeyConditionExpression=(
-                    Key("PK").eq(f"HACK#{hack_id}") &
-                    Key("SK").begins_with("SUB#")
+                    Key("PK").eq(f"HACK#{hack_id}") & Key("SK").begins_with("SUB#")
                 )
             )
             return response.get("Items", [])
@@ -263,9 +259,7 @@ class DynamoDBHelper:
             Submission record or None
         """
         try:
-            response = self.table.get_item(
-                Key={"PK": f"HACK#{hack_id}", "SK": f"SUB#{sub_id}"}
-            )
+            response = self.table.get_item(Key={"PK": f"HACK#{hack_id}", "SK": f"SUB#{sub_id}"})
             return response.get("Item")
         except ClientError as e:
             logger.error("get_submission_failed", sub_id=sub_id, error=str(e))
@@ -282,8 +276,7 @@ class DynamoDBHelper:
         """
         try:
             response = self.table.query(
-                IndexName="GSI1",
-                KeyConditionExpression=Key("GSI1PK").eq(f"SUB#{sub_id}")
+                IndexName="GSI1", KeyConditionExpression=Key("GSI1PK").eq(f"SUB#{sub_id}")
             )
             items = response.get("Items", [])
             return items[0] if items else None
@@ -309,9 +302,7 @@ class DynamoDBHelper:
             logger.error("put_submission_failed", error=str(e))
             return False
 
-    def update_submission_status(
-        self, hack_id: str, sub_id: str, status: str, **kwargs
-    ) -> bool:
+    def update_submission_status(self, hack_id: str, sub_id: str, status: str, **kwargs) -> bool:
         """Update submission status and optional fields.
 
         Args:
@@ -330,7 +321,9 @@ class DynamoDBHelper:
             expr_attr_names = {"#status": "status"}
             expr_attr_values = {
                 ":status": status,
-                ":updated_at": kwargs.get("updated_at").isoformat() if isinstance(kwargs.get("updated_at"), datetime) else kwargs.get("updated_at"),
+                ":updated_at": kwargs.get("updated_at").isoformat()
+                if isinstance(kwargs.get("updated_at"), datetime)
+                else kwargs.get("updated_at"),
             }
 
             # Add optional fields
@@ -370,8 +363,7 @@ class DynamoDBHelper:
         try:
             response = self.table.query(
                 KeyConditionExpression=(
-                    Key("PK").eq(f"SUB#{sub_id}") &
-                    Key("SK").begins_with("SCORE#")
+                    Key("PK").eq(f"SUB#{sub_id}") & Key("SK").begins_with("SCORE#")
                 )
             )
             return response.get("Items", [])
@@ -390,9 +382,7 @@ class DynamoDBHelper:
             Agent score record or None
         """
         try:
-            response = self.table.get_item(
-                Key={"PK": f"SUB#{sub_id}", "SK": f"SCORE#{agent_name}"}
-            )
+            response = self.table.get_item(Key={"PK": f"SUB#{sub_id}", "SK": f"SCORE#{agent_name}"})
             return response.get("Item")
         except ClientError as e:
             logger.error("get_agent_score_failed", sub_id=sub_id, agent=agent_name, error=str(e))
@@ -410,7 +400,9 @@ class DynamoDBHelper:
         try:
             item = self._serialize_item(score)
             self.table.put_item(Item=item)
-            logger.info("agent_score_saved", sub_id=score.get("sub_id"), agent=score.get("agent_name"))
+            logger.info(
+                "agent_score_saved", sub_id=score.get("sub_id"), agent=score.get("agent_name")
+            )
             return True
         except ClientError as e:
             logger.error("put_agent_score_failed", error=str(e))
@@ -426,9 +418,7 @@ class DynamoDBHelper:
             Submission summary record or None
         """
         try:
-            response = self.table.get_item(
-                Key={"PK": f"SUB#{sub_id}", "SK": "SUMMARY"}
-            )
+            response = self.table.get_item(Key={"PK": f"SUB#{sub_id}", "SK": "SUMMARY"})
             return response.get("Item")
         except ClientError as e:
             logger.error("get_submission_summary_failed", sub_id=sub_id, error=str(e))
@@ -468,8 +458,7 @@ class DynamoDBHelper:
         try:
             response = self.table.query(
                 KeyConditionExpression=(
-                    Key("PK").eq(f"SUB#{sub_id}") &
-                    Key("SK").begins_with("COST#")
+                    Key("PK").eq(f"SUB#{sub_id}") & Key("SK").begins_with("COST#")
                 )
             )
             return response.get("Items", [])
@@ -489,7 +478,9 @@ class DynamoDBHelper:
         try:
             item = self._serialize_item(cost)
             self.table.put_item(Item=item)
-            logger.info("cost_record_saved", sub_id=cost.get("sub_id"), agent=cost.get("agent_name"))
+            logger.info(
+                "cost_record_saved", sub_id=cost.get("sub_id"), agent=cost.get("agent_name")
+            )
             return True
         except ClientError as e:
             logger.error("put_cost_record_failed", error=str(e))
@@ -505,9 +496,7 @@ class DynamoDBHelper:
             Hackathon cost summary or None
         """
         try:
-            response = self.table.get_item(
-                Key={"PK": f"HACK#{hack_id}", "SK": "COST#SUMMARY"}
-            )
+            response = self.table.get_item(Key={"PK": f"HACK#{hack_id}", "SK": "COST#SUMMARY"})
             return response.get("Item")
         except ClientError as e:
             logger.error("get_hackathon_cost_summary_failed", hack_id=hack_id, error=str(e))
@@ -547,8 +536,7 @@ class DynamoDBHelper:
         try:
             response = self.table.query(
                 KeyConditionExpression=(
-                    Key("PK").eq(f"HACK#{hack_id}") &
-                    Key("SK").begins_with("JOB#")
+                    Key("PK").eq(f"HACK#{hack_id}") & Key("SK").begins_with("JOB#")
                 )
             )
             return response.get("Items", [])
@@ -567,8 +555,7 @@ class DynamoDBHelper:
         """
         try:
             response = self.table.query(
-                IndexName="GSI2",
-                KeyConditionExpression=Key("GSI2PK").eq(f"JOB_STATUS#{status}")
+                IndexName="GSI2", KeyConditionExpression=Key("GSI2PK").eq(f"JOB_STATUS#{status}")
             )
             return response.get("Items", [])
         except ClientError as e:
@@ -650,9 +637,7 @@ class DynamoDBHelper:
             Team analysis record or None
         """
         try:
-            response = self.table.get_item(
-                Key={"PK": f"SUB#{sub_id}", "SK": "TEAM_ANALYSIS"}
-            )
+            response = self.table.get_item(Key={"PK": f"SUB#{sub_id}", "SK": "TEAM_ANALYSIS"})
             return response.get("Item")
         except ClientError as e:
             logger.error("get_team_analysis_failed", sub_id=sub_id, error=str(e))
@@ -686,9 +671,7 @@ class DynamoDBHelper:
             Strategy analysis record or None
         """
         try:
-            response = self.table.get_item(
-                Key={"PK": f"SUB#{sub_id}", "SK": "STRATEGY_ANALYSIS"}
-            )
+            response = self.table.get_item(Key={"PK": f"SUB#{sub_id}", "SK": "STRATEGY_ANALYSIS"})
             return response.get("Item")
         except ClientError as e:
             logger.error("get_strategy_analysis_failed", sub_id=sub_id, error=str(e))
@@ -722,9 +705,7 @@ class DynamoDBHelper:
             Actionable feedback record or None
         """
         try:
-            response = self.table.get_item(
-                Key={"PK": f"SUB#{sub_id}", "SK": "ACTIONABLE_FEEDBACK"}
-            )
+            response = self.table.get_item(Key={"PK": f"SUB#{sub_id}", "SK": "ACTIONABLE_FEEDBACK"})
             return response.get("Item")
         except ClientError as e:
             logger.error("get_actionable_feedback_failed", sub_id=sub_id, error=str(e))

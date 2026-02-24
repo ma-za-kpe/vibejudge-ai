@@ -10,7 +10,11 @@ from typing import Any
 from src.analysis.actions_analyzer import ActionsAnalyzer
 from src.analysis.git_analyzer import clone_and_extract, parse_github_url
 from src.analysis.orchestrator import AnalysisOrchestrator
-from src.analysis.performance_monitor import PerformanceMonitor, PERFORMANCE_TARGETS, log_performance_warning
+from src.analysis.performance_monitor import (
+    PERFORMANCE_TARGETS,
+    PerformanceMonitor,
+    log_performance_warning,
+)
 from src.models.common import AgentName, JobStatus, SubmissionStatus
 from src.services.analysis_service import AnalysisService
 from src.services.cost_service import CostService
@@ -155,63 +159,87 @@ def handler(event: dict, context: Any) -> dict:
                     if result.get("team_analysis"):
                         try:
                             team_analysis = result["team_analysis"]
-                            db_helper.put_team_analysis({
-                                "PK": f"SUB#{sub_id}",
-                                "SK": "TEAM_ANALYSIS",
-                                "entity_type": "TEAM_ANALYSIS",
-                                "sub_id": sub_id,
-                                "hack_id": hack_id,
-                                "workload_distribution": team_analysis.workload_distribution,
-                                "collaboration_patterns": [p.model_dump() for p in team_analysis.collaboration_patterns],
-                                "red_flags": [f.model_dump() for f in team_analysis.red_flags],
-                                "individual_scorecards": [s.model_dump() for s in team_analysis.individual_scorecards],
-                                "team_dynamics_grade": team_analysis.team_dynamics_grade,
-                                "commit_message_quality": team_analysis.commit_message_quality,
-                                "panic_push_detected": team_analysis.panic_push_detected,
-                                "duration_ms": team_analysis.duration_ms,
-                            })
+                            db.put_team_analysis(
+                                {
+                                    "PK": f"SUB#{sub_id}",
+                                    "SK": "TEAM_ANALYSIS",
+                                    "entity_type": "TEAM_ANALYSIS",
+                                    "sub_id": sub_id,
+                                    "hack_id": hack_id,
+                                    "workload_distribution": team_analysis.workload_distribution,
+                                    "collaboration_patterns": [
+                                        p.model_dump() for p in team_analysis.collaboration_patterns
+                                    ],
+                                    "red_flags": [f.model_dump() for f in team_analysis.red_flags],
+                                    "individual_scorecards": [
+                                        s.model_dump() for s in team_analysis.individual_scorecards
+                                    ],
+                                    "team_dynamics_grade": team_analysis.team_dynamics_grade,
+                                    "commit_message_quality": team_analysis.commit_message_quality,
+                                    "panic_push_detected": team_analysis.panic_push_detected,
+                                    "duration_ms": team_analysis.duration_ms,
+                                }
+                            )
                             logger.info("team_analysis_stored", sub_id=sub_id)
                         except Exception as e:
-                            logger.error("team_analysis_storage_failed", sub_id=sub_id, error=str(e))
+                            logger.error(
+                                "team_analysis_storage_failed", sub_id=sub_id, error=str(e)
+                            )
 
                     # Store strategy analysis if available
                     if result.get("strategy_analysis"):
                         try:
                             strategy_analysis = result["strategy_analysis"]
-                            db_helper.put_strategy_analysis({
-                                "PK": f"SUB#{sub_id}",
-                                "SK": "STRATEGY_ANALYSIS",
-                                "entity_type": "STRATEGY_ANALYSIS",
-                                "sub_id": sub_id,
-                                "hack_id": hack_id,
-                                "test_strategy": strategy_analysis.test_strategy.value,
-                                "critical_path_focus": strategy_analysis.critical_path_focus,
-                                "tradeoffs": [t.model_dump() for t in strategy_analysis.tradeoffs],
-                                "learning_journey": strategy_analysis.learning_journey.model_dump() if strategy_analysis.learning_journey else None,
-                                "maturity_level": strategy_analysis.maturity_level.value,
-                                "strategic_context": strategy_analysis.strategic_context,
-                                "duration_ms": strategy_analysis.duration_ms,
-                            })
+                            db.put_strategy_analysis(
+                                {
+                                    "PK": f"SUB#{sub_id}",
+                                    "SK": "STRATEGY_ANALYSIS",
+                                    "entity_type": "STRATEGY_ANALYSIS",
+                                    "sub_id": sub_id,
+                                    "hack_id": hack_id,
+                                    "test_strategy": strategy_analysis.test_strategy.value,
+                                    "critical_path_focus": strategy_analysis.critical_path_focus,
+                                    "tradeoffs": [
+                                        t.model_dump() for t in strategy_analysis.tradeoffs
+                                    ],
+                                    "learning_journey": strategy_analysis.learning_journey.model_dump()
+                                    if strategy_analysis.learning_journey
+                                    else None,
+                                    "maturity_level": strategy_analysis.maturity_level.value,
+                                    "strategic_context": strategy_analysis.strategic_context,
+                                    "duration_ms": strategy_analysis.duration_ms,
+                                }
+                            )
                             logger.info("strategy_analysis_stored", sub_id=sub_id)
                         except Exception as e:
-                            logger.error("strategy_analysis_storage_failed", sub_id=sub_id, error=str(e))
+                            logger.error(
+                                "strategy_analysis_storage_failed", sub_id=sub_id, error=str(e)
+                            )
 
                     # Store actionable feedback if available
                     if result.get("actionable_feedback"):
                         try:
                             actionable_feedback = result["actionable_feedback"]
-                            db_helper.put_actionable_feedback({
-                                "PK": f"SUB#{sub_id}",
-                                "SK": "ACTIONABLE_FEEDBACK",
-                                "entity_type": "ACTIONABLE_FEEDBACK",
-                                "sub_id": sub_id,
-                                "hack_id": hack_id,
-                                "feedback_items": [f.model_dump() for f in actionable_feedback],
-                                "total_count": len(actionable_feedback),
-                            })
-                            logger.info("actionable_feedback_stored", sub_id=sub_id, count=len(actionable_feedback))
+                            db.put_actionable_feedback(
+                                {
+                                    "PK": f"SUB#{sub_id}",
+                                    "SK": "ACTIONABLE_FEEDBACK",
+                                    "entity_type": "ACTIONABLE_FEEDBACK",
+                                    "sub_id": sub_id,
+                                    "hack_id": hack_id,
+                                    "feedback_items": [f.model_dump() for f in actionable_feedback],
+                                    "total_count": len(actionable_feedback),
+                                }
+                            )
+                            logger.info(
+                                "actionable_feedback_stored",
+                                sub_id=sub_id,
+                                count=len(actionable_feedback),
+                            )
                         except Exception as e:
-                            logger.error("actionable_feedback_storage_failed", sub_id=sub_id, error=str(e))
+                            logger.error(
+                                "actionable_feedback_storage_failed", sub_id=sub_id, error=str(e)
+                            )
 
                     # Record costs
                     for cost_record in result["cost_records"]:
@@ -378,7 +406,7 @@ def analyze_single_submission(
     try:
         # Initialize performance monitor
         perf_monitor = PerformanceMonitor(submission.sub_id)
-        
+
         # Extract repo data
         logger.info("extracting_repo_data", sub_id=submission.sub_id, repo=submission.repo_url)
 
@@ -415,7 +443,7 @@ def analyze_single_submission(
             )
 
         logger.info("repo_data_extracted", sub_id=submission.sub_id)
-        
+
         # Check if we're at risk of timeout after git operations
         if perf_monitor.check_timeout_risk():
             logger.warning(
@@ -462,7 +490,7 @@ def analyze_single_submission(
         logger.info(
             "orchestrator_complete", sub_id=submission.sub_id, score=result["overall_score"]
         )
-        
+
         # Log performance summary
         perf_summary = perf_monitor.get_summary()
         logger.info(
@@ -470,7 +498,7 @@ def analyze_single_submission(
             sub_id=submission.sub_id,
             **perf_summary,
         )
-        
+
         # Check individual component performance against targets
         for component, duration_ms in perf_monitor.timings.items():
             if component in PERFORMANCE_TARGETS:

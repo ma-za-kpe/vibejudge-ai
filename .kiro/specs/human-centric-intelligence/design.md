@@ -166,36 +166,36 @@ sequenceDiagram
 ```python
 class StaticAnalysisEngine:
     """Orchestrates static analysis tools for multiple languages."""
-    
+
     def analyze(self, repo_path: str, timeout_seconds: int = 30) -> StaticAnalysisResult:
         """Run static analysis on repository.
-        
+
         Args:
             repo_path: Path to cloned repository
             timeout_seconds: Timeout per tool
-            
+
         Returns:
             StaticAnalysisResult with normalized findings
         """
-        
+
     def _detect_language(self, repo_path: str) -> PrimaryLanguage:
         """Detect primary language from file extensions."""
-        
+
     def _run_python_tools(self, repo_path: str) -> list[StaticFinding]:
         """Run Flake8, Bandit, Safety, Radon."""
-        
+
     def _run_javascript_tools(self, repo_path: str) -> list[StaticFinding]:
         """Run ESLint, npm audit, Prettier."""
-        
+
     def _run_go_tools(self, repo_path: str) -> list[StaticFinding]:
         """Run go vet, staticcheck."""
-        
+
     def _run_rust_tools(self, repo_path: str) -> list[StaticFinding]:
         """Run clippy, cargo audit."""
-        
+
     def _normalize_finding(self, tool_output: dict, tool_name: str) -> StaticFinding:
         """Convert tool-specific output to normalized format."""
-        
+
     def _validate_evidence(self, finding: StaticFinding, repo_path: str) -> bool:
         """Verify file and line number exist."""
 ```
@@ -241,33 +241,33 @@ STATIC_TOOLS = {
 ```python
 class TestExecutionEngine:
     """Executes tests in sandboxed environment."""
-    
+
     def execute_tests(self, repo_path: str, timeout_seconds: int = 60) -> TestExecutionResult:
         """Run tests and capture results.
-        
+
         Args:
             repo_path: Path to cloned repository
             timeout_seconds: Timeout for test execution
-            
+
         Returns:
             TestExecutionResult with pass/fail counts
         """
-        
+
     def _detect_framework(self, repo_path: str) -> TestFramework | None:
         """Detect test framework from config files."""
-        
+
     def _run_pytest(self, repo_path: str) -> TestExecutionResult:
         """Run pytest with JSON output."""
-        
+
     def _run_jest(self, repo_path: str) -> TestExecutionResult:
         """Run jest with JSON output."""
-        
+
     def _run_go_test(self, repo_path: str) -> TestExecutionResult:
         """Run go test with JSON output."""
-        
+
     def _install_dependencies(self, repo_path: str, framework: TestFramework) -> bool:
         """Attempt to install test dependencies."""
-        
+
     def _parse_coverage(self, coverage_file: str) -> dict[str, float]:
         """Parse coverage report."""
 ```
@@ -288,30 +288,30 @@ class TestExecutionEngine:
 ```python
 class CICDAnalyzer:
     """Analyzes CI/CD sophistication and extracts insights."""
-    
+
     def analyze(self, repo_data: RepoData, github_client: GitHubClient) -> CICDAnalysisResult:
         """Analyze CI/CD setup and history.
-        
+
         Args:
             repo_data: Repository data with workflow info
             github_client: GitHub API client
-            
+
         Returns:
             CICDAnalysisResult with sophistication score
         """
-        
+
     def _parse_workflow_yaml(self, workflow_content: str) -> WorkflowConfig:
         """Parse workflow YAML to detect job types."""
-        
+
     def _fetch_build_logs(self, repo_url: str, run_ids: list[str]) -> list[BuildLog]:
         """Fetch logs for recent workflow runs."""
-        
+
     def _extract_test_results(self, log_content: str) -> TestResults:
         """Parse test output from build logs."""
-        
+
     def _extract_linter_output(self, log_content: str) -> list[LinterFinding]:
         """Parse linter errors from build logs."""
-        
+
     def _calculate_sophistication(self, workflow: WorkflowConfig) -> CISophisticationScore:
         """Calculate CI sophistication score."""
 ```
@@ -332,40 +332,40 @@ class CICDAnalyzer:
 ```python
 class TeamAnalyzer:
     """Analyzes team dynamics and individual contributions."""
-    
+
     def analyze(self, repo_data: RepoData) -> TeamAnalysisResult:
         """Analyze team dynamics from git history.
-        
+
         Args:
             repo_data: Repository data with commit history
-            
+
         Returns:
             TeamAnalysisResult with dynamics and scorecards
         """
-        
+
     def _calculate_workload_distribution(self, commits: list[Commit]) -> dict[str, float]:
         """Calculate percentage of commits per contributor."""
-        
+
     def _detect_collaboration_patterns(self, commits: list[Commit]) -> list[CollaborationPattern]:
         """Detect pair programming, code review patterns."""
-        
+
     def _detect_red_flags(self, commits: list[Commit], contributors: list[str]) -> list[RedFlag]:
         """Identify concerning team dynamics."""
-        
+
     def _generate_individual_scorecard(
-        self, 
-        contributor: str, 
+        self,
+        contributor: str,
         commits: list[Commit],
         files_touched: list[str]
     ) -> IndividualScorecard:
         """Generate detailed scorecard for contributor."""
-        
+
     def _detect_role(self, files_touched: list[str]) -> ContributorRole:
         """Detect role from file patterns."""
-        
+
     def _detect_expertise(self, commits: list[Commit]) -> list[ExpertiseArea]:
         """Identify expertise areas from commit content."""
-        
+
     def _generate_hiring_signals(self, scorecard: IndividualScorecard) -> HiringSignals:
         """Generate hiring recommendations."""
 ```
@@ -386,36 +386,36 @@ class TeamAnalyzer:
 ```python
 class StrategyDetector:
     """Detects strategic thinking behind technical decisions."""
-    
+
     def analyze(
-        self, 
+        self,
         repo_data: RepoData,
         test_results: TestExecutionResult,
         static_findings: StaticAnalysisResult
     ) -> StrategyAnalysisResult:
         """Analyze strategic decisions.
-        
+
         Args:
             repo_data: Repository data
             test_results: Test execution results
             static_findings: Static analysis findings
-            
+
         Returns:
             StrategyAnalysisResult with context
         """
-        
+
     def _analyze_test_strategy(self, test_results: TestExecutionResult) -> TestStrategy:
         """Classify test strategy (unit/integration/e2e focus)."""
-        
+
     def _detect_critical_path_focus(self, test_files: list[str]) -> bool:
         """Check if tests focus on critical paths."""
-        
+
     def _detect_architecture_tradeoffs(self, repo_data: RepoData) -> list[Tradeoff]:
         """Identify speed vs security, simplicity vs scalability."""
-        
+
     def _detect_learning_journey(self, commits: list[Commit]) -> LearningJourney | None:
         """Detect if team learned new tech during hackathon."""
-        
+
     def _classify_maturity(self, strategy: StrategyAnalysisResult) -> MaturityLevel:
         """Classify as junior (tutorial-following) or senior (production thinking)."""
 ```
@@ -436,34 +436,34 @@ class StrategyDetector:
 ```python
 class BrandVoiceTransformer:
     """Transforms technical findings into educational feedback."""
-    
+
     def transform_findings(
-        self, 
+        self,
         findings: list[Finding],
         strategy_context: StrategyAnalysisResult
     ) -> list[ActionableFeedback]:
         """Transform findings into actionable feedback.
-        
+
         Args:
             findings: Raw technical findings
             strategy_context: Strategic context for scoring
-            
+
         Returns:
             List of actionable feedback items
         """
-        
+
     def _transform_security_finding(self, finding: Finding) -> ActionableFeedback:
         """Transform security issue with warm tone."""
-        
+
     def _generate_code_example(self, finding: Finding) -> CodeExample:
         """Generate before/after code example."""
-        
+
     def _add_learning_resources(self, finding: Finding) -> list[LearningResource]:
         """Add relevant documentation and tutorials."""
-        
+
     def _estimate_effort(self, finding: Finding) -> EffortEstimate:
         """Estimate time and difficulty."""
-        
+
     def _explain_business_impact(self, finding: Finding) -> str:
         """Explain why this matters for business."""
 ```
@@ -484,29 +484,29 @@ class BrandVoiceTransformer:
 ```python
 class OrganizerIntelligenceService:
     """Generates organizer intelligence dashboard."""
-    
+
     def generate_dashboard(self, hack_id: str) -> OrganizerDashboard:
         """Generate intelligence dashboard for hackathon.
-        
+
         Args:
             hack_id: Hackathon ID
-            
+
         Returns:
             OrganizerDashboard with aggregated insights
         """
-        
+
     def _aggregate_top_performers(self, submissions: list[Submission]) -> list[TopPerformer]:
         """Identify top teams with key strengths."""
-        
+
     def _generate_hiring_intelligence(self, scorecards: list[IndividualScorecard]) -> HiringIntelligence:
         """Categorize candidates by role and seniority."""
-        
+
     def _analyze_technology_trends(self, submissions: list[Submission]) -> TechnologyTrends:
         """Identify popular stacks and emerging tech."""
-        
+
     def _identify_common_issues(self, findings: list[Finding]) -> list[CommonIssue]:
         """Find patterns across submissions."""
-        
+
     def _recommend_prizes(self, submissions: list[Submission]) -> list[PrizeRecommendation]:
         """Recommend prize winners with evidence."""
 ```
@@ -1264,7 +1264,7 @@ import pytest
 def test_property_1_language_specific_tool_execution(repo_path, language):
     """
     Feature: human-centric-intelligence, Property 1:
-    For any repository with a detectable primary language, the static 
+    For any repository with a detectable primary language, the static
     analysis engine should execute all configured tools for that language.
     """
     # Setup: Create mock repository with specified language

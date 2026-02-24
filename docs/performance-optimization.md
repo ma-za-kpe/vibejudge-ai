@@ -82,21 +82,21 @@ The performance monitor is integrated into the analysis pipeline:
 def analyze_single_submission(submission, hackathon, db):
     # Initialize performance monitor
     perf_monitor = PerformanceMonitor(submission.sub_id)
-    
+
     # Track each phase
     with perf_monitor.track("actions_analyzer"):
         actions_data = actions_analyzer.analyze(owner, repo_name)
-    
+
     with perf_monitor.track("git_clone_and_extract"):
         repo_data = clone_and_extract(...)
-    
+
     # Check timeout risk after expensive operations
     if perf_monitor.check_timeout_risk():
         logger.warning("timeout_risk_after_git")
-    
+
     with perf_monitor.track("orchestrator_analysis"):
         result = orchestrator.analyze_submission(...)
-    
+
     # Log final summary
     perf_summary = perf_monitor.get_summary()
     logger.info("performance_summary", **perf_summary)

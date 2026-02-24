@@ -1,8 +1,7 @@
 """Integration tests for enhanced AnalysisOrchestrator with intelligence layer."""
 
-import asyncio
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -11,7 +10,6 @@ from src.models.analysis import CommitInfo, RepoData, SourceFile
 from src.models.common import AgentName
 from src.models.hackathon import RubricConfig, RubricDimension
 from src.models.submission import RepoMeta
-
 
 # ============================================================
 # FIXTURES
@@ -102,20 +100,22 @@ async def test_analyze_submission_with_intelligence_layer(
         # Setup mock Bedrock client
         mock_bedrock = MagicMock()
         mock_bedrock_cls.return_value = mock_bedrock
-        
+
         # Mock agent responses
         mock_bedrock.converse.return_value = {
             "content": '{"overall_score": 8.5, "confidence": 0.9, "evidence": []}',
             "usage": {"input_tokens": 1000, "output_tokens": 500},
             "latency_ms": 1200,
         }
-        
+
         orchestrator = AnalysisOrchestrator(bedrock_client=mock_bedrock)
-        
+
         # Mock intelligence components
         with patch.object(orchestrator.team_analyzer, "analyze") as mock_team:
             with patch.object(orchestrator.strategy_detector, "analyze") as mock_strategy:
-                with patch.object(orchestrator.brand_voice_transformer, "transform_findings") as mock_feedback:
+                with patch.object(
+                    orchestrator.brand_voice_transformer, "transform_findings"
+                ) as mock_feedback:
                     # Setup mock returns
                     mock_team.return_value = MagicMock(
                         team_dynamics_grade="A",
@@ -130,7 +130,7 @@ async def test_analyze_submission_with_intelligence_layer(
                         duration_ms=100,
                     )
                     mock_feedback.return_value = []
-                    
+
                     # Run analysis
                     result = await orchestrator.analyze_submission(
                         repo_data=sample_repo_data,
@@ -141,12 +141,12 @@ async def test_analyze_submission_with_intelligence_layer(
                         rubric=sample_rubric,
                         agents_enabled=[AgentName.BUG_HUNTER],
                     )
-                    
+
                     # Verify intelligence layer was invoked
                     mock_team.assert_called_once()
                     mock_strategy.assert_called_once()
                     mock_feedback.assert_called_once()
-                    
+
                     # Verify result structure
                     assert "team_analysis" in result
                     assert "strategy_analysis" in result
@@ -171,7 +171,7 @@ async def test_analyze_submission_with_cicd_parsing(
                 "usage": {"input_tokens": 1000, "output_tokens": 500},
                 "latency_ms": 1200,
             }
-            
+
             mock_actions = MagicMock()
             mock_actions_cls.return_value = mock_actions
             mock_actions.analyze.return_value = {
@@ -180,9 +180,9 @@ async def test_analyze_submission_with_cicd_parsing(
                 ],
                 "test_results": {"total": 10, "passed": 9, "failed": 1},
             }
-            
+
             orchestrator = AnalysisOrchestrator(bedrock_client=mock_bedrock)
-            
+
             # Run analysis with GitHub token
             result = await orchestrator.analyze_submission(
                 repo_data=sample_repo_data,
@@ -194,11 +194,11 @@ async def test_analyze_submission_with_cicd_parsing(
                 agents_enabled=[AgentName.BUG_HUNTER],
                 github_token="ghp_test_token",
             )
-            
+
             # Verify CI/CD analyzer was called
             mock_actions.analyze.assert_called_once_with("test-org", "test-repo")
             mock_actions.close.assert_called_once()
-            
+
             # Verify findings were captured
             assert result["cicd_findings_count"] == 1
 
@@ -218,13 +218,13 @@ async def test_analyze_submission_cicd_parsing_failure(
                 "usage": {"input_tokens": 1000, "output_tokens": 500},
                 "latency_ms": 1200,
             }
-            
+
             mock_actions = MagicMock()
             mock_actions_cls.return_value = mock_actions
             mock_actions.analyze.side_effect = Exception("API rate limit exceeded")
-            
+
             orchestrator = AnalysisOrchestrator(bedrock_client=mock_bedrock)
-            
+
             result = await orchestrator.analyze_submission(
                 repo_data=sample_repo_data,
                 hackathon_name="Test Hackathon",
@@ -235,12 +235,14 @@ async def test_analyze_submission_cicd_parsing_failure(
                 agents_enabled=[AgentName.BUG_HUNTER],
                 github_token="ghp_test_token",
             )
-            
+
             assert result["overall_score"] > 0
             assert result["cicd_findings_count"] == 0
-            
+
             component_perf = result["component_performance"]
-            actions_records = [r for r in component_perf if r["component_name"] == "actions_analyzer"]
+            actions_records = [
+                r for r in component_perf if r["component_name"] == "actions_analyzer"
+            ]
             assert len(actions_records) == 1
             assert actions_records[0]["success"] is False
 
@@ -259,12 +261,12 @@ async def test_analyze_submission_team_analysis_failure(
             "usage": {"input_tokens": 1000, "output_tokens": 500},
             "latency_ms": 1200,
         }
-        
+
         orchestrator = AnalysisOrchestrator(bedrock_client=mock_bedrock)
-        
+
         with patch.object(orchestrator.team_analyzer, "analyze") as mock_team:
             mock_team.side_effect = Exception("Team analysis error")
-            
+
             result = await orchestrator.analyze_submission(
                 repo_data=sample_repo_data,
                 hackathon_name="Test Hackathon",
@@ -274,10 +276,10 @@ async def test_analyze_submission_team_analysis_failure(
                 rubric=sample_rubric,
                 agents_enabled=[AgentName.BUG_HUNTER],
             )
-            
+
             assert result["overall_score"] > 0
             assert result["team_analysis"] is None
-            
+
             component_perf = result["component_performance"]
             team_records = [r for r in component_perf if r["component_name"] == "team_analyzer"]
             assert len(team_records) == 1
@@ -298,9 +300,9 @@ async def test_component_performance_tracking(
             "usage": {"input_tokens": 1000, "output_tokens": 500},
             "latency_ms": 1200,
         }
-        
+
         orchestrator = AnalysisOrchestrator(bedrock_client=mock_bedrock)
-        
+
         result = await orchestrator.analyze_submission(
             repo_data=sample_repo_data,
             hackathon_name="Test Hackathon",
@@ -310,14 +312,14 @@ async def test_component_performance_tracking(
             rubric=sample_rubric,
             agents_enabled=[AgentName.BUG_HUNTER],
         )
-        
+
         component_perf = result["component_performance"]
         component_names = [r["component_name"] for r in component_perf]
-        
+
         assert "team_analyzer" in component_names
         assert "strategy_detector" in component_names
         assert "brand_voice_transformer" in component_names
-        
+
         for record in component_perf:
             assert "component_name" in record
             assert "duration_ms" in record
@@ -336,22 +338,22 @@ async def test_static_context_passed_to_agents(
         with patch("src.analysis.orchestrator.ActionsAnalyzer") as mock_actions_cls:
             mock_bedrock = MagicMock()
             mock_bedrock_cls.return_value = mock_bedrock
-            
+
             analyze_calls = []
-            
+
             def track_analyze(*args, **kwargs):
                 analyze_calls.append(kwargs)
                 return (
                     MagicMock(overall_score=8.5, confidence=0.9, evidence=[]),
-                    {"input_tokens": 1000, "output_tokens": 500, "latency_ms": 1200}
+                    {"input_tokens": 1000, "output_tokens": 500, "latency_ms": 1200},
                 )
-            
+
             mock_bedrock.converse.return_value = {
                 "content": '{"overall_score": 8.5, "confidence": 0.9, "evidence": []}',
                 "usage": {"input_tokens": 1000, "output_tokens": 500},
                 "latency_ms": 1200,
             }
-            
+
             mock_actions = MagicMock()
             mock_actions_cls.return_value = mock_actions
             mock_actions.analyze.return_value = {
@@ -361,13 +363,13 @@ async def test_static_context_passed_to_agents(
                 ],
                 "test_results": None,
             }
-            
+
             orchestrator = AnalysisOrchestrator(bedrock_client=mock_bedrock)
-            
+
             for agent in orchestrator.agents.values():
                 agent.analyze = track_analyze
-            
-            result = await orchestrator.analyze_submission(
+
+            await orchestrator.analyze_submission(
                 repo_data=sample_repo_data,
                 hackathon_name="Test Hackathon",
                 team_name="Test Team",
@@ -377,7 +379,7 @@ async def test_static_context_passed_to_agents(
                 agents_enabled=[AgentName.BUG_HUNTER],
                 github_token="ghp_test_token",
             )
-            
+
             assert len(analyze_calls) == 1
             assert "static_context" in analyze_calls[0]
             static_ctx = analyze_calls[0]["static_context"]
@@ -399,9 +401,9 @@ async def test_multiple_agents_with_intelligence_layer(
             "usage": {"input_tokens": 1000, "output_tokens": 500},
             "latency_ms": 1200,
         }
-        
+
         orchestrator = AnalysisOrchestrator(bedrock_client=mock_bedrock)
-        
+
         result = await orchestrator.analyze_submission(
             repo_data=sample_repo_data,
             hackathon_name="Test Hackathon",
@@ -416,16 +418,16 @@ async def test_multiple_agents_with_intelligence_layer(
                 AgentName.AI_DETECTION,
             ],
         )
-        
+
         assert len(result["agent_responses"]) == 4
         assert AgentName.BUG_HUNTER in result["agent_responses"]
         assert AgentName.PERFORMANCE in result["agent_responses"]
         assert AgentName.INNOVATION in result["agent_responses"]
         assert AgentName.AI_DETECTION in result["agent_responses"]
-        
+
         assert result["team_analysis"] is not None
         assert result["strategy_analysis"] is not None
         assert isinstance(result["actionable_feedback"], list)
-        
+
         cost_records = result["cost_records"]
         assert len(cost_records) == 4

@@ -4,14 +4,12 @@ This module defines Pydantic models for static analysis results from tools
 like Flake8, ESLint, Bandit, etc.
 """
 
-from enum import Enum
-
-from pydantic import Field
+from enum import StrEnum
 
 from src.models.common import Severity, VibeJudgeBase
 
 
-class PrimaryLanguage(str, Enum):
+class PrimaryLanguage(StrEnum):
     """Primary programming language."""
 
     PYTHON = "python"

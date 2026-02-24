@@ -102,28 +102,28 @@ class AnalysisOrchestrator:
         cicd_findings = None
         test_results_from_logs = None
         cicd_start = datetime.now(UTC)
-        
+
         if github_token and repo_data.repo_url:
             try:
                 # Extract owner/repo from URL
                 parts = repo_data.repo_url.rstrip("/").split("/")
                 if len(parts) >= 2:
                     owner, repo = parts[-2], parts[-1]
-                    
+
                     logger.info(
                         "parsing_cicd_logs",
                         sub_id=sub_id,
                         owner=owner,
                         repo=repo,
                     )
-                    
+
                     actions_analyzer = ActionsAnalyzer(github_token)
                     cicd_analysis = actions_analyzer.analyze(owner, repo)
                     actions_analyzer.close()
-                    
+
                     cicd_findings = cicd_analysis.get("linter_findings", [])
                     test_results_from_logs = cicd_analysis.get("test_results")
-                    
+
                     # Track component performance
                     cicd_duration_ms = int((datetime.now(UTC) - cicd_start).total_seconds() * 1000)
                     self.cost_tracker.record_component_performance(
@@ -134,7 +134,7 @@ class AnalysisOrchestrator:
                         findings_count=len(cicd_findings) if cicd_findings else 0,
                         success=True,
                     )
-                    
+
                     logger.info(
                         "cicd_logs_parsed",
                         sub_id=sub_id,
@@ -165,7 +165,7 @@ class AnalysisOrchestrator:
         try:
             logger.info("running_team_analysis", sub_id=sub_id)
             team_analysis = self.team_analyzer.analyze(repo_data)
-            
+
             # Track component performance
             team_duration_ms = int((datetime.now(UTC) - team_start).total_seconds() * 1000)
             self.cost_tracker.record_component_performance(
@@ -173,10 +173,11 @@ class AnalysisOrchestrator:
                 hack_id=hack_id,
                 component_name="team_analyzer",
                 duration_ms=team_duration_ms,
-                findings_count=len(team_analysis.individual_scorecards) + len(team_analysis.red_flags),
+                findings_count=len(team_analysis.individual_scorecards)
+                + len(team_analysis.red_flags),
                 success=True,
             )
-            
+
             logger.info(
                 "team_analysis_completed",
                 sub_id=sub_id,
@@ -211,7 +212,7 @@ class AnalysisOrchestrator:
                 test_results=test_results_from_logs,
                 static_findings=cicd_findings,
             )
-            
+
             # Track component performance
             strategy_duration_ms = int((datetime.now(UTC) - strategy_start).total_seconds() * 1000)
             self.cost_tracker.record_component_performance(
@@ -222,7 +223,7 @@ class AnalysisOrchestrator:
                 findings_count=len(strategy_analysis.tradeoffs),
                 success=True,
             )
-            
+
             logger.info(
                 "strategy_detection_completed",
                 sub_id=sub_id,
@@ -309,21 +310,23 @@ class AnalysisOrchestrator:
         try:
             if agent_responses:
                 logger.info("transforming_feedback", sub_id=sub_id)
-                
+
                 # Collect all findings from agents
                 all_findings = []
-                for agent_name, response in agent_responses.items():
-                    if hasattr(response, 'evidence') and response.evidence:
+                for _agent_name, response in agent_responses.items():
+                    if hasattr(response, "evidence") and response.evidence:
                         all_findings.extend(response.evidence)
-                
+
                 # Transform findings with brand voice
                 actionable_feedback = self.brand_voice_transformer.transform_findings(
                     findings=all_findings,
                     strategy_context=strategy_analysis,
                 )
-                
+
                 # Track component performance
-                feedback_duration_ms = int((datetime.now(UTC) - feedback_start).total_seconds() * 1000)
+                feedback_duration_ms = int(
+                    (datetime.now(UTC) - feedback_start).total_seconds() * 1000
+                )
                 self.cost_tracker.record_component_performance(
                     sub_id=sub_id,
                     hack_id=hack_id,
@@ -332,7 +335,7 @@ class AnalysisOrchestrator:
                     findings_count=len(actionable_feedback),
                     success=True,
                 )
-                
+
                 logger.info(
                     "feedback_transformed",
                     sub_id=sub_id,
@@ -427,7 +430,7 @@ class AnalysisOrchestrator:
         kwargs = {}
         if agent_name == AgentName.AI_DETECTION:
             kwargs["ai_policy_mode"] = ai_policy_mode
-        
+
         # Pass static findings to reduce agent scope (avoid duplicate work)
         if static_findings:
             kwargs["static_context"] = {
@@ -510,9 +513,9 @@ class AnalysisOrchestrator:
         weaknesses = []
 
         for agent_response in agent_responses.values():
-            if hasattr(agent_response, 'strengths'):
+            if hasattr(agent_response, "strengths"):
                 strengths.extend(agent_response.strengths[:2])
-            if hasattr(agent_response, 'improvements'):
+            if hasattr(agent_response, "improvements"):
                 weaknesses.extend(agent_response.improvements[:2])
 
         # Deduplicate and limit

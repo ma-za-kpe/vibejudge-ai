@@ -161,7 +161,9 @@ class ScorecardResponse(VibeJudgeBase, TimestampMixin):
     disqualification_reason: str | None = None
     team_dynamics: dict | None = None  # TeamAnalysisResult as dict
     strategy_analysis: dict | None = None  # StrategyAnalysisResult as dict
-    actionable_feedback: list[dict] = Field(default_factory=list)  # List of ActionableFeedback as dicts
+    actionable_feedback: list[dict] = Field(
+        default_factory=list
+    )  # List of ActionableFeedback as dicts
 
 
 # --- Evidence Models ---

@@ -186,8 +186,9 @@ async def get_submission_costs(
         raise HTTPException(status_code=500, detail=f"Failed to get costs: {str(e)}") from e
 
 
-
-@router.get("/submissions/{sub_id}/individual-scorecards", response_model=IndividualScorecardsResponse)
+@router.get(
+    "/submissions/{sub_id}/individual-scorecards", response_model=IndividualScorecardsResponse
+)
 async def get_individual_scorecards(
     sub_id: str,
     submission_service: SubmissionServiceDep,
@@ -213,8 +214,8 @@ async def get_individual_scorecards(
 
     if hackathon.org_id != current_organizer["org_id"]:
         raise HTTPException(
-            status_code=403, 
-            detail="You do not have permission to access this submission's scorecards"
+            status_code=403,
+            detail="You do not have permission to access this submission's scorecards",
         )
 
     # Get individual scorecards
@@ -249,5 +250,5 @@ async def get_submission_scorecard(
     scorecard = submission_service.get_submission_scorecard(sub_id)
     if scorecard is None:
         raise HTTPException(status_code=404, detail="Submission not found")
-    
+
     return scorecard

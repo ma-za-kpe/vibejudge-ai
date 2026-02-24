@@ -1,7 +1,5 @@
 """Unit tests for component performance tracking in CostTracker."""
 
-import pytest
-
 from src.analysis.cost_tracker import CostTracker
 
 
@@ -11,7 +9,7 @@ class TestComponentPerformanceTracking:
     def test_record_component_performance_success(self):
         """Test recording successful component execution."""
         tracker = CostTracker()
-        
+
         record = tracker.record_component_performance(
             sub_id="sub_123",
             hack_id="hack_456",
@@ -20,7 +18,7 @@ class TestComponentPerformanceTracking:
             findings_count=5,
             success=True,
         )
-        
+
         assert record.sub_id == "sub_123"
         assert record.hack_id == "hack_456"
         assert record.component_name == "team_analyzer"
@@ -32,7 +30,7 @@ class TestComponentPerformanceTracking:
     def test_record_component_performance_failure(self):
         """Test recording failed component execution."""
         tracker = CostTracker()
-        
+
         record = tracker.record_component_performance(
             sub_id="sub_123",
             hack_id="hack_456",
@@ -42,7 +40,7 @@ class TestComponentPerformanceTracking:
             success=False,
             error_message="Analysis failed",
         )
-        
+
         assert record.success is False
         assert record.error_message == "Analysis failed"
         assert record.findings_count == 0
@@ -50,7 +48,7 @@ class TestComponentPerformanceTracking:
     def test_get_component_records(self):
         """Test retrieving component performance records."""
         tracker = CostTracker()
-        
+
         tracker.record_component_performance(
             sub_id="sub_123",
             hack_id="hack_456",
@@ -58,7 +56,7 @@ class TestComponentPerformanceTracking:
             duration_ms=1500,
             findings_count=5,
         )
-        
+
         tracker.record_component_performance(
             sub_id="sub_123",
             hack_id="hack_456",
@@ -66,7 +64,7 @@ class TestComponentPerformanceTracking:
             duration_ms=800,
             findings_count=3,
         )
-        
+
         records = tracker.get_component_records()
         assert len(records) == 2
         assert records[0].component_name == "team_analyzer"
@@ -75,7 +73,7 @@ class TestComponentPerformanceTracking:
     def test_get_total_component_duration(self):
         """Test calculating total component duration."""
         tracker = CostTracker()
-        
+
         tracker.record_component_performance(
             sub_id="sub_123",
             hack_id="hack_456",
@@ -83,7 +81,7 @@ class TestComponentPerformanceTracking:
             duration_ms=1500,
             findings_count=5,
         )
-        
+
         tracker.record_component_performance(
             sub_id="sub_123",
             hack_id="hack_456",
@@ -91,7 +89,7 @@ class TestComponentPerformanceTracking:
             duration_ms=800,
             findings_count=3,
         )
-        
+
         tracker.record_component_performance(
             sub_id="sub_123",
             hack_id="hack_456",
@@ -99,14 +97,14 @@ class TestComponentPerformanceTracking:
             duration_ms=1200,
             findings_count=10,
         )
-        
+
         total_duration = tracker.get_total_component_duration_ms()
         assert total_duration == 3500  # 1500 + 800 + 1200
 
     def test_clear_clears_component_records(self):
         """Test that clear() removes component records."""
         tracker = CostTracker()
-        
+
         tracker.record_component_performance(
             sub_id="sub_123",
             hack_id="hack_456",
@@ -114,18 +112,18 @@ class TestComponentPerformanceTracking:
             duration_ms=1500,
             findings_count=5,
         )
-        
+
         assert len(tracker.get_component_records()) == 1
-        
+
         tracker.clear()
-        
+
         assert len(tracker.get_component_records()) == 0
         assert tracker.get_total_component_duration_ms() == 0
 
     def test_component_tracking_independent_of_agent_tracking(self):
         """Test that component tracking doesn't interfere with agent tracking."""
         tracker = CostTracker()
-        
+
         # Record agent cost
         tracker.record_agent_cost(
             sub_id="sub_123",
@@ -136,7 +134,7 @@ class TestComponentPerformanceTracking:
             output_tokens=500,
             latency_ms=2000,
         )
-        
+
         # Record component performance
         tracker.record_component_performance(
             sub_id="sub_123",
@@ -145,7 +143,7 @@ class TestComponentPerformanceTracking:
             duration_ms=1500,
             findings_count=5,
         )
-        
+
         # Both should be tracked independently
         assert len(tracker.get_records()) == 1
         assert len(tracker.get_component_records()) == 1

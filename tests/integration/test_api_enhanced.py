@@ -23,7 +23,10 @@ from src.models.dashboard import (
 )
 from src.models.feedback import ActionableFeedback, CodeExample, EffortEstimate, LearningResource
 from src.models.strategy import LearningJourney, StrategyAnalysisResult, Tradeoff
-from src.models.submission import IndividualScorecardsResponse, ScorecardResponse, SubmissionResponse
+from src.models.submission import (
+    ScorecardResponse,
+    SubmissionResponse,
+)
 from src.models.team_dynamics import (
     CollaborationPattern,
     ContributorRole,
@@ -36,7 +39,6 @@ from src.models.team_dynamics import (
     WorkStyle,
 )
 
-
 # ============================================================
 # FIXTURES
 # ============================================================
@@ -45,38 +47,37 @@ from src.models.team_dynamics import (
 @pytest.fixture
 def mock_services():
     """Mock all service dependencies."""
-    with patch("src.api.dependencies.get_submission_service") as mock_sub_service, \
-         patch("src.api.dependencies.get_hackathon_service") as mock_hack_service, \
-         patch("src.api.dependencies.get_organizer_service") as mock_org_service, \
-         patch("src.api.dependencies.get_organizer_intelligence_service") as mock_intel_service:
-        
+    with (
+        patch("src.api.dependencies.get_submission_service") as mock_sub_service,
+        patch("src.api.dependencies.get_hackathon_service") as mock_hack_service,
+        patch("src.api.dependencies.get_organizer_service") as mock_org_service,
+        patch("src.api.dependencies.get_organizer_intelligence_service") as mock_intel_service,
+    ):
         # Mock organizer service for auth
         org_service = MagicMock()
         org_service.verify_api_key.return_value = "org_123"
         org_service.get_organizer.return_value = MagicMock(
             org_id="org_123",
             email="test@example.com",
-            model_dump=lambda: {"org_id": "org_123", "email": "test@example.com"}
+            model_dump=lambda: {"org_id": "org_123", "email": "test@example.com"},
         )
         mock_org_service.return_value = org_service
-        
+
         # Mock hackathon service
         hack_service = MagicMock()
         hack_service.get_hackathon.return_value = MagicMock(
-            hack_id="hack_123",
-            org_id="org_123",
-            name="Test Hackathon"
+            hack_id="hack_123", org_id="org_123", name="Test Hackathon"
         )
         mock_hack_service.return_value = hack_service
-        
+
         # Mock submission service
         sub_service = MagicMock()
         mock_sub_service.return_value = sub_service
-        
+
         # Mock intelligence service
         intel_service = MagicMock()
         mock_intel_service.return_value = intel_service
-        
+
         yield {
             "submission": sub_service,
             "hackathon": hack_service,
@@ -246,39 +247,38 @@ def sample_organizer_dashboard():
 def test_get_organizer_intelligence_success(mock_services, sample_organizer_dashboard):
     """Test successful retrieval of organizer intelligence dashboard."""
     mock_services["intelligence"].generate_dashboard.return_value = sample_organizer_dashboard
-    
+
     client = TestClient(app)
     response = client.get(
-        "/api/v1/hackathons/hack_123/intelligence",
-        headers={"X-API-Key": "test_key"}
+        "/api/v1/hackathons/hack_123/intelligence", headers={"X-API-Key": "test_key"}
     )
-    
+
     assert response.status_code == 200
     data = response.json()
-    
+
     # Verify dashboard structure
     assert data["hack_id"] == "hack_123"
     assert data["hackathon_name"] == "Test Hackathon"
     assert data["total_submissions"] == 10
-    
+
     # Verify top performers
     assert len(data["top_performers"]) == 2
     assert data["top_performers"][0]["team_name"] == "Team Alpha"
     assert data["top_performers"][0]["overall_score"] == 95.0
-    
+
     # Verify technology trends
     assert len(data["technology_trends"]["most_used"]) == 3
     assert data["technology_trends"]["most_used"][0] == ["Python", 8]
-    
+
     # Verify common issues
     assert len(data["common_issues"]) == 2
     assert data["common_issues"][0]["issue_type"] == "Missing error handling"
     assert data["common_issues"][0]["percentage_affected"] == 60.0
-    
+
     # Verify prize recommendations
     assert len(data["prize_recommendations"]) == 1
     assert data["prize_recommendations"][0]["prize_category"] == "Best Team Dynamics"
-    
+
     # Verify service was called correctly
     mock_services["intelligence"].generate_dashboard.assert_called_once_with("hack_123")
 
@@ -286,13 +286,12 @@ def test_get_organizer_intelligence_success(mock_services, sample_organizer_dash
 def test_get_organizer_intelligence_hackathon_not_found(mock_services):
     """Test 404 when hackathon not found."""
     mock_services["hackathon"].get_hackathon.return_value = None
-    
+
     client = TestClient(app)
     response = client.get(
-        "/api/v1/hackathons/hack_999/intelligence",
-        headers={"X-API-Key": "test_key"}
+        "/api/v1/hackathons/hack_999/intelligence", headers={"X-API-Key": "test_key"}
     )
-    
+
     assert response.status_code == 404
     assert "not found" in response.json()["detail"].lower()
 
@@ -303,15 +302,14 @@ def test_get_organizer_intelligence_forbidden(mock_services):
     mock_services["hackathon"].get_hackathon.return_value = MagicMock(
         hack_id="hack_123",
         org_id="org_999",  # Different org
-        name="Test Hackathon"
+        name="Test Hackathon",
     )
-    
+
     client = TestClient(app)
     response = client.get(
-        "/api/v1/hackathons/hack_123/intelligence",
-        headers={"X-API-Key": "test_key"}
+        "/api/v1/hackathons/hack_123/intelligence", headers={"X-API-Key": "test_key"}
     )
-    
+
     assert response.status_code == 403
     assert "permission" in response.json()["detail"].lower()
 
@@ -320,20 +318,19 @@ def test_get_organizer_intelligence_no_auth(mock_services):
     """Test 401 when no API key provided."""
     client = TestClient(app)
     response = client.get("/api/v1/hackathons/hack_123/intelligence")
-    
+
     assert response.status_code == 401
 
 
 def test_get_organizer_intelligence_service_error(mock_services):
     """Test 500 when intelligence service fails."""
     mock_services["intelligence"].generate_dashboard.side_effect = Exception("Database error")
-    
+
     client = TestClient(app)
     response = client.get(
-        "/api/v1/hackathons/hack_123/intelligence",
-        headers={"X-API-Key": "test_key"}
+        "/api/v1/hackathons/hack_123/intelligence", headers={"X-API-Key": "test_key"}
     )
-    
+
     assert response.status_code == 500
     assert "failed to generate" in response.json()["detail"].lower()
 
@@ -364,13 +361,12 @@ def test_get_organizer_intelligence_no_submissions(mock_services):
         sponsor_follow_up_actions=[],
     )
     mock_services["intelligence"].generate_dashboard.return_value = empty_dashboard
-    
+
     client = TestClient(app)
     response = client.get(
-        "/api/v1/hackathons/hack_123/intelligence",
-        headers={"X-API-Key": "test_key"}
+        "/api/v1/hackathons/hack_123/intelligence", headers={"X-API-Key": "test_key"}
     )
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["total_submissions"] == 0
@@ -382,29 +378,32 @@ def test_get_organizer_intelligence_no_submissions(mock_services):
 # ============================================================
 
 
-def test_get_individual_scorecards_success(mock_services, sample_submission, sample_individual_scorecards):
+def test_get_individual_scorecards_success(
+    mock_services, sample_submission, sample_individual_scorecards
+):
     """Test successful retrieval of individual scorecards."""
     mock_services["submission"].get_submission.return_value = sample_submission
-    mock_services["submission"].get_individual_scorecards.return_value = sample_individual_scorecards
-    
+    mock_services[
+        "submission"
+    ].get_individual_scorecards.return_value = sample_individual_scorecards
+
     client = TestClient(app)
     response = client.get(
-        "/api/v1/submissions/sub_123/individual-scorecards",
-        headers={"X-API-Key": "test_key"}
+        "/api/v1/submissions/sub_123/individual-scorecards", headers={"X-API-Key": "test_key"}
     )
-    
+
     assert response.status_code == 200
     data = response.json()
-    
+
     # Verify response structure
     assert data["sub_id"] == "sub_123"
     assert data["hack_id"] == "hack_123"
     assert data["team_name"] == "Test Team"
     assert data["total_count"] == 2
-    
+
     # Verify scorecards
     assert len(data["scorecards"]) == 2
-    
+
     # Verify Alice's scorecard
     alice = data["scorecards"][0]
     assert alice["contributor_name"] == "Alice"
@@ -412,7 +411,7 @@ def test_get_individual_scorecards_success(mock_services, sample_submission, sam
     assert alice["commit_count"] == 50
     assert "database" in alice["expertise_areas"]
     assert alice["hiring_signals"]["must_interview"] is True
-    
+
     # Verify Bob's scorecard
     bob = data["scorecards"][1]
     assert bob["contributor_name"] == "Bob"
@@ -424,13 +423,12 @@ def test_get_individual_scorecards_success(mock_services, sample_submission, sam
 def test_get_individual_scorecards_submission_not_found(mock_services):
     """Test 404 when submission not found."""
     mock_services["submission"].get_submission.return_value = None
-    
+
     client = TestClient(app)
     response = client.get(
-        "/api/v1/submissions/sub_999/individual-scorecards",
-        headers={"X-API-Key": "test_key"}
+        "/api/v1/submissions/sub_999/individual-scorecards", headers={"X-API-Key": "test_key"}
     )
-    
+
     assert response.status_code == 404
     assert "not found" in response.json()["detail"].lower()
 
@@ -438,20 +436,19 @@ def test_get_individual_scorecards_submission_not_found(mock_services):
 def test_get_individual_scorecards_forbidden(mock_services, sample_submission):
     """Test 403 when organizer doesn't own the hackathon."""
     mock_services["submission"].get_submission.return_value = sample_submission
-    
+
     # Hackathon owned by different organizer
     mock_services["hackathon"].get_hackathon.return_value = MagicMock(
         hack_id="hack_123",
         org_id="org_999",  # Different org
-        name="Test Hackathon"
+        name="Test Hackathon",
     )
-    
+
     client = TestClient(app)
     response = client.get(
-        "/api/v1/submissions/sub_123/individual-scorecards",
-        headers={"X-API-Key": "test_key"}
+        "/api/v1/submissions/sub_123/individual-scorecards", headers={"X-API-Key": "test_key"}
     )
-    
+
     assert response.status_code == 403
     assert "permission" in response.json()["detail"].lower()
 
@@ -460,13 +457,12 @@ def test_get_individual_scorecards_empty(mock_services, sample_submission):
     """Test successful response with empty scorecards."""
     mock_services["submission"].get_submission.return_value = sample_submission
     mock_services["submission"].get_individual_scorecards.return_value = []
-    
+
     client = TestClient(app)
     response = client.get(
-        "/api/v1/submissions/sub_123/individual-scorecards",
-        headers={"X-API-Key": "test_key"}
+        "/api/v1/submissions/sub_123/individual-scorecards", headers={"X-API-Key": "test_key"}
     )
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["total_count"] == 0
@@ -555,31 +551,31 @@ def test_get_enhanced_scorecard_success(mock_services):
             )
         ],
     )
-    
+
     mock_services["submission"].get_submission_scorecard.return_value = enhanced_scorecard
-    
+
     client = TestClient(app)
     response = client.get("/api/v1/submissions/sub_123/scorecard")
-    
+
     assert response.status_code == 200
     data = response.json()
-    
+
     # Verify basic fields
     assert data["sub_id"] == "sub_123"
     assert data["overall_score"] == 85.5
-    
+
     # Verify team analysis
     assert data["team_analysis"] is not None
     assert data["team_analysis"]["team_dynamics_grade"] == "A"
     assert data["team_analysis"]["workload_distribution"]["Alice"] == 60.0
     assert len(data["team_analysis"]["collaboration_patterns"]) == 1
-    
+
     # Verify strategy analysis
     assert data["strategy_analysis"] is not None
     assert data["strategy_analysis"]["test_strategy"] == "unit_focused"
     assert data["strategy_analysis"]["maturity_level"] == "mid"
     assert data["strategy_analysis"]["learning_journey"]["impressive"] is True
-    
+
     # Verify actionable feedback
     assert len(data["actionable_feedback"]) == 1
     feedback = data["actionable_feedback"][0]
@@ -592,10 +588,10 @@ def test_get_enhanced_scorecard_success(mock_services):
 def test_get_enhanced_scorecard_not_found(mock_services):
     """Test 404 when scorecard not found."""
     mock_services["submission"].get_submission_scorecard.return_value = None
-    
+
     client = TestClient(app)
     response = client.get("/api/v1/submissions/sub_999/scorecard")
-    
+
     assert response.status_code == 404
     assert "not found" in response.json()["detail"].lower()
 
@@ -641,15 +637,15 @@ def test_get_enhanced_scorecard_with_red_flags(mock_services):
         strategy_analysis=None,
         actionable_feedback=[],
     )
-    
+
     mock_services["submission"].get_submission_scorecard.return_value = scorecard_with_red_flags
-    
+
     client = TestClient(app)
     response = client.get("/api/v1/submissions/sub_123/scorecard")
-    
+
     assert response.status_code == 200
     data = response.json()
-    
+
     # Verify red flags
     assert len(data["team_analysis"]["red_flags"]) == 2
     assert data["team_analysis"]["red_flags"][0]["severity"] == "critical"
@@ -671,15 +667,15 @@ def test_get_enhanced_scorecard_minimal_intelligence(mock_services):
         strategy_analysis=None,  # Analysis failed
         actionable_feedback=[],  # No feedback generated
     )
-    
+
     mock_services["submission"].get_submission_scorecard.return_value = minimal_scorecard
-    
+
     client = TestClient(app)
     response = client.get("/api/v1/submissions/sub_123/scorecard")
-    
+
     assert response.status_code == 200
     data = response.json()
-    
+
     # Verify graceful degradation
     assert data["overall_score"] == 75.0
     assert data["team_analysis"] is None
@@ -692,7 +688,9 @@ def test_get_enhanced_scorecard_minimal_intelligence(mock_services):
 # ============================================================
 
 
-def test_intelligence_dashboard_aggregates_individual_scorecards(mock_services, sample_organizer_dashboard):
+def test_intelligence_dashboard_aggregates_individual_scorecards(
+    mock_services, sample_organizer_dashboard
+):
     """Test that intelligence dashboard includes aggregated hiring intelligence."""
     # Add hiring intelligence to dashboard
     sample_organizer_dashboard.hiring_intelligence = HiringIntelligence(
@@ -732,18 +730,17 @@ def test_intelligence_dashboard_aggregates_individual_scorecards(mock_services, 
         full_stack_candidates=[],
         must_interview=[],
     )
-    
+
     mock_services["intelligence"].generate_dashboard.return_value = sample_organizer_dashboard
-    
+
     client = TestClient(app)
     response = client.get(
-        "/api/v1/hackathons/hack_123/intelligence",
-        headers={"X-API-Key": "test_key"}
+        "/api/v1/hackathons/hack_123/intelligence", headers={"X-API-Key": "test_key"}
     )
-    
+
     assert response.status_code == 200
     data = response.json()
-    
+
     # Verify hiring intelligence is included
     assert "hiring_intelligence" in data
     assert len(data["hiring_intelligence"]["backend_candidates"]) == 1
@@ -792,15 +789,15 @@ def test_scorecard_feedback_references_strategy_context(mock_services):
             )
         ],
     )
-    
+
     mock_services["submission"].get_submission_scorecard.return_value = scorecard
-    
+
     client = TestClient(app)
     response = client.get("/api/v1/submissions/sub_123/scorecard")
-    
+
     assert response.status_code == 200
     data = response.json()
-    
+
     # Verify feedback acknowledges strategy
     feedback = data["actionable_feedback"][0]
     assert "demo-first strategy" in feedback["context"].lower()

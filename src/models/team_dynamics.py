@@ -1,12 +1,8 @@
 """Team dynamics and individual contributor models."""
 
-from datetime import datetime
 from enum import StrEnum
 
-from pydantic import Field
-
 from src.models.common import VibeJudgeBase
-
 
 # ============================================================
 # ENUMS
@@ -15,6 +11,7 @@ from src.models.common import VibeJudgeBase
 
 class ContributorRole(StrEnum):
     """Detected contributor role."""
+
     BACKEND = "backend"
     FRONTEND = "frontend"
     DEVOPS = "devops"
@@ -24,6 +21,7 @@ class ContributorRole(StrEnum):
 
 class ExpertiseArea(StrEnum):
     """Expertise area."""
+
     DATABASE = "database"
     SECURITY = "security"
     TESTING = "testing"
@@ -34,6 +32,7 @@ class ExpertiseArea(StrEnum):
 
 class RedFlagSeverity(StrEnum):
     """Red flag severity."""
+
     CRITICAL = "critical"
     HIGH = "high"
     MEDIUM = "medium"
@@ -46,6 +45,7 @@ class RedFlagSeverity(StrEnum):
 
 class RedFlag(VibeJudgeBase):
     """Concerning team dynamic pattern."""
+
     flag_type: str  # extreme_imbalance | ghost_contributor | history_rewriting | etc.
     severity: RedFlagSeverity
     description: str
@@ -57,6 +57,7 @@ class RedFlag(VibeJudgeBase):
 
 class CollaborationPattern(VibeJudgeBase):
     """Detected collaboration pattern."""
+
     pattern_type: str  # pair_programming | code_review | alternating_commits
     contributors: list[str]
     evidence: str
@@ -65,6 +66,7 @@ class CollaborationPattern(VibeJudgeBase):
 
 class WorkStyle(VibeJudgeBase):
     """Work style patterns."""
+
     commit_frequency: str  # frequent | moderate | infrequent
     avg_commit_size: int
     active_hours: list[int]  # Hours of day (0-23)
@@ -74,6 +76,7 @@ class WorkStyle(VibeJudgeBase):
 
 class HiringSignals(VibeJudgeBase):
     """Hiring recommendations."""
+
     recommended_role: str
     seniority_level: str  # junior | mid | senior
     salary_range_usd: str  # e.g., "$80k-$100k"
@@ -84,6 +87,7 @@ class HiringSignals(VibeJudgeBase):
 
 class IndividualScorecard(VibeJudgeBase):
     """Detailed assessment of individual contributor."""
+
     contributor_name: str
     contributor_email: str
     role: ContributorRole
@@ -102,6 +106,7 @@ class IndividualScorecard(VibeJudgeBase):
 
 class TeamAnalysisResult(VibeJudgeBase):
     """Result from team dynamics analysis."""
+
     workload_distribution: dict[str, float]  # contributor -> percentage
     collaboration_patterns: list[CollaborationPattern]
     red_flags: list[RedFlag]

@@ -1,14 +1,15 @@
 """Strategy analysis data models."""
 
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import Field
 
 from src.models.common import VibeJudgeBase
 
 
-class TestStrategy(str, Enum):
+class TestStrategy(StrEnum):
     """Test strategy classification."""
+
     UNIT_FOCUSED = "unit_focused"
     INTEGRATION_FOCUSED = "integration_focused"
     E2E_FOCUSED = "e2e_focused"
@@ -17,8 +18,9 @@ class TestStrategy(str, Enum):
     NO_TESTS = "no_tests"
 
 
-class MaturityLevel(str, Enum):
+class MaturityLevel(StrEnum):
     """Team maturity level."""
+
     JUNIOR = "junior"  # Tutorial-following
     MID = "mid"  # Solid fundamentals
     SENIOR = "senior"  # Production thinking
@@ -26,6 +28,7 @@ class MaturityLevel(str, Enum):
 
 class Tradeoff(VibeJudgeBase):
     """Detected architecture tradeoff."""
+
     tradeoff_type: str  # speed_vs_security | simplicity_vs_scalability
     decision: str  # What they chose
     rationale: str  # Why this makes sense for hackathon
@@ -34,6 +37,7 @@ class Tradeoff(VibeJudgeBase):
 
 class LearningJourney(VibeJudgeBase):
     """Detected learning during hackathon."""
+
     technology: str
     evidence: list[str]  # Commit messages
     progression: str  # How they improved
@@ -42,6 +46,7 @@ class LearningJourney(VibeJudgeBase):
 
 class StrategyAnalysisResult(VibeJudgeBase):
     """Result from strategy detection."""
+
     test_strategy: TestStrategy
     critical_path_focus: bool
     tradeoffs: list[Tradeoff] = Field(default_factory=list)

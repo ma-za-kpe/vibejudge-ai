@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field, computed_field
 
 class TestFramework(str):
     """Detected test framework."""
+
     PYTEST = "pytest"
     JEST = "jest"
     MOCHA = "mocha"
@@ -15,6 +16,7 @@ class TestFramework(str):
 
 class FailingTest(BaseModel):
     """Details of a failing test."""
+
     name: str
     error_message: str
     file: str
@@ -23,6 +25,7 @@ class FailingTest(BaseModel):
 
 class TestExecutionResult(BaseModel):
     """Result from test execution."""
+
     framework: str
     total_tests: int
     passed_tests: int

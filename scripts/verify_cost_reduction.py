@@ -8,7 +8,7 @@ This script calculates:
 4. Verification against 42% target
 """
 
-from src.constants import MODEL_RATES, AGENT_MODELS
+from src.constants import MODEL_RATES
 
 # ============================================================
 # BASELINE COST (Before Enhancement)
@@ -40,7 +40,7 @@ BASELINE_TOKEN_ESTIMATES = {
     },
     "ai_detection": {
         "model": "amazon.nova-micro-v1:0",
-        "input_tokens": 8000,   # Full repo context, no commit patterns
+        "input_tokens": 8000,  # Full repo context, no commit patterns
         "output_tokens": 2000,  # All authenticity analysis
     },
 }
@@ -57,7 +57,6 @@ CURRENT_TOKEN_ESTIMATES = {
     "actions_analyzer": {
         "cost_usd": 0.0,  # GitHub API calls only
     },
-    
     # Intelligence layer (FREE - local computation)
     "team_analyzer": {
         "cost_usd": 0.0,  # Git history analysis
@@ -68,16 +67,15 @@ CURRENT_TOKEN_ESTIMATES = {
     "brand_voice_transformer": {
         "cost_usd": 0.0,  # Text transformation
     },
-    
     # AI agents (REDUCED SCOPE - static context provided)
     "bug_hunter": {
         "model": "amazon.nova-lite-v1:0",
-        "input_tokens": 8000,   # Reduced: static findings provided
+        "input_tokens": 8000,  # Reduced: static findings provided
         "output_tokens": 2000,  # Reduced: focus on logic bugs only
     },
     "performance": {
         "model": "amazon.nova-lite-v1:0",
-        "input_tokens": 8000,   # Reduced: CI/CD insights provided
+        "input_tokens": 8000,  # Reduced: CI/CD insights provided
         "output_tokens": 2000,  # Reduced: focus on architecture
     },
     "innovation": {
@@ -87,7 +85,7 @@ CURRENT_TOKEN_ESTIMATES = {
     },
     "ai_detection": {
         "model": "amazon.nova-micro-v1:0",
-        "input_tokens": 6000,   # Reduced: commit patterns provided
+        "input_tokens": 6000,  # Reduced: commit patterns provided
         "output_tokens": 1500,  # Reduced: focus on AI usage
     },
 }
@@ -96,38 +94,41 @@ CURRENT_TOKEN_ESTIMATES = {
 # COST CALCULATION
 # ============================================================
 
+
 def calculate_agent_cost(agent_name: str, estimates: dict) -> float:
     """Calculate cost for a single agent."""
     model_id = estimates["model"]
     input_tokens = estimates["input_tokens"]
     output_tokens = estimates["output_tokens"]
-    
+
     rates = MODEL_RATES[model_id]
     input_cost = input_tokens * rates["input"]
     output_cost = output_tokens * rates["output"]
-    
+
     return input_cost + output_cost
+
 
 def calculate_baseline_cost() -> dict:
     """Calculate baseline cost (before enhancement)."""
     costs = {}
     total = 0.0
-    
+
     for agent_name, estimates in BASELINE_TOKEN_ESTIMATES.items():
         cost = calculate_agent_cost(agent_name, estimates)
         costs[agent_name] = cost
         total += cost
-    
+
     return {
         "by_agent": costs,
         "total": total,
     }
 
+
 def calculate_current_cost() -> dict:
     """Calculate current cost (after enhancement)."""
     costs = {}
     total = 0.0
-    
+
     for component_name, estimates in CURRENT_TOKEN_ESTIMATES.items():
         if "cost_usd" in estimates:
             # Free component
@@ -135,20 +136,21 @@ def calculate_current_cost() -> dict:
         else:
             # AI agent
             cost = calculate_agent_cost(component_name, estimates)
-        
+
         costs[component_name] = cost
         total += cost
-    
+
     return {
         "by_component": costs,
         "total": total,
     }
 
+
 def calculate_reduction(baseline: float, current: float) -> dict:
     """Calculate cost reduction metrics."""
     reduction_usd = baseline - current
     reduction_pct = (reduction_usd / baseline) * 100
-    
+
     return {
         "reduction_usd": reduction_usd,
         "reduction_pct": reduction_pct,
@@ -156,9 +158,11 @@ def calculate_reduction(baseline: float, current: float) -> dict:
         "meets_target": reduction_pct >= 42.0,
     }
 
+
 # ============================================================
 # MAIN VERIFICATION
 # ============================================================
+
 
 def main():
     """Run cost reduction verification."""
@@ -166,7 +170,7 @@ def main():
     print("COST REDUCTION VERIFICATION")
     print("=" * 80)
     print()
-    
+
     # Calculate baseline cost
     baseline = calculate_baseline_cost()
     print("BASELINE COST (Before Enhancement)")
@@ -175,37 +179,37 @@ def main():
         print(f"  {agent:20s}: ${cost:.6f}")
     print(f"  {'TOTAL':20s}: ${baseline['total']:.6f}")
     print()
-    
+
     # Calculate current cost
     current = calculate_current_cost()
     print("CURRENT COST (After Enhancement)")
     print("-" * 80)
-    
+
     # Group by type
     free_components = []
     ai_agents = []
-    
+
     for component, cost in current["by_component"].items():
         if cost == 0.0:
             free_components.append((component, cost))
         else:
             ai_agents.append((component, cost))
-    
+
     print("  Free Components (CI/CD + Intelligence Layer):")
     for component, cost in free_components:
         print(f"    {component:20s}: ${cost:.6f}")
-    
+
     print()
     print("  AI Agents (Reduced Scope):")
     for component, cost in ai_agents:
         print(f"    {component:20s}: ${cost:.6f}")
-    
+
     print(f"  {'TOTAL':22s}: ${current['total']:.6f}")
     print()
-    
+
     # Calculate reduction
     reduction = calculate_reduction(baseline["total"], current["total"])
-    
+
     print("COST REDUCTION ANALYSIS")
     print("-" * 80)
     print(f"  Baseline Cost:        ${baseline['total']:.6f}")
@@ -214,7 +218,7 @@ def main():
     print(f"  Reduction (%):        {reduction['reduction_pct']:.2f}%")
     print(f"  Target (%):           {reduction['target_pct']:.2f}%")
     print()
-    
+
     # Verification result
     if reduction["meets_target"]:
         print("✅ VERIFICATION PASSED")
@@ -222,22 +226,29 @@ def main():
     else:
         shortfall = reduction["target_pct"] - reduction["reduction_pct"]
         print("❌ VERIFICATION FAILED")
-        print(f"   Cost reduction of {reduction['reduction_pct']:.2f}% falls short of 42% target by {shortfall:.2f}%")
-    
+        print(
+            f"   Cost reduction of {reduction['reduction_pct']:.2f}% falls short of 42% target by {shortfall:.2f}%"
+        )
+
     print()
     print("=" * 80)
-    
+
     # Additional insights
     print()
     print("KEY INSIGHTS")
     print("-" * 80)
-    print(f"  • Free components save: ${sum(c for _, c in free_components):.6f} (100% of their baseline)")
-    print(f"  • AI agent scope reduced by: {((baseline['total'] - current['total']) / baseline['total'] * 100):.1f}%")
+    print(
+        f"  • Free components save: ${sum(c for _, c in free_components):.6f} (100% of their baseline)"
+    )
+    print(
+        f"  • AI agent scope reduced by: {((baseline['total'] - current['total']) / baseline['total'] * 100):.1f}%"
+    )
     print(f"  • Cost per repo: ${current['total']:.6f} (vs baseline ${baseline['total']:.6f})")
     print()
-    
+
     # Return exit code
     return 0 if reduction["meets_target"] else 1
+
 
 if __name__ == "__main__":
     exit(main())

@@ -1,20 +1,16 @@
 """Unit tests for StrategyDetector component."""
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 
 import pytest
 
 from src.analysis.strategy_detector import StrategyDetector
 from src.models.analysis import CommitInfo, RepoData, SourceFile
-from src.models.submission import RepoMeta
 from src.models.strategy import (
-    LearningJourney,
     MaturityLevel,
     TestStrategy,
-    Tradeoff,
 )
-from src.models.test_execution import TestExecutionResult, TestFramework
-
+from src.models.submission import RepoMeta
 
 # ============================================================
 # FIXTURES
@@ -101,7 +97,7 @@ def test_analyze_empty_repository(
 ) -> None:
     """Test analysis of repository with no files or commits."""
     result = strategy_detector.analyze(base_repo_data)
-    
+
     assert result.test_strategy == TestStrategy.NO_TESTS
     assert result.critical_path_focus is False
     # Empty repo may have simplicity tradeoff detected
@@ -125,9 +121,9 @@ def test_detect_no_tests_strategy(
         create_source_file("src/main.py", lines=200),
         create_source_file("src/utils.py", lines=150),
     ]
-    
+
     result = strategy_detector.analyze(base_repo_data)
-    
+
     assert result.test_strategy == TestStrategy.NO_TESTS
 
 
@@ -143,9 +139,9 @@ def test_detect_demo_first_strategy(
         create_source_file("public/index.html", lines=100),
         create_source_file("src/utils.py", lines=150),
     ]
-    
+
     result = strategy_detector.analyze(base_repo_data)
-    
+
     # Demo-first requires >500 production lines with UI but no tests
     assert result.test_strategy in [TestStrategy.DEMO_FIRST, TestStrategy.NO_TESTS]
 
@@ -161,9 +157,9 @@ def test_detect_unit_focused_strategy(
         create_source_file("tests/test_utils.py", lines=100),
         create_source_file("tests/test_models.py", lines=80),
     ]
-    
+
     result = strategy_detector.analyze(base_repo_data)
-    
+
     assert result.test_strategy == TestStrategy.UNIT_FOCUSED
 
 
@@ -178,9 +174,9 @@ def test_detect_integration_focused_strategy(
         create_source_file("tests/integration/test_database.py", lines=120),
         create_source_file("tests/test_utils.py", lines=50),
     ]
-    
+
     result = strategy_detector.analyze(base_repo_data)
-    
+
     assert result.test_strategy == TestStrategy.INTEGRATION_FOCUSED
 
 
@@ -195,9 +191,9 @@ def test_detect_e2e_focused_strategy(
         create_source_file("tests/e2e/test_checkout.py", lines=150),
         create_source_file("tests/test_utils.py", lines=50),
     ]
-    
+
     result = strategy_detector.analyze(base_repo_data)
-    
+
     assert result.test_strategy == TestStrategy.E2E_FOCUSED
 
 
@@ -213,9 +209,9 @@ def test_detect_critical_path_strategy(
         create_source_file("tests/test_security.py", "def test_admin", lines=80),
         create_source_file("tests/test_order.py", "def test_transaction", lines=90),
     ]
-    
+
     result = strategy_detector.analyze(base_repo_data)
-    
+
     # With >50% critical path tests, should detect critical path focus
     # May be classified as CRITICAL_PATH or UNIT_FOCUSED depending on logic
     assert result.critical_path_focus is True
@@ -264,9 +260,9 @@ def test_critical_path_focus_with_auth_tests(
         create_source_file("tests/test_auth.py", "def test_login"),
         create_source_file("tests/test_payment.py", "def test_checkout"),
     ]
-    
+
     result = strategy_detector._detect_critical_path_focus(source_files)
-    
+
     assert result is True
 
 
@@ -278,9 +274,9 @@ def test_no_critical_path_focus_with_generic_tests(
         create_source_file("tests/test_utils.py", "def test_format"),
         create_source_file("tests/test_helpers.py", "def test_parse"),
     ]
-    
+
     result = strategy_detector._detect_critical_path_focus(source_files)
-    
+
     assert result is False
 
 
@@ -298,9 +294,9 @@ def test_detect_monolith_architecture(
         create_source_file("src/models.py"),
         create_source_file("src/views.py"),
     ]
-    
+
     arch_type = strategy_detector._detect_architecture_type(source_files)
-    
+
     assert arch_type == "monolith"
 
 
@@ -314,9 +310,9 @@ def test_detect_microservices_architecture(
         create_source_file("services/user/main.py"),
         create_source_file("services/order/main.py"),
     ]
-    
+
     arch_type = strategy_detector._detect_architecture_type(source_files)
-    
+
     assert arch_type == "microservices"
 
 
@@ -329,9 +325,9 @@ def test_detect_modular_monolith_architecture(
         create_source_file("services/payment/main.py"),
         create_source_file("docker-compose.yml", "services:\n  api:\n  db:"),
     ]
-    
+
     arch_type = strategy_detector._detect_architecture_type(source_files)
-    
+
     assert arch_type == "modular_monolith"
 
 
@@ -347,9 +343,9 @@ def test_detect_mvc_pattern(strategy_detector: StrategyDetector) -> None:
         create_source_file("src/views/user_view.py"),
         create_source_file("src/controllers/user_controller.py"),
     ]
-    
+
     patterns = strategy_detector._detect_design_patterns(source_files)
-    
+
     assert "MVC (Model-View-Controller)" in patterns
 
 
@@ -361,9 +357,9 @@ def test_detect_service_repository_pattern(
         create_source_file("src/services/user_service.py"),
         create_source_file("src/repositories/user_repository.py"),
     ]
-    
+
     patterns = strategy_detector._detect_design_patterns(source_files)
-    
+
     assert "Service Layer + Repository Pattern" in patterns
 
 
@@ -376,9 +372,9 @@ def test_detect_hexagonal_architecture(
         create_source_file("src/application/use_cases.py"),
         create_source_file("src/infrastructure/database.py"),
     ]
-    
+
     patterns = strategy_detector._detect_design_patterns(source_files)
-    
+
     assert "Hexagonal/Clean Architecture" in patterns
 
 
@@ -388,7 +384,7 @@ def test_detect_cqrs_pattern(strategy_detector: StrategyDetector) -> None:
         create_source_file("src/commands/create_user.py"),
         create_source_file("src/queries/get_user.py"),
     ]
-    
+
     patterns = strategy_detector._detect_design_patterns(source_files)
-    
+
     assert "CQRS (Command Query Responsibility Segregation)" in patterns

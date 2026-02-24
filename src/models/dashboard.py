@@ -5,7 +5,6 @@ from pydantic import Field
 from src.models.common import VibeJudgeBase
 from src.models.team_dynamics import IndividualScorecard
 
-
 # ============================================================
 # DASHBOARD MODELS
 # ============================================================
@@ -13,6 +12,7 @@ from src.models.team_dynamics import IndividualScorecard
 
 class TopPerformer(VibeJudgeBase):
     """Top performing team."""
+
     team_name: str
     sub_id: str
     overall_score: float
@@ -22,6 +22,7 @@ class TopPerformer(VibeJudgeBase):
 
 class HiringIntelligence(VibeJudgeBase):
     """Hiring intelligence by role."""
+
     backend_candidates: list[IndividualScorecard] = Field(default_factory=list)
     frontend_candidates: list[IndividualScorecard] = Field(default_factory=list)
     devops_candidates: list[IndividualScorecard] = Field(default_factory=list)
@@ -31,13 +32,17 @@ class HiringIntelligence(VibeJudgeBase):
 
 class TechnologyTrends(VibeJudgeBase):
     """Technology trend analysis."""
+
     most_used: list[tuple[str, int]]  # (technology, count)
     emerging: list[str] = Field(default_factory=list)
-    popular_stacks: list[tuple[str, int]] = Field(default_factory=list)  # (stack combination, count)
+    popular_stacks: list[tuple[str, int]] = Field(
+        default_factory=list
+    )  # (stack combination, count)
 
 
 class CommonIssue(VibeJudgeBase):
     """Common issue across submissions."""
+
     issue_type: str
     percentage_affected: float
     workshop_recommendation: str
@@ -46,6 +51,7 @@ class CommonIssue(VibeJudgeBase):
 
 class PrizeRecommendation(VibeJudgeBase):
     """Prize recommendation with evidence."""
+
     prize_category: str
     recommended_team: str
     sub_id: str
@@ -55,6 +61,7 @@ class PrizeRecommendation(VibeJudgeBase):
 
 class OrganizerDashboard(VibeJudgeBase):
     """Complete organizer intelligence dashboard."""
+
     hack_id: str
     hackathon_name: str
     total_submissions: int

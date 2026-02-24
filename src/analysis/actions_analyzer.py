@@ -73,9 +73,7 @@ class ActionsAnalyzer:
             "disqualification_reason": disqualification_reason,
         }
 
-    def _fetch_workflow_logs(
-        self, owner: str, repo: str, max_runs: int = 5
-    ) -> list[dict]:
+    def _fetch_workflow_logs(self, owner: str, repo: str, max_runs: int = 5) -> list[dict]:
         """Fetch logs for most recent workflow runs.
 
         Args:
@@ -97,8 +95,6 @@ class ActionsAnalyzer:
                 ...
             ]
         """
-        import time
-        import httpx
 
         logger.info(
             "fetching_workflow_logs",
@@ -125,14 +121,16 @@ class ActionsAnalyzer:
             )
 
             if log_content:
-                logs_with_metadata.append({
-                    "run_id": run.run_id,
-                    "name": run.name,
-                    "status": run.status,
-                    "conclusion": run.conclusion,
-                    "created_at": run.created_at,
-                    "log_content": log_content,
-                })
+                logs_with_metadata.append(
+                    {
+                        "run_id": run.run_id,
+                        "name": run.name,
+                        "status": run.status,
+                        "conclusion": run.conclusion,
+                        "created_at": run.created_at,
+                        "log_content": log_content,
+                    }
+                )
 
         logger.info(
             "workflow_logs_fetched",
@@ -165,9 +163,8 @@ class ActionsAnalyzer:
             Log content as string, or None if fetch failed
         """
         import time
+
         import httpx
-        import zipfile
-        import io
 
         url = f"/repos/{owner}/{repo}/actions/runs/{run_id}/logs"
 
@@ -181,7 +178,7 @@ class ActionsAnalyzer:
                     rate_limit_remaining = resp.headers.get("X-RateLimit-Remaining", "0")
                     if rate_limit_remaining == "0":
                         # Calculate backoff: 2^attempt seconds
-                        backoff_seconds = 2 ** attempt
+                        backoff_seconds = 2**attempt
                         logger.warning(
                             "github_rate_limit_hit",
                             owner=owner,
@@ -223,7 +220,7 @@ class ActionsAnalyzer:
             except httpx.HTTPStatusError as e:
                 if e.response.status_code == 403:
                     # Rate limit - retry with backoff
-                    backoff_seconds = 2 ** attempt
+                    backoff_seconds = 2**attempt
                     logger.warning(
                         "github_rate_limit_retry",
                         owner=owner,
@@ -256,7 +253,7 @@ class ActionsAnalyzer:
                 )
 
                 if attempt < max_retries - 1:
-                    backoff_seconds = 2 ** attempt
+                    backoff_seconds = 2**attempt
                     time.sleep(backoff_seconds)
                     continue
                 else:
@@ -280,8 +277,8 @@ class ActionsAnalyzer:
         Returns:
             Concatenated log content as string
         """
-        import zipfile
         import io
+        import zipfile
 
         try:
             with zipfile.ZipFile(io.BytesIO(zip_content)) as zip_file:
@@ -348,15 +345,11 @@ class ActionsAnalyzer:
 
         # Pattern 1: Flake8 format - file.py:line:col: CODE message
         # Example: src/api/main.py:42:80: E501 line too long (82 > 79 characters)
-        flake8_pattern = re.compile(
-            r"^([^:]+):(\d+):(\d+):\s+([A-Z]\d+)\s+(.+)$"
-        )
+        flake8_pattern = re.compile(r"^([^:]+):(\d+):(\d+):\s+([A-Z]\d+)\s+(.+)$")
 
         # Pattern 2: ESLint format - file.js:line:col: message (rule-name)
         # Example: src/utils/helper.js:15:3: 'foo' is assigned a value but never used (no-unused-vars)
-        eslint_pattern = re.compile(
-            r"^([^:]+):(\d+):(\d+):\s+(.+?)\s+\(([^)]+)\)$"
-        )
+        eslint_pattern = re.compile(r"^([^:]+):(\d+):(\d+):\s+(.+?)\s+\(([^)]+)\)$")
 
         # Pattern 3: Bandit format - >> Issue: [severity] message
         #                            Location: file.py:line
@@ -364,12 +357,8 @@ class ActionsAnalyzer:
         # >> Issue: [B201:flask_debug_true] A Flask app appears to be run with debug=True
         #    Severity: High   Confidence: High
         #    Location: src/app.py:10
-        bandit_issue_pattern = re.compile(
-            r"^>>\s+Issue:\s+\[([^\]]+)\]\s+(.+)$"
-        )
-        bandit_location_pattern = re.compile(
-            r"^\s+Location:\s+([^:]+):(\d+)$"
-        )
+        bandit_issue_pattern = re.compile(r"^>>\s+Issue:\s+\[([^\]]+)\]\s+(.+)$")
+        bandit_location_pattern = re.compile(r"^\s+Location:\s+([^:]+):(\d+)$")
 
         i = 0
         while i < len(lines):
@@ -681,9 +670,7 @@ class ActionsAnalyzer:
             "verified": verified,
         }
 
-    def _generate_recommendation(
-        self, category: str, code: str, message: str
-    ) -> str:
+    def _generate_recommendation(self, category: str, code: str, message: str) -> str:
         """Generate actionable recommendation based on finding.
 
         Args:
@@ -703,9 +690,7 @@ class ActionsAnalyzer:
             "complexity": "Reduce code complexity by refactoring into smaller functions.",
         }
 
-        base_recommendation = recommendations.get(
-            category, "Review and address this issue."
-        )
+        base_recommendation = recommendations.get(category, "Review and address this issue.")
 
         # Add specific guidance for common issues
         if "unused" in message.lower():
@@ -881,17 +866,19 @@ class ActionsAnalyzer:
         )
 
         for match in failure_pattern.finditer(log_content):
-            status = match.group(1)
+            match.group(1)
             file_path = match.group(2)
             test_name = match.group(3)
             error_message = match.group(4).strip()
 
-            failing_tests.append({
-                "name": f"{file_path}::{test_name}",
-                "error_message": error_message,
-                "file": file_path,
-                "line": None,
-            })
+            failing_tests.append(
+                {
+                    "name": f"{file_path}::{test_name}",
+                    "error_message": error_message,
+                    "file": file_path,
+                    "line": None,
+                }
+            )
 
         return failing_tests
 
@@ -912,9 +899,7 @@ class ActionsAnalyzer:
         #          Error message
         # Pattern: FAIL src/test.js
         #          ● test name
-        failure_pattern = re.compile(
-            r"●\s+(.+?)\s+›\s+(.+?)$", re.MULTILINE
-        )
+        failure_pattern = re.compile(r"●\s+(.+?)\s+›\s+(.+?)$", re.MULTILINE)
 
         # Also look for file paths with FAIL
         file_pattern = re.compile(r"FAIL\s+([^\s]+\.(?:js|ts|jsx|tsx))")
@@ -932,12 +917,14 @@ class ActionsAnalyzer:
                 suite_name = failure_match.group(1).strip()
                 test_name = failure_match.group(2).strip()
 
-                failing_tests.append({
-                    "name": f"{suite_name} › {test_name}",
-                    "error_message": "Test failed (see logs for details)",
-                    "file": current_file or "unknown",
-                    "line": None,
-                })
+                failing_tests.append(
+                    {
+                        "name": f"{suite_name} › {test_name}",
+                        "error_message": "Test failed (see logs for details)",
+                        "file": current_file or "unknown",
+                        "line": None,
+                    }
+                )
 
         return failing_tests
 
@@ -956,14 +943,10 @@ class ActionsAnalyzer:
 
         # Pattern: --- FAIL: TestName (0.00s)
         #              file.go:123: error message
-        failure_pattern = re.compile(
-            r"---\s+FAIL:\s+(\w+)\s+\([\d.]+s\)", re.MULTILINE
-        )
+        failure_pattern = re.compile(r"---\s+FAIL:\s+(\w+)\s+\([\d.]+s\)", re.MULTILINE)
 
         # Pattern for error location: file.go:123: message
-        error_location_pattern = re.compile(
-            r"^\s+([^:]+):(\d+):\s+(.+)$", re.MULTILINE
-        )
+        error_location_pattern = re.compile(r"^\s+([^:]+):(\d+):\s+(.+)$", re.MULTILINE)
 
         lines = log_content.split("\n")
         i = 0
@@ -989,12 +972,14 @@ class ActionsAnalyzer:
                         error_message = error_match.group(3).strip()
                         break
 
-                failing_tests.append({
-                    "name": test_name,
-                    "error_message": error_message,
-                    "file": file_path,
-                    "line": line_num,
-                })
+                failing_tests.append(
+                    {
+                        "name": test_name,
+                        "error_message": error_message,
+                        "file": file_path,
+                        "line": line_num,
+                    }
+                )
 
             i += 1
 
@@ -1048,20 +1033,16 @@ class ActionsAnalyzer:
         # Example: src/utils/helper.js |   92.5 |    88.0 |   95.0 |   92.5 |
         istanbul_file_pattern = re.compile(
             r"^([^\s|]+\.(?:js|ts|jsx|tsx))\s+\|\s+(\d+(?:\.\d+)?)\s+\|\s+(\d+(?:\.\d+)?)\s+\|\s+(\d+(?:\.\d+)?)\s+\|\s+(\d+(?:\.\d+)?)",
-            re.MULTILINE
+            re.MULTILINE,
         )
 
         # Pattern 5: Go coverage format
         # Example: coverage: 85.5% of statements
-        go_coverage_pattern = re.compile(
-            r"coverage:\s+(\d+(?:\.\d+)?)%\s+of\s+statements"
-        )
+        go_coverage_pattern = re.compile(r"coverage:\s+(\d+(?:\.\d+)?)%\s+of\s+statements")
 
         # Pattern 6: SimpleCov (Ruby) format
         # Example: 85.5% covered
-        simplecov_pattern = re.compile(
-            r"(\d+(?:\.\d+)?)%\s+covered"
-        )
+        simplecov_pattern = re.compile(r"(\d+(?:\.\d+)?)%\s+covered")
 
         # Try coverage.py patterns
         coverage_py_total_match = coverage_py_total_pattern.search(log_content)
@@ -1130,7 +1111,3 @@ class ActionsAnalyzer:
         # No coverage output detected
         logger.debug("no_coverage_output_detected")
         return coverage_by_file
-
-
-
-

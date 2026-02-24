@@ -5,25 +5,13 @@ from datetime import UTC, datetime
 import pytest
 
 from src.analysis.dashboard_aggregator import DashboardAggregator
+from src.models.common import SubmissionStatus
 from src.models.dashboard import (
-    CommonIssue,
     HiringIntelligence,
     OrganizerDashboard,
     PrizeRecommendation,
     TechnologyTrends,
     TopPerformer,
-)
-from src.models.submission import RepoMeta, SubmissionResponse
-from src.models.team_dynamics import (
-    CollaborationPattern,
-    ContributorRole,
-    ExpertiseArea,
-    HiringSignals,
-    IndividualScorecard,
-    RedFlag,
-    RedFlagSeverity,
-    TeamAnalysisResult,
-    WorkStyle,
 )
 from src.models.strategy import (
     LearningJourney,
@@ -32,8 +20,16 @@ from src.models.strategy import (
     TestStrategy,
     Tradeoff,
 )
-from src.models.common import SubmissionStatus
-
+from src.models.submission import RepoMeta, SubmissionResponse
+from src.models.team_dynamics import (
+    CollaborationPattern,
+    ContributorRole,
+    ExpertiseArea,
+    HiringSignals,
+    IndividualScorecard,
+    TeamAnalysisResult,
+    WorkStyle,
+)
 
 # ============================================================
 # FIXTURES
@@ -546,7 +542,9 @@ def test_find_best_learning_journey(
     """Test finding team with best learning journey."""
     strategy_analyses = {"SUB#001": sample_strategy_analysis}
 
-    result = dashboard_aggregator._find_best_learning_journey([sample_submission], strategy_analyses)
+    result = dashboard_aggregator._find_best_learning_journey(
+        [sample_submission], strategy_analyses
+    )
 
     assert result is not None
     assert isinstance(result, PrizeRecommendation)
@@ -577,8 +575,14 @@ def test_categorize_weakness(
     dashboard_aggregator: DashboardAggregator,
 ) -> None:
     """Test weakness categorization."""
-    assert dashboard_aggregator._categorize_weakness("Insufficient test coverage") == "insufficient_testing"
-    assert dashboard_aggregator._categorize_weakness("SQL injection vulnerability") == "security_vulnerabilities"
+    assert (
+        dashboard_aggregator._categorize_weakness("Insufficient test coverage")
+        == "insufficient_testing"
+    )
+    assert (
+        dashboard_aggregator._categorize_weakness("SQL injection vulnerability")
+        == "security_vulnerabilities"
+    )
     assert dashboard_aggregator._categorize_weakness("Missing README") == "poor_documentation"
     assert dashboard_aggregator._categorize_weakness("No error handling") == "weak_error_handling"
     assert dashboard_aggregator._categorize_weakness("Slow performance") == "performance_issues"

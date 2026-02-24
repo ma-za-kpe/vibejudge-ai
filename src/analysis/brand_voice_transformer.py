@@ -26,7 +26,7 @@ logger = structlog.get_logger()
 
 class BrandVoiceTransformer:
     """Transforms technical findings into educational feedback.
-    
+
     Responsibilities:
     - Transform cold technical findings into warm educational feedback
     - Add code examples (vulnerable vs fixed)
@@ -42,19 +42,16 @@ class BrandVoiceTransformer:
     def transform_findings(
         self,
         findings: list[
-            BugHunterEvidence
-            | PerformanceEvidence
-            | InnovationEvidence
-            | AIDetectionEvidence
+            BugHunterEvidence | PerformanceEvidence | InnovationEvidence | AIDetectionEvidence
         ],
         strategy_context: StrategyAnalysisResult | None = None,
     ) -> list[ActionableFeedback]:
         """Transform findings into actionable feedback.
-        
+
         Args:
             findings: Raw technical findings from agents
             strategy_context: Strategic context for scoring adjustments
-            
+
         Returns:
             List of actionable feedback items with warm tone
         """
@@ -69,21 +66,15 @@ class BrandVoiceTransformer:
         for finding in findings:
             try:
                 if isinstance(finding, BugHunterEvidence):
-                    feedback = self._transform_bug_hunter_finding(
-                        finding, strategy_context
-                    )
+                    feedback = self._transform_bug_hunter_finding(finding, strategy_context)
                 elif isinstance(finding, PerformanceEvidence):
-                    feedback = self._transform_performance_finding(
-                        finding, strategy_context
-                    )
+                    feedback = self._transform_performance_finding(finding, strategy_context)
                 elif isinstance(finding, InnovationEvidence):
                     feedback = self._transform_innovation_finding(finding)
                 elif isinstance(finding, AIDetectionEvidence):
                     feedback = self._transform_ai_detection_finding(finding)
                 else:
-                    self.logger.warning(
-                        "unknown_finding_type", finding_type=type(finding).__name__
-                    )
+                    self.logger.warning("unknown_finding_type", finding_type=type(finding).__name__)
                     continue
 
                 actionable_feedback.append(feedback)
@@ -110,11 +101,11 @@ class BrandVoiceTransformer:
         strategy_context: StrategyAnalysisResult | None,
     ) -> ActionableFeedback:
         """Transform BugHunter finding with warm tone.
-        
+
         Args:
             finding: BugHunter evidence item
             strategy_context: Strategic context for adjustments
-            
+
         Returns:
             ActionableFeedback with warm educational tone
         """
@@ -159,6 +150,7 @@ class BrandVoiceTransformer:
             effort_estimate=effort_estimate,
             business_impact=business_impact,
         )
+
     def _transform_tone(self, text: str) -> str:
         """Transform cold technical language into warm, encouraging language.
 
@@ -191,7 +183,6 @@ class BrandVoiceTransformer:
             "broken": "needs attention",
             "Broken": "Needs attention",
             "BROKEN": "NEEDS ATTENTION",
-
             # Blame language
             "you failed": "this can be improved",
             "You failed": "This can be improved",
@@ -203,7 +194,6 @@ class BrandVoiceTransformer:
             "You should have": "Consider",
             "you must": "we recommend",
             "You must": "We recommend",
-
             # Harsh technical terms
             "vulnerable": "could be more secure",
             "Vulnerable": "Could be more secure",
@@ -248,18 +238,17 @@ class BrandVoiceTransformer:
 
         return transformed
 
-
     def _transform_performance_finding(
         self,
         finding: PerformanceEvidence,
         strategy_context: StrategyAnalysisResult | None,
     ) -> ActionableFeedback:
         """Transform Performance finding with warm tone.
-        
+
         Args:
             finding: Performance evidence item
             strategy_context: Strategic context for adjustments
-            
+
         Returns:
             ActionableFeedback with warm educational tone
         """
@@ -281,14 +270,12 @@ class BrandVoiceTransformer:
             business_impact=self._explain_business_impact_performance(finding),
         )
 
-    def _transform_innovation_finding(
-        self, finding: InnovationEvidence
-    ) -> ActionableFeedback:
+    def _transform_innovation_finding(self, finding: InnovationEvidence) -> ActionableFeedback:
         """Transform Innovation finding (positive feedback).
-        
+
         Args:
             finding: Innovation evidence item
-            
+
         Returns:
             ActionableFeedback celebrating innovation
         """
@@ -306,14 +293,12 @@ class BrandVoiceTransformer:
             business_impact=finding.detail,
         )
 
-    def _transform_ai_detection_finding(
-        self, finding: AIDetectionEvidence
-    ) -> ActionableFeedback:
+    def _transform_ai_detection_finding(self, finding: AIDetectionEvidence) -> ActionableFeedback:
         """Transform AI Detection finding with neutral tone.
-        
+
         Args:
             finding: AI Detection evidence item
-            
+
         Returns:
             ActionableFeedback with neutral educational tone
         """
@@ -333,17 +318,17 @@ class BrandVoiceTransformer:
 
     def _severity_to_priority(self, severity: Severity) -> int:
         """Convert severity to priority (1-5, 1=highest).
-        
+
         Priority considers both severity and effort:
         - Priority 1 (Critical): High-severity issues that should be fixed first
         - Priority 2 (High): Important issues with moderate effort
         - Priority 3 (Medium): Balance of severity and effort
         - Priority 4 (Low): Minor issues or high-effort improvements
         - Priority 5 (Info): Nice-to-have improvements
-        
+
         Args:
             severity: Finding severity
-            
+
         Returns:
             Priority level (1-5)
         """
@@ -355,58 +340,54 @@ class BrandVoiceTransformer:
             Severity.INFO: 5,
         }
         return severity_map.get(severity, 3)
-    
-    def _calculate_priority_with_effort(
-        self, 
-        severity: Severity, 
-        effort: EffortEstimate
-    ) -> int:
+
+    def _calculate_priority_with_effort(self, severity: Severity, effort: EffortEstimate) -> int:
         """Calculate priority considering both severity and effort.
-        
+
         Prioritization strategy:
         - Quick wins (high severity, low effort): Priority 1
         - Critical issues (critical severity): Priority 1 regardless of effort
         - High-impact moderate effort: Priority 2
         - Low-effort improvements: Priority 3-4 (do these while fixing bigger issues)
         - High-effort low-severity: Priority 4-5 (defer for later)
-        
+
         Args:
             severity: Finding severity
             effort: Effort estimate
-            
+
         Returns:
             Priority level (1-5) optimized for quick wins
         """
         base_priority = self._severity_to_priority(severity)
-        
+
         # Critical severity always gets priority 1
         if severity == Severity.CRITICAL:
             return 1
-        
+
         # Quick wins: High severity + low effort = bump up priority
         if severity == Severity.HIGH and effort.minutes <= 15:
             return 1  # Quick security/bug fixes are top priority
-        
+
         # Medium severity + quick fix = good priority
         if severity == Severity.MEDIUM and effort.minutes <= 10:
             return 2  # Easy improvements
-        
+
         # High effort + low severity = lower priority
         if severity in [Severity.LOW, Severity.INFO] and effort.minutes >= 60:
             return 5  # Defer major refactoring of minor issues
-        
+
         # High effort + medium severity = slightly lower priority
         if severity == Severity.MEDIUM and effort.minutes >= 120:
             return 4  # Defer time-consuming moderate issues
-        
+
         return base_priority
 
     def _generate_acknowledgment(self, category: str) -> str:
         """Generate warm acknowledgment based on category.
-        
+
         Args:
             category: Finding category
-            
+
         Returns:
             Warm acknowledgment message
         """
@@ -428,11 +409,11 @@ class BrandVoiceTransformer:
         self, category: str, strategy_context: StrategyAnalysisResult | None
     ) -> str:
         """Generate context explaining why this is common in hackathons.
-        
+
         Args:
             category: Finding category
             strategy_context: Strategic context for adjustments
-            
+
         Returns:
             Context explanation
         """
@@ -456,10 +437,10 @@ class BrandVoiceTransformer:
 
     def _explain_vulnerability(self, finding: BugHunterEvidence) -> str:
         """Explain why the current approach is vulnerable.
-        
+
         Args:
             finding: BugHunter evidence
-            
+
         Returns:
             Explanation of vulnerability
         """
@@ -467,10 +448,10 @@ class BrandVoiceTransformer:
 
     def _explain_fix(self, finding: BugHunterEvidence) -> str:
         """Explain why the fix solves the problem.
-        
+
         Args:
             finding: BugHunter evidence
-            
+
         Returns:
             Explanation of fix
         """
@@ -478,10 +459,10 @@ class BrandVoiceTransformer:
 
     def _generate_testing_instructions(self, finding: BugHunterEvidence) -> str:
         """Generate testing instructions for the fix.
-        
+
         Args:
             finding: BugHunter evidence
-            
+
         Returns:
             Testing instructions
         """
@@ -496,14 +477,14 @@ class BrandVoiceTransformer:
 
     def _generate_learning_resources(self, category: str) -> list[LearningResource]:
         """Generate learning resources for the category.
-        
+
         Maps finding categories to curated learning resources including official
         documentation, tutorials, and articles. Prioritizes free, high-quality
         resources from authoritative sources.
-        
+
         Args:
             category: Finding category (security, testing, architecture, etc.)
-            
+
         Returns:
             List of learning resources with title, URL, and resource type
         """
@@ -526,7 +507,6 @@ class BrandVoiceTransformer:
                     resource_type="documentation",
                 ),
             ],
-            
             # Testing resources
             "testing": [
                 LearningResource(
@@ -545,7 +525,6 @@ class BrandVoiceTransformer:
                     resource_type="tutorial",
                 ),
             ],
-            
             # Architecture resources
             "architecture": [
                 LearningResource(
@@ -564,7 +543,6 @@ class BrandVoiceTransformer:
                     resource_type="documentation",
                 ),
             ],
-            
             # Database resources
             "database": [
                 LearningResource(
@@ -583,7 +561,6 @@ class BrandVoiceTransformer:
                     resource_type="guide",
                 ),
             ],
-            
             # API design resources
             "api": [
                 LearningResource(
@@ -602,7 +579,6 @@ class BrandVoiceTransformer:
                     resource_type="guide",
                 ),
             ],
-            
             # Scalability resources
             "scalability": [
                 LearningResource(
@@ -621,7 +597,6 @@ class BrandVoiceTransformer:
                     resource_type="guide",
                 ),
             ],
-            
             # Bug/code quality resources
             "bug": [
                 LearningResource(
@@ -635,7 +610,6 @@ class BrandVoiceTransformer:
                     resource_type="documentation",
                 ),
             ],
-            
             # Code smell resources
             "code_smell": [
                 LearningResource(
@@ -654,7 +628,6 @@ class BrandVoiceTransformer:
                     resource_type="tutorial",
                 ),
             ],
-            
             # Dependency management resources
             "dependency": [
                 LearningResource(
@@ -673,7 +646,6 @@ class BrandVoiceTransformer:
                     resource_type="guide",
                 ),
             ],
-            
             # Performance resources
             "performance": [
                 LearningResource(
@@ -687,7 +659,6 @@ class BrandVoiceTransformer:
                     resource_type="tutorial",
                 ),
             ],
-            
             # CI/CD resources
             "cicd": [
                 LearningResource(
@@ -701,7 +672,6 @@ class BrandVoiceTransformer:
                     resource_type="guide",
                 ),
             ],
-            
             # Documentation resources
             "documentation": [
                 LearningResource(
@@ -716,51 +686,51 @@ class BrandVoiceTransformer:
                 ),
             ],
         }
-        
+
         # Return resources for the category, or empty list if category not found
         return resources_map.get(category, [])
 
     def _estimate_effort(self, finding: BugHunterEvidence) -> EffortEstimate:
         """Estimate effort to fix the finding with category-specific logic.
-        
+
         Categorizes fixes into:
         - Quick (5min): Simple style fixes, formatting, imports
         - Medium (30min): Logic bugs, test additions, refactoring
         - Involved (2hr+): Security vulnerabilities, architecture changes
-        
+
         Args:
             finding: BugHunter evidence
-            
+
         Returns:
             Effort estimate with minutes, difficulty, and prioritization guidance
         """
         # Category-specific effort estimation
         category = finding.category.lower()
         severity = finding.severity
-        
+
         # Quick fixes (5-15 minutes) - Easy difficulty
         if category in ["style", "complexity"] and severity in [Severity.LOW, Severity.INFO]:
             return EffortEstimate(minutes=5, difficulty="Easy")
-        
+
         if category == "import" and severity == Severity.MEDIUM:
             return EffortEstimate(minutes=10, difficulty="Easy")
-        
+
         if category == "code_smell" and severity == Severity.LOW:
             return EffortEstimate(minutes=15, difficulty="Easy")
-        
+
         # Medium fixes (30-60 minutes) - Moderate difficulty
         if category == "bug" and severity in [Severity.MEDIUM, Severity.HIGH]:
             return EffortEstimate(minutes=45, difficulty="Moderate")
-        
+
         if category == "testing" and severity == Severity.MEDIUM:
             return EffortEstimate(minutes=30, difficulty="Moderate")
-        
+
         if category == "dependency" and severity == Severity.MEDIUM:
             return EffortEstimate(minutes=30, difficulty="Moderate")
-        
+
         if category == "code_smell" and severity in [Severity.MEDIUM, Severity.HIGH]:
             return EffortEstimate(minutes=60, difficulty="Moderate")
-        
+
         # Involved fixes (2+ hours) - Advanced difficulty
         if category == "security":
             if severity == Severity.CRITICAL:
@@ -769,22 +739,22 @@ class BrandVoiceTransformer:
                 return EffortEstimate(minutes=120, difficulty="Advanced")
             else:
                 return EffortEstimate(minutes=60, difficulty="Moderate")
-        
+
         if category == "bug" and severity == Severity.CRITICAL:
             return EffortEstimate(minutes=120, difficulty="Advanced")
-        
+
         if category == "dependency" and severity in [Severity.HIGH, Severity.CRITICAL]:
             return EffortEstimate(minutes=90, difficulty="Advanced")
-        
+
         # Fallback to severity-based estimation
         return self._estimate_effort_from_severity(severity)
 
     def _estimate_effort_from_severity(self, severity: Severity) -> EffortEstimate:
         """Estimate effort from severity level.
-        
+
         Args:
             severity: Finding severity
-            
+
         Returns:
             Effort estimate
         """
@@ -799,10 +769,10 @@ class BrandVoiceTransformer:
 
     def _explain_business_impact(self, finding: BugHunterEvidence) -> str:
         """Explain business impact of the issue.
-        
+
         Args:
             finding: BugHunter evidence
-            
+
         Returns:
             Business impact explanation
         """
@@ -817,14 +787,12 @@ class BrandVoiceTransformer:
             "This issue can impact user experience and system reliability.",
         )
 
-    def _explain_business_impact_performance(
-        self, finding: PerformanceEvidence
-    ) -> str:
+    def _explain_business_impact_performance(self, finding: PerformanceEvidence) -> str:
         """Explain business impact of performance issues.
-        
+
         Args:
             finding: Performance evidence
-            
+
         Returns:
             Business impact explanation
         """
@@ -844,15 +812,15 @@ class BrandVoiceTransformer:
         finding: BugHunterEvidence | PerformanceEvidence,
     ) -> CodeExample | None:
         """Generate before/after code examples for a finding.
-        
+
         For each finding, generates a code snippet showing:
         1. The vulnerable/problematic code (before)
         2. The fixed/improved code (after)
         3. An explanation of why the fix improves the code
-        
+
         Args:
             finding: Evidence item with file, line, category, and recommendation
-            
+
         Returns:
             CodeExample with vulnerable_code, fixed_code, and explanation,
             or None if code example cannot be generated for this finding type
@@ -884,39 +852,39 @@ class BrandVoiceTransformer:
 
     def _generate_security_example(self, finding: BugHunterEvidence) -> CodeExample:
         """Generate security-related code example.
-        
+
         Args:
             finding: BugHunter evidence with security category
-            
+
         Returns:
             CodeExample showing vulnerable and fixed code
         """
         # Detect specific security issue types from finding text
         finding_lower = finding.finding.lower()
-        
+
         if "sql injection" in finding_lower or "sql" in finding_lower:
             return CodeExample(
-                vulnerable_code=f"""# {finding.file}:{finding.line or '?'}
+                vulnerable_code=f"""# {finding.file}:{finding.line or "?"}
 # ❌ Vulnerable to SQL injection
 def get_user(username):
     query = f"SELECT * FROM users WHERE username = '{{username}}'"
     return db.execute(query)""",
-                fixed_code=f"""# {finding.file}:{finding.line or '?'}
+                fixed_code=f"""# {finding.file}:{finding.line or "?"}
 # ✅ Protected with parameterized query
 def get_user(username):
     query = "SELECT * FROM users WHERE username = ?"
     return db.execute(query, (username,))""",
                 explanation="Parameterized queries prevent SQL injection by treating user input as data, not executable code. The database driver automatically escapes special characters, making it impossible for attackers to inject malicious SQL commands.",
             )
-        
+
         elif "password" in finding_lower or "hash" in finding_lower:
             return CodeExample(
-                vulnerable_code=f"""# {finding.file}:{finding.line or '?'}
+                vulnerable_code=f"""# {finding.file}:{finding.line or "?"}
 # ❌ Storing passwords in plain text
 def create_user(username, password):
     user = User(username=username, password=password)
     db.save(user)""",
-                fixed_code=f"""# {finding.file}:{finding.line or '?'}
+                fixed_code=f"""# {finding.file}:{finding.line or "?"}
 # ✅ Hashing passwords with bcrypt
 import bcrypt
 
@@ -926,16 +894,16 @@ def create_user(username, password):
     db.save(user)""",
                 explanation="Hashing passwords with bcrypt protects user credentials even if the database is compromised. Bcrypt includes a salt and is computationally expensive, making brute-force attacks impractical.",
             )
-        
+
         elif "xss" in finding_lower or "cross-site" in finding_lower or "escape" in finding_lower:
             return CodeExample(
-                vulnerable_code=f"""# {finding.file}:{finding.line or '?'}
+                vulnerable_code=f"""# {finding.file}:{finding.line or "?"}
 # ❌ Vulnerable to XSS attacks
 @app.route('/search')
 def search():
     query = request.args.get('q')
     return f"<h1>Results for: {{query}}</h1>" """,
-                fixed_code=f"""# {finding.file}:{finding.line or '?'}
+                fixed_code=f"""# {finding.file}:{finding.line or "?"}
 # ✅ Escaping user input
 from markupsafe import escape
 
@@ -945,17 +913,17 @@ def search():
     return f"<h1>Results for: {{escape(query)}}</h1>" """,
                 explanation="Escaping user input prevents XSS attacks by converting special HTML characters (like <, >, &) into safe entities. This ensures user input is displayed as text, not executed as code.",
             )
-        
+
         elif "secret" in finding_lower or "api key" in finding_lower or "token" in finding_lower:
             return CodeExample(
-                vulnerable_code=f"""# {finding.file}:{finding.line or '?'}
+                vulnerable_code=f"""# {finding.file}:{finding.line or "?"}
 # ❌ Hardcoded secrets in source code
 API_KEY = "sk_live_abc123xyz789"
 db_password = "MySecretPassword123"
 
 def connect():
     return db.connect(password=db_password)""",
-                fixed_code=f"""# {finding.file}:{finding.line or '?'}
+                fixed_code=f"""# {finding.file}:{finding.line or "?"}
 # ✅ Loading secrets from environment variables
 import os
 
@@ -966,14 +934,14 @@ def connect():
     return db.connect(password=db_password)""",
                 explanation="Environment variables keep secrets out of source code, preventing accidental exposure in version control. Use .env files locally and secret managers (AWS Secrets Manager, etc.) in production.",
             )
-        
+
         else:
             # Generic security example
             return CodeExample(
-                vulnerable_code=f"""# {finding.file}:{finding.line or '?'}
+                vulnerable_code=f"""# {finding.file}:{finding.line or "?"}
 # ❌ Current implementation
 # {finding.finding}""",
-                fixed_code=f"""# {finding.file}:{finding.line or '?'}
+                fixed_code=f"""# {finding.file}:{finding.line or "?"}
 # ✅ Improved implementation
 # {finding.recommendation}""",
                 explanation="This fix addresses the security concern by implementing proper validation, sanitization, or access controls to prevent potential exploits.",
@@ -981,23 +949,23 @@ def connect():
 
     def _generate_bug_example(self, finding: BugHunterEvidence) -> CodeExample:
         """Generate bug-related code example.
-        
+
         Args:
             finding: BugHunter evidence with bug category
-            
+
         Returns:
             CodeExample showing buggy and fixed code
         """
         finding_lower = finding.finding.lower()
-        
+
         if "null" in finding_lower or "none" in finding_lower or "undefined" in finding_lower:
             return CodeExample(
-                vulnerable_code=f"""# {finding.file}:{finding.line or '?'}
+                vulnerable_code=f"""# {finding.file}:{finding.line or "?"}
 # ❌ No null check
 def process_order(order):
     total = order.items.sum()  # Crashes if items is None
     return total * 1.1""",
-                fixed_code=f"""# {finding.file}:{finding.line or '?'}
+                fixed_code=f"""# {finding.file}:{finding.line or "?"}
 # ✅ Defensive null check
 def process_order(order):
     if not order or not order.items:
@@ -1006,14 +974,14 @@ def process_order(order):
     return total * 1.1""",
                 explanation="Null checks prevent crashes when data is missing or invalid. This defensive programming pattern makes your code more robust and user-friendly.",
             )
-        
+
         elif "divide" in finding_lower or "division" in finding_lower or "zero" in finding_lower:
             return CodeExample(
-                vulnerable_code=f"""# {finding.file}:{finding.line or '?'}
+                vulnerable_code=f"""# {finding.file}:{finding.line or "?"}
 # ❌ Division by zero risk
 def calculate_average(total, count):
     return total / count  # Crashes if count is 0""",
-                fixed_code=f"""# {finding.file}:{finding.line or '?'}
+                fixed_code=f"""# {finding.file}:{finding.line or "?"}
 # ✅ Handle edge case
 def calculate_average(total, count):
     if count == 0:
@@ -1021,14 +989,14 @@ def calculate_average(total, count):
     return total / count""",
                 explanation="Checking for zero before division prevents runtime errors. This is especially important when count comes from user input or database queries that might return empty results.",
             )
-        
+
         elif "index" in finding_lower or "array" in finding_lower or "list" in finding_lower:
             return CodeExample(
-                vulnerable_code=f"""# {finding.file}:{finding.line or '?'}
+                vulnerable_code=f"""# {finding.file}:{finding.line or "?"}
 # ❌ Index out of bounds risk
 def get_first_item(items):
     return items[0]  # Crashes if items is empty""",
-                fixed_code=f"""# {finding.file}:{finding.line or '?'}
+                fixed_code=f"""# {finding.file}:{finding.line or "?"}
 # ✅ Safe array access
 def get_first_item(items):
     if not items:
@@ -1036,14 +1004,14 @@ def get_first_item(items):
     return items[0]""",
                 explanation="Checking array length before accessing elements prevents index errors. Returning None or a default value makes the function more predictable and easier to use.",
             )
-        
+
         else:
             # Generic bug example
             return CodeExample(
-                vulnerable_code=f"""# {finding.file}:{finding.line or '?'}
+                vulnerable_code=f"""# {finding.file}:{finding.line or "?"}
 # ❌ Current implementation
 # {finding.finding}""",
-                fixed_code=f"""# {finding.file}:{finding.line or '?'}
+                fixed_code=f"""# {finding.file}:{finding.line or "?"}
 # ✅ Fixed implementation
 # {finding.recommendation}""",
                 explanation="This fix addresses the bug by adding proper error handling, validation, or edge case handling to prevent unexpected behavior.",
@@ -1051,21 +1019,21 @@ def get_first_item(items):
 
     def _generate_testing_example(self, finding: BugHunterEvidence) -> CodeExample:
         """Generate testing-related code example.
-        
+
         Args:
             finding: BugHunter evidence with testing category
-            
+
         Returns:
             CodeExample showing test implementation
         """
         return CodeExample(
-            vulnerable_code=f"""# {finding.file}:{finding.line or '?'}
+            vulnerable_code=f"""# {finding.file}:{finding.line or "?"}
 # ❌ No tests for this functionality
 def calculate_discount(price, percentage):
     return price * (1 - percentage / 100)
 
 # No test file exists""",
-            fixed_code=f"""# tests/test_{finding.file.replace('/', '_').replace('.py', '')}.py
+            fixed_code=f"""# tests/test_{finding.file.replace("/", "_").replace(".py", "")}.py
 # ✅ Comprehensive test coverage
 import pytest
 
@@ -1086,18 +1054,18 @@ def test_calculate_discount_invalid():
 
     def _generate_code_smell_example(self, finding: BugHunterEvidence) -> CodeExample:
         """Generate code smell example.
-        
+
         Args:
             finding: BugHunter evidence with code_smell category
-            
+
         Returns:
             CodeExample showing refactored code
         """
         finding_lower = finding.finding.lower()
-        
+
         if "duplicate" in finding_lower or "repeated" in finding_lower:
             return CodeExample(
-                vulnerable_code=f"""# {finding.file}:{finding.line or '?'}
+                vulnerable_code=f"""# {finding.file}:{finding.line or "?"}
 # ❌ Duplicated code
 def send_welcome_email(user):
     subject = "Welcome!"
@@ -1108,7 +1076,7 @@ def send_reset_email(user):
     subject = "Password Reset"
     body = f"Hi {{user.name}}, click here to reset."
     send_email(user.email, subject, body)""",
-                fixed_code=f"""# {finding.file}:{finding.line or '?'}
+                fixed_code=f"""# {finding.file}:{finding.line or "?"}
 # ✅ Extracted common logic
 def send_user_email(user, subject, body_template):
     body = body_template.format(name=user.name)
@@ -1121,10 +1089,10 @@ def send_reset_email(user):
     send_user_email(user, "Password Reset", "Hi {{name}}, click here.")""",
                 explanation="Extracting common logic into a shared function reduces duplication and makes maintenance easier. When you need to change email sending logic, you only update one place.",
             )
-        
+
         elif "complex" in finding_lower or "long" in finding_lower:
             return CodeExample(
-                vulnerable_code=f"""# {finding.file}:{finding.line or '?'}
+                vulnerable_code=f"""# {finding.file}:{finding.line or "?"}
 # ❌ Complex nested logic
 def process(data):
     if data:
@@ -1133,7 +1101,7 @@ def process(data):
                 if data.user.active:
                     return data.user.process()
     return None""",
-                fixed_code=f"""# {finding.file}:{finding.line or '?'}
+                fixed_code=f"""# {finding.file}:{finding.line or "?"}
 # ✅ Early returns for clarity
 def process(data):
     if not data:
@@ -1145,14 +1113,14 @@ def process(data):
     return data.user.process()""",
                 explanation="Early returns (guard clauses) reduce nesting and make code easier to read. Each condition is clear and independent, making the logic flow more obvious.",
             )
-        
+
         else:
             # Generic code smell example
             return CodeExample(
-                vulnerable_code=f"""# {finding.file}:{finding.line or '?'}
+                vulnerable_code=f"""# {finding.file}:{finding.line or "?"}
 # ❌ Current implementation
 # {finding.finding}""",
-                fixed_code=f"""# {finding.file}:{finding.line or '?'}
+                fixed_code=f"""# {finding.file}:{finding.line or "?"}
 # ✅ Refactored implementation
 # {finding.recommendation}""",
                 explanation="This refactoring improves code readability, maintainability, and follows best practices for clean code.",
@@ -1160,20 +1128,20 @@ def process(data):
 
     def _generate_dependency_example(self, finding: BugHunterEvidence) -> CodeExample:
         """Generate dependency-related code example.
-        
+
         Args:
             finding: BugHunter evidence with dependency category
-            
+
         Returns:
             CodeExample showing dependency update
         """
         return CodeExample(
-            vulnerable_code=f"""# requirements.txt
+            vulnerable_code="""# requirements.txt
 # ❌ Outdated dependencies with known vulnerabilities
 flask==1.0.0
 requests==2.18.0
 django==2.0.0""",
-            fixed_code=f"""# requirements.txt
+            fixed_code="""# requirements.txt
 # ✅ Updated to latest secure versions
 flask==3.0.0
 requests==2.31.0
@@ -1185,24 +1153,24 @@ django==5.0.0
 
     def _generate_database_example(self, finding: PerformanceEvidence) -> CodeExample:
         """Generate database performance example.
-        
+
         Args:
             finding: Performance evidence with database category
-            
+
         Returns:
             CodeExample showing database optimization
         """
         finding_lower = finding.finding.lower()
-        
+
         if "n+1" in finding_lower or "query" in finding_lower:
             return CodeExample(
-                vulnerable_code=f"""# {finding.file}:{finding.line or '?'}
+                vulnerable_code=f"""# {finding.file}:{finding.line or "?"}
 # ❌ N+1 query problem
 def get_posts_with_authors():
     posts = Post.query.all()
     for post in posts:
         print(post.author.name)  # Separate query for each post!""",
-                fixed_code=f"""# {finding.file}:{finding.line or '?'}
+                fixed_code=f"""# {finding.file}:{finding.line or "?"}
 # ✅ Eager loading with join
 def get_posts_with_authors():
     posts = Post.query.options(joinedload(Post.author)).all()
@@ -1210,17 +1178,17 @@ def get_posts_with_authors():
         print(post.author.name)  # No extra queries!""",
                 explanation="Eager loading fetches related data in a single query instead of making N separate queries. This dramatically improves performance when displaying lists with relationships.",
             )
-        
+
         elif "index" in finding_lower:
             return CodeExample(
-                vulnerable_code=f"""# {finding.file}:{finding.line or '?'}
+                vulnerable_code=f"""# {finding.file}:{finding.line or "?"}
 # ❌ No database index
 class User(db.Model):
     email = db.Column(db.String(120))
-    
+
 # Query is slow on large tables
 User.query.filter_by(email=email).first()""",
-                fixed_code=f"""# {finding.file}:{finding.line or '?'}
+                fixed_code=f"""# {finding.file}:{finding.line or "?"}
 # ✅ Add index for frequently queried column
 class User(db.Model):
     email = db.Column(db.String(120), index=True)
@@ -1229,14 +1197,14 @@ class User(db.Model):
 User.query.filter_by(email=email).first()""",
                 explanation="Database indexes speed up queries by creating a sorted lookup structure. Add indexes to columns used in WHERE clauses, JOIN conditions, or ORDER BY statements.",
             )
-        
+
         else:
             # Generic database example
             return CodeExample(
-                vulnerable_code=f"""# {finding.file}:{finding.line or '?'}
+                vulnerable_code=f"""# {finding.file}:{finding.line or "?"}
 # ❌ Current implementation
 # {finding.finding}""",
-                fixed_code=f"""# {finding.file}:{finding.line or '?'}
+                fixed_code=f"""# {finding.file}:{finding.line or "?"}
 # ✅ Optimized implementation
 # {finding.recommendation}""",
                 explanation="This optimization improves database performance by reducing query count, adding indexes, or optimizing query structure.",
@@ -1244,24 +1212,24 @@ User.query.filter_by(email=email).first()""",
 
     def _generate_api_example(self, finding: PerformanceEvidence) -> CodeExample:
         """Generate API design example.
-        
+
         Args:
             finding: Performance evidence with api category
-            
+
         Returns:
             CodeExample showing API improvement
         """
         finding_lower = finding.finding.lower()
-        
+
         if "pagination" in finding_lower:
             return CodeExample(
-                vulnerable_code=f"""# {finding.file}:{finding.line or '?'}
+                vulnerable_code=f"""# {finding.file}:{finding.line or "?"}
 # ❌ No pagination - returns all records
 @app.route('/api/users')
 def get_users():
     users = User.query.all()  # Could be millions!
     return jsonify([u.to_dict() for u in users])""",
-                fixed_code=f"""# {finding.file}:{finding.line or '?'}
+                fixed_code=f"""# {finding.file}:{finding.line or "?"}
 # ✅ Pagination for large datasets
 @app.route('/api/users')
 def get_users():
@@ -1276,16 +1244,16 @@ def get_users():
     }})""",
                 explanation="Pagination prevents overwhelming clients with huge responses and reduces server load. Return metadata (total, page, pages) so clients can build navigation UI.",
             )
-        
+
         elif "rate limit" in finding_lower or "throttle" in finding_lower:
             return CodeExample(
-                vulnerable_code=f"""# {finding.file}:{finding.line or '?'}
+                vulnerable_code=f"""# {finding.file}:{finding.line or "?"}
 # ❌ No rate limiting
 @app.route('/api/search')
 def search():
     query = request.args.get('q')
     return jsonify(expensive_search(query))""",
-                fixed_code=f"""# {finding.file}:{finding.line or '?'}
+                fixed_code=f"""# {finding.file}:{finding.line or "?"}
 # ✅ Rate limiting to prevent abuse
 from flask_limiter import Limiter
 
@@ -1298,14 +1266,14 @@ def search():
     return jsonify(expensive_search(query))""",
                 explanation="Rate limiting prevents API abuse and protects your server from being overwhelmed. Set limits based on endpoint cost (expensive operations get lower limits).",
             )
-        
+
         else:
             # Generic API example
             return CodeExample(
-                vulnerable_code=f"""# {finding.file}:{finding.line or '?'}
+                vulnerable_code=f"""# {finding.file}:{finding.line or "?"}
 # ❌ Current implementation
 # {finding.finding}""",
-                fixed_code=f"""# {finding.file}:{finding.line or '?'}
+                fixed_code=f"""# {finding.file}:{finding.line or "?"}
 # ✅ Improved implementation
 # {finding.recommendation}""",
                 explanation="This improvement makes the API more efficient, scalable, and user-friendly by following REST best practices.",
@@ -1313,15 +1281,15 @@ def search():
 
     def _generate_architecture_example(self, finding: PerformanceEvidence) -> CodeExample:
         """Generate architecture example.
-        
+
         Args:
             finding: Performance evidence with architecture category
-            
+
         Returns:
             CodeExample showing architectural improvement
         """
         return CodeExample(
-            vulnerable_code=f"""# {finding.file}:{finding.line or '?'}
+            vulnerable_code=f"""# {finding.file}:{finding.line or "?"}
 # ❌ Tight coupling - hard to test and maintain
 class OrderController:
     def create_order(self, data):
@@ -1331,13 +1299,13 @@ class OrderController:
         db.session.commit()
         send_email(order.user.email, "Order confirmed")
         return order""",
-            fixed_code=f"""# {finding.file}:{finding.line or '?'}
+            fixed_code=f"""# {finding.file}:{finding.line or "?"}
 # ✅ Separation of concerns - testable and maintainable
 class OrderService:
     def __init__(self, db, email_service):
         self.db = db
         self.email_service = email_service
-    
+
     def create_order(self, data):
         order = Order(**data)
         self.db.save(order)
@@ -1352,24 +1320,24 @@ class OrderController:
 
     def _generate_scalability_example(self, finding: PerformanceEvidence) -> CodeExample:
         """Generate scalability example.
-        
+
         Args:
             finding: Performance evidence with scalability category
-            
+
         Returns:
             CodeExample showing scalability improvement
         """
         finding_lower = finding.finding.lower()
-        
+
         if "cache" in finding_lower or "caching" in finding_lower:
             return CodeExample(
-                vulnerable_code=f"""# {finding.file}:{finding.line or '?'}
+                vulnerable_code=f"""# {finding.file}:{finding.line or "?"}
 # ❌ Expensive computation on every request
 @app.route('/api/stats')
 def get_stats():
     # Recalculates from millions of records every time
     return jsonify(calculate_expensive_stats())""",
-                fixed_code=f"""# {finding.file}:{finding.line or '?'}
+                fixed_code=f"""# {finding.file}:{finding.line or "?"}
 # ✅ Cache expensive computations
 from functools import lru_cache
 from datetime import datetime, timedelta
@@ -1385,14 +1353,14 @@ def get_stats():
     return jsonify(get_cached_stats(cache_key))""",
                 explanation="Caching expensive computations dramatically improves response time and reduces server load. Invalidate cache periodically or when data changes.",
             )
-        
+
         else:
             # Generic scalability example
             return CodeExample(
-                vulnerable_code=f"""# {finding.file}:{finding.line or '?'}
+                vulnerable_code=f"""# {finding.file}:{finding.line or "?"}
 # ❌ Current implementation
 # {finding.finding}""",
-                fixed_code=f"""# {finding.file}:{finding.line or '?'}
+                fixed_code=f"""# {finding.file}:{finding.line or "?"}
 # ✅ Scalable implementation
 # {finding.recommendation}""",
                 explanation="This optimization improves scalability by reducing resource usage, enabling horizontal scaling, or improving throughput.",

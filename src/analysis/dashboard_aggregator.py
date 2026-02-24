@@ -1,7 +1,8 @@
 """Dashboard aggregator for organizer intelligence."""
 
-import structlog
 from collections import Counter, defaultdict
+
+import structlog
 
 from src.models.dashboard import (
     CommonIssue,
@@ -11,13 +12,13 @@ from src.models.dashboard import (
     TechnologyTrends,
     TopPerformer,
 )
+from src.models.strategy import StrategyAnalysisResult
 from src.models.submission import SubmissionResponse
 from src.models.team_dynamics import (
     ContributorRole,
     IndividualScorecard,
     TeamAnalysisResult,
 )
-from src.models.strategy import StrategyAnalysisResult
 
 logger = structlog.get_logger()
 
@@ -56,13 +57,11 @@ class DashboardAggregator:
         )
 
         # Filter to analyzed submissions only
-        analyzed_submissions = [
-            s for s in submissions if s.overall_score is not None
-        ]
+        analyzed_submissions = [s for s in submissions if s.overall_score is not None]
 
         # Aggregate all individual scorecards
         all_scorecards: list[IndividualScorecard] = []
-        for sub_id, team_analysis in team_analyses.items():
+        for _sub_id, team_analysis in team_analyses.items():
             all_scorecards.extend(team_analysis.individual_scorecards)
 
         # Generate dashboard components
@@ -191,9 +190,7 @@ class DashboardAggregator:
         seniority_order = {"senior": 0, "mid": 1, "junior": 2}
 
         def sort_key(sc: IndividualScorecard) -> int:
-            return seniority_order.get(
-                sc.hiring_signals.seniority_level.lower(), 3
-            )
+            return seniority_order.get(sc.hiring_signals.seniority_level.lower(), 3)
 
         backend_candidates.sort(key=sort_key)
         frontend_candidates.sort(key=sort_key)
@@ -209,9 +206,7 @@ class DashboardAggregator:
             must_interview=must_interview,
         )
 
-    def _analyze_technology_trends(
-        self, submissions: list[SubmissionResponse]
-    ) -> TechnologyTrends:
+    def _analyze_technology_trends(self, submissions: list[SubmissionResponse]) -> TechnologyTrends:
         """Identify popular stacks and emerging tech.
 
         Detects:
@@ -262,11 +257,7 @@ class DashboardAggregator:
         most_used = combined_counter.most_common(10)
 
         # Emerging technologies (used by 2-5 teams, indicating new adoption)
-        emerging = [
-            tech
-            for tech, count in combined_counter.items()
-            if 2 <= count <= 5
-        ]
+        emerging = [tech for tech, count in combined_counter.items() if 2 <= count <= 5]
 
         # Popular stacks (top 5)
         popular_stacks = stack_counter.most_common(5)
@@ -323,7 +314,6 @@ class DashboardAggregator:
 
         return frameworks
 
-
     def _detect_python_frameworks(self, submission: SubmissionResponse) -> list[str]:
         """Detect Python frameworks from submission data.
 
@@ -351,7 +341,6 @@ class DashboardAggregator:
         # For MVP, we return empty list since we don't have file content access here
         # This would be enhanced in Phase 2 with file content analysis
         return []
-
 
     def _identify_common_issues(
         self,
@@ -383,9 +372,7 @@ class DashboardAggregator:
 
         # Analyze red flags from team analyses
         for sub_id, team_analysis in team_analyses.items():
-            submission = next(
-                (s for s in submissions if s.sub_id == sub_id), None
-            )
+            submission = next((s for s in submissions if s.sub_id == sub_id), None)
             if not submission:
                 continue
 
@@ -426,28 +413,17 @@ class DashboardAggregator:
         """
         weakness_lower = weakness.lower()
 
-        if any(
-            keyword in weakness_lower
-            for keyword in ["test", "testing", "coverage"]
-        ):
+        if any(keyword in weakness_lower for keyword in ["test", "testing", "coverage"]):
             return "insufficient_testing"
         elif any(
-            keyword in weakness_lower
-            for keyword in ["security", "vulnerability", "injection"]
+            keyword in weakness_lower for keyword in ["security", "vulnerability", "injection"]
         ):
             return "security_vulnerabilities"
-        elif any(
-            keyword in weakness_lower for keyword in ["documentation", "readme"]
-        ):
+        elif any(keyword in weakness_lower for keyword in ["documentation", "readme"]):
             return "poor_documentation"
-        elif any(
-            keyword in weakness_lower
-            for keyword in ["error handling", "exception"]
-        ):
+        elif any(keyword in weakness_lower for keyword in ["error handling", "exception"]):
             return "weak_error_handling"
-        elif any(
-            keyword in weakness_lower for keyword in ["performance", "optimization"]
-        ):
+        elif any(keyword in weakness_lower for keyword in ["performance", "optimization"]):
             return "performance_issues"
         else:
             return "general_code_quality"
@@ -492,16 +468,12 @@ class DashboardAggregator:
         recommendations = []
 
         # Best Team Dynamics
-        best_team_dynamics = self._find_best_team_dynamics(
-            submissions, team_analyses
-        )
+        best_team_dynamics = self._find_best_team_dynamics(submissions, team_analyses)
         if best_team_dynamics:
             recommendations.append(best_team_dynamics)
 
         # Most Improved / Best Learning Journey
-        best_learning = self._find_best_learning_journey(
-            submissions, strategy_analyses
-        )
+        best_learning = self._find_best_learning_journey(submissions, strategy_analyses)
         if best_learning:
             recommendations.append(best_learning)
 
@@ -533,25 +505,21 @@ class DashboardAggregator:
 
         for sub_id, team_analysis in team_analyses.items():
             grade = team_analysis.team_dynamics_grade
-            if not best_team or grade_order.get(grade, 5) < grade_order.get(
-                best_grade, 5
-            ):
+            if not best_team or grade_order.get(grade, 5) < grade_order.get(best_grade, 5):
                 best_team = sub_id
                 best_grade = grade
 
         if not best_team:
             return None
 
-        submission = next(
-            (s for s in submissions if s.sub_id == best_team), None
-        )
+        submission = next((s for s in submissions if s.sub_id == best_team), None)
         if not submission:
             return None
 
         team_analysis = team_analyses[best_team]
         evidence = [
             f"Team dynamics grade: {team_analysis.team_dynamics_grade}",
-            f"Balanced workload distribution",
+            "Balanced workload distribution",
             f"{len(team_analysis.collaboration_patterns)} positive collaboration patterns",
         ]
 
@@ -581,22 +549,17 @@ class DashboardAggregator:
         best_journey = None
 
         for sub_id, strategy_analysis in strategy_analyses.items():
-            if (
-                strategy_analysis.learning_journey
-                and strategy_analysis.learning_journey.impressive
-            ):
-                if not best_journey or len(
-                    strategy_analysis.learning_journey.evidence
-                ) > len(best_journey.evidence):
+            if strategy_analysis.learning_journey and strategy_analysis.learning_journey.impressive:
+                if not best_journey or len(strategy_analysis.learning_journey.evidence) > len(
+                    best_journey.evidence
+                ):
                     best_team = sub_id
                     best_journey = strategy_analysis.learning_journey
 
         if not best_team or not best_journey:
             return None
 
-        submission = next(
-            (s for s in submissions if s.sub_id == best_team), None
-        )
+        submission = next((s for s in submissions if s.sub_id == best_team), None)
         if not submission:
             return None
 
@@ -613,9 +576,7 @@ class DashboardAggregator:
             evidence=evidence,
         )
 
-    def _find_best_cicd(
-        self, submissions: list[SubmissionResponse]
-    ) -> PrizeRecommendation | None:
+    def _find_best_cicd(self, submissions: list[SubmissionResponse]) -> PrizeRecommendation | None:
         """Find team with best CI/CD practices.
 
         Args:
@@ -681,9 +642,7 @@ class DashboardAggregator:
 
         # Find highest scoring team
         if submissions:
-            top_submission = max(
-                submissions, key=lambda s: s.overall_score or 0
-            )
+            top_submission = max(submissions, key=lambda s: s.overall_score or 0)
             moments.append(
                 f"{top_submission.team_name} achieved highest score: {top_submission.overall_score:.1f}/100"
             )
@@ -691,9 +650,7 @@ class DashboardAggregator:
         # Find most collaborative team
         for sub_id, team_analysis in team_analyses.items():
             if len(team_analysis.collaboration_patterns) >= 3:
-                submission = next(
-                    (s for s in submissions if s.sub_id == sub_id), None
-                )
+                submission = next((s for s in submissions if s.sub_id == sub_id), None)
                 if submission:
                     moments.append(
                         f"{submission.team_name} demonstrated exceptional collaboration with {len(team_analysis.collaboration_patterns)} positive patterns"
@@ -702,13 +659,8 @@ class DashboardAggregator:
 
         # Find most innovative technology adoption
         for sub_id, strategy_analysis in strategy_analyses.items():
-            if (
-                strategy_analysis.learning_journey
-                and strategy_analysis.learning_journey.impressive
-            ):
-                submission = next(
-                    (s for s in submissions if s.sub_id == sub_id), None
-                )
+            if strategy_analysis.learning_journey and strategy_analysis.learning_journey.impressive:
+                submission = next((s for s in submissions if s.sub_id == sub_id), None)
                 if submission:
                     moments.append(
                         f"{submission.team_name} learned {strategy_analysis.learning_journey.technology} during the hackathon"
@@ -741,9 +693,7 @@ class DashboardAggregator:
         # Recommend technology focus
         if technology_trends.most_used:
             top_tech = technology_trends.most_used[0][0]
-            recommendations.append(
-                f"Consider {top_tech}-focused track or prizes"
-            )
+            recommendations.append(f"Consider {top_tech}-focused track or prizes")
 
         # Recommend emerging tech support
         if technology_trends.emerging:
@@ -752,12 +702,8 @@ class DashboardAggregator:
             )
 
         # General recommendations
-        recommendations.append(
-            "Encourage teams to set up CI/CD early in the hackathon"
-        )
-        recommendations.append(
-            "Provide git collaboration best practices guide"
-        )
+        recommendations.append("Encourage teams to set up CI/CD early in the hackathon")
+        recommendations.append("Provide git collaboration best practices guide")
 
         return recommendations
 
@@ -787,9 +733,7 @@ class DashboardAggregator:
         # Technology insights
         if technology_trends.most_used:
             top_tech = technology_trends.most_used[0][0]
-            actions.append(
-                f"Highlight {top_tech} expertise in candidate pool"
-            )
+            actions.append(f"Highlight {top_tech} expertise in candidate pool")
 
         # Role-specific insights
         backend_count = len(hiring_intelligence.backend_candidates)

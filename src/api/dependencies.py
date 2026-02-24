@@ -28,6 +28,7 @@ api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 # AWS SERVICE CLIENTS
 # ============================================================
 
+
 def get_dynamodb_table():
     """Get DynamoDB table resource."""
     table_name = os.environ.get("TABLE_NAME", "VibeJudgeTable")
@@ -63,6 +64,7 @@ def get_s3_client():
 # ============================================================
 # SERVICE LAYER DEPENDENCIES
 # ============================================================
+
 
 def get_organizer_service(
     db: DynamoDBHelper = Depends(get_dynamodb_helper),
@@ -131,6 +133,7 @@ OrganizerIntelligenceServiceDep = Annotated[
 # ============================================================
 # AUTHENTICATION
 # ============================================================
+
 
 async def verify_api_key(
     organizer_service: OrganizerServiceDep,

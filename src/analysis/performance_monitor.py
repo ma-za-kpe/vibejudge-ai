@@ -75,7 +75,7 @@ class PerformanceMonitor:
         """
         current_ms = self.get_total_duration_ms()
         threshold_ms = 90000 * 0.75  # 75% of 90 seconds
-        
+
         if current_ms > threshold_ms:
             logger.warning(
                 "timeout_risk_detected",

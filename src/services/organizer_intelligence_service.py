@@ -1,7 +1,8 @@
 """Organizer intelligence dashboard service."""
 
-import structlog
 from collections import Counter, defaultdict
+
+import structlog
 
 from src.models.dashboard import (
     CommonIssue,
@@ -11,7 +12,7 @@ from src.models.dashboard import (
     TechnologyTrends,
     TopPerformer,
 )
-from src.models.team_dynamics import ContributorRole, IndividualScorecard
+from src.models.team_dynamics import ContributorRole
 from src.services.hackathon_service import HackathonService
 from src.services.submission_service import SubmissionService
 from src.utils.dynamo import DynamoDBHelper
@@ -116,9 +117,7 @@ class OrganizerIntelligenceService:
             return []
 
         # Sort by overall score
-        sorted_submissions = sorted(
-            submissions, key=lambda x: x.overall_score or 0, reverse=True
-        )
+        sorted_submissions = sorted(submissions, key=lambda x: x.overall_score or 0, reverse=True)
 
         top_performers = []
         for submission in sorted_submissions[:10]:  # Top 10
@@ -212,8 +211,8 @@ class OrganizerIntelligenceService:
             TechnologyTrends with usage statistics
         """
         language_counter = Counter()
-        framework_counter = Counter()
-        stack_counter = Counter()
+        Counter()
+        Counter()
 
         for submission in submissions:
             # Try to extract technology info from repo data
@@ -312,9 +311,7 @@ class OrganizerIntelligenceService:
             "syntax": "Workshop: Language Fundamentals and Common Pitfalls",
         }
 
-        return recommendations.get(
-            issue_type, f"Workshop: Best Practices for {issue_type.title()}"
-        )
+        return recommendations.get(issue_type, f"Workshop: Best Practices for {issue_type.title()}")
 
     def _recommend_prizes(self, submissions: list) -> list[PrizeRecommendation]:
         """Recommend prize winners with evidence.
@@ -423,9 +420,7 @@ class OrganizerIntelligenceService:
         # Recommend workshops based on common issues
         if common_issues:
             top_issue = common_issues[0]
-            recommendations.append(
-                f"Pre-hackathon workshop: {top_issue.workshop_recommendation}"
-            )
+            recommendations.append(f"Pre-hackathon workshop: {top_issue.workshop_recommendation}")
 
         # Recommend technology focus
         if technology_trends.most_used:

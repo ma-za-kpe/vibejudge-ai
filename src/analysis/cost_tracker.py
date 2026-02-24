@@ -1,6 +1,5 @@
 """Cost tracking for agent analysis."""
 
-
 from src.constants import MODEL_RATES
 from src.models.common import AgentName, ServiceTier
 from src.models.costs import ComponentPerformanceRecord, CostRecord

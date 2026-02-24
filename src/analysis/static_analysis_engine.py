@@ -55,21 +55,21 @@ class StaticAnalysisEngine:
 
     def analyze(self, repo_path: str, timeout_seconds: int = 30) -> StaticAnalysisResult:
         """Run static analysis on repository.
-        
+
         Args:
             repo_path: Path to cloned repository
             timeout_seconds: Timeout per tool (default: 30)
-            
+
         Returns:
             StaticAnalysisResult with normalized findings
         """
         start_time = time.time()
         self.logger.info("static_analysis_started", repo_path=repo_path)
-        
+
         # Detect primary language
         language = self._detect_language(repo_path)
         self.logger.info("language_detected", language=language)
-        
+
         # Get tools for this language
         tools = STATIC_TOOLS.get(language, [])
         if not tools:
@@ -83,12 +83,12 @@ class StaticAnalysisEngine:
                 critical_issues=0,
                 duration_ms=int((time.time() - start_time) * 1000),
             )
-        
+
         # Run tools based on language
         all_findings: list[StaticFinding] = []
         tools_run: list[str] = []
         tools_failed: list[str] = []
-        
+
         if language == PrimaryLanguage.PYTHON:
             findings, run, failed = self._run_python_tools(repo_path, timeout_seconds)
             all_findings.extend(findings)
@@ -109,17 +109,17 @@ class StaticAnalysisEngine:
             all_findings.extend(findings)
             tools_run.extend(run)
             tools_failed.extend(failed)
-        
+
         # Validate evidence for all findings
         for finding in all_findings:
             self._validate_evidence(finding, repo_path)
-        
+
         # Calculate statistics
         total_issues = len(all_findings)
         critical_issues = sum(1 for f in all_findings if f.severity == Severity.CRITICAL)
-        
+
         duration_ms = int((time.time() - start_time) * 1000)
-        
+
         self.logger.info(
             "static_analysis_completed",
             language=language,
@@ -129,7 +129,7 @@ class StaticAnalysisEngine:
             critical_issues=critical_issues,
             duration_ms=duration_ms,
         )
-        
+
         return StaticAnalysisResult(
             language=language,
             tools_run=tools_run,
@@ -142,22 +142,25 @@ class StaticAnalysisEngine:
 
     def _detect_language(self, repo_path: str) -> PrimaryLanguage:
         """Detect primary language from file extensions.
-        
+
         Args:
             repo_path: Path to repository
-            
+
         Returns:
             Detected primary language
         """
         extension_counts: Counter[str] = Counter()
-        
+
         try:
             for root, _, files in os.walk(repo_path):
                 # Skip hidden directories and common non-source directories
-                if any(part.startswith('.') or part in ('node_modules', 'venv', '__pycache__', 'target', 'dist', 'build') 
-                       for part in Path(root).parts):
+                if any(
+                    part.startswith(".")
+                    or part in ("node_modules", "venv", "__pycache__", "target", "dist", "build")
+                    for part in Path(root).parts
+                ):
                     continue
-                
+
                 for file in files:
                     ext = Path(file).suffix.lower()
                     if ext:
@@ -165,46 +168,46 @@ class StaticAnalysisEngine:
         except Exception as e:
             self.logger.error("language_detection_failed", error=str(e))
             return PrimaryLanguage.UNKNOWN
-        
+
         # Map extensions to languages
         if not extension_counts:
             return PrimaryLanguage.UNKNOWN
-        
+
         most_common_ext = extension_counts.most_common(1)[0][0]
-        
+
         language_map = {
-            '.py': PrimaryLanguage.PYTHON,
-            '.js': PrimaryLanguage.JAVASCRIPT,
-            '.jsx': PrimaryLanguage.JAVASCRIPT,
-            '.ts': PrimaryLanguage.TYPESCRIPT,
-            '.tsx': PrimaryLanguage.TYPESCRIPT,
-            '.go': PrimaryLanguage.GO,
-            '.rs': PrimaryLanguage.RUST,
+            ".py": PrimaryLanguage.PYTHON,
+            ".js": PrimaryLanguage.JAVASCRIPT,
+            ".jsx": PrimaryLanguage.JAVASCRIPT,
+            ".ts": PrimaryLanguage.TYPESCRIPT,
+            ".tsx": PrimaryLanguage.TYPESCRIPT,
+            ".go": PrimaryLanguage.GO,
+            ".rs": PrimaryLanguage.RUST,
         }
-        
+
         return language_map.get(most_common_ext, PrimaryLanguage.UNKNOWN)
 
     def _run_python_tools(
         self, repo_path: str, timeout_seconds: int
     ) -> tuple[list[StaticFinding], list[str], list[str]]:
         """Run Python static analysis tools.
-        
+
         Args:
             repo_path: Path to repository
             timeout_seconds: Timeout per tool
-            
+
         Returns:
             Tuple of (findings, tools_run, tools_failed)
         """
         findings: list[StaticFinding] = []
         tools_run: list[str] = []
         tools_failed: list[str] = []
-        
+
         for tool_config in STATIC_TOOLS["python"]:
             tool_name = tool_config["name"]
             cmd = tool_config["cmd"]
             timeout = tool_config["timeout"]
-            
+
             try:
                 # Check if tool is installed
                 check_cmd = [cmd[0], "--version"]
@@ -218,7 +221,7 @@ class StaticAnalysisEngine:
                 self.logger.warning("tool_not_installed", tool=tool_name)
                 tools_failed.append(tool_name)
                 continue
-            
+
             # Run the tool
             try:
                 self.logger.info("running_tool", tool=tool_name, timeout=timeout)
@@ -229,44 +232,46 @@ class StaticAnalysisEngine:
                     cwd=repo_path,
                     text=True,
                 )
-                
+
                 # Parse output
-                tool_findings = self._parse_python_tool_output(tool_name, result.stdout, result.stderr)
+                tool_findings = self._parse_python_tool_output(
+                    tool_name, result.stdout, result.stderr
+                )
                 findings.extend(tool_findings)
                 tools_run.append(tool_name)
-                
+
                 self.logger.info("tool_completed", tool=tool_name, findings=len(tool_findings))
-                
+
             except subprocess.TimeoutExpired:
                 self.logger.warning("tool_timeout", tool=tool_name, timeout=timeout)
                 tools_failed.append(tool_name)
             except Exception as e:
                 self.logger.error("tool_execution_failed", tool=tool_name, error=str(e))
                 tools_failed.append(tool_name)
-        
+
         return findings, tools_run, tools_failed
 
     def _run_javascript_tools(
         self, repo_path: str, timeout_seconds: int
     ) -> tuple[list[StaticFinding], list[str], list[str]]:
         """Run JavaScript/TypeScript static analysis tools.
-        
+
         Args:
             repo_path: Path to repository
             timeout_seconds: Timeout per tool
-            
+
         Returns:
             Tuple of (findings, tools_run, tools_failed)
         """
         findings: list[StaticFinding] = []
         tools_run: list[str] = []
         tools_failed: list[str] = []
-        
+
         for tool_config in STATIC_TOOLS["javascript"]:
             tool_name = tool_config["name"]
             cmd = tool_config["cmd"]
             timeout = tool_config["timeout"]
-            
+
             try:
                 # Check if tool is installed
                 check_cmd = [cmd[0], "--version"]
@@ -280,7 +285,7 @@ class StaticAnalysisEngine:
                 self.logger.warning("tool_not_installed", tool=tool_name)
                 tools_failed.append(tool_name)
                 continue
-            
+
             # Run the tool
             try:
                 self.logger.info("running_tool", tool=tool_name, timeout=timeout)
@@ -291,44 +296,46 @@ class StaticAnalysisEngine:
                     cwd=repo_path,
                     text=True,
                 )
-                
+
                 # Parse output
-                tool_findings = self._parse_javascript_tool_output(tool_name, result.stdout, result.stderr)
+                tool_findings = self._parse_javascript_tool_output(
+                    tool_name, result.stdout, result.stderr
+                )
                 findings.extend(tool_findings)
                 tools_run.append(tool_name)
-                
+
                 self.logger.info("tool_completed", tool=tool_name, findings=len(tool_findings))
-                
+
             except subprocess.TimeoutExpired:
                 self.logger.warning("tool_timeout", tool=tool_name, timeout=timeout)
                 tools_failed.append(tool_name)
             except Exception as e:
                 self.logger.error("tool_execution_failed", tool=tool_name, error=str(e))
                 tools_failed.append(tool_name)
-        
+
         return findings, tools_run, tools_failed
 
     def _run_go_tools(
         self, repo_path: str, timeout_seconds: int
     ) -> tuple[list[StaticFinding], list[str], list[str]]:
         """Run Go static analysis tools.
-        
+
         Args:
             repo_path: Path to repository
             timeout_seconds: Timeout per tool
-            
+
         Returns:
             Tuple of (findings, tools_run, tools_failed)
         """
         findings: list[StaticFinding] = []
         tools_run: list[str] = []
         tools_failed: list[str] = []
-        
+
         for tool_config in STATIC_TOOLS["go"]:
             tool_name = tool_config["name"]
             cmd = tool_config["cmd"]
             timeout = tool_config["timeout"]
-            
+
             try:
                 # Check if tool is installed
                 check_cmd = [cmd[0], "version"]
@@ -342,7 +349,7 @@ class StaticAnalysisEngine:
                 self.logger.warning("tool_not_installed", tool=tool_name)
                 tools_failed.append(tool_name)
                 continue
-            
+
             # Run the tool
             try:
                 self.logger.info("running_tool", tool=tool_name, timeout=timeout)
@@ -353,44 +360,44 @@ class StaticAnalysisEngine:
                     cwd=repo_path,
                     text=True,
                 )
-                
+
                 # Parse output
                 tool_findings = self._parse_go_tool_output(tool_name, result.stdout, result.stderr)
                 findings.extend(tool_findings)
                 tools_run.append(tool_name)
-                
+
                 self.logger.info("tool_completed", tool=tool_name, findings=len(tool_findings))
-                
+
             except subprocess.TimeoutExpired:
                 self.logger.warning("tool_timeout", tool=tool_name, timeout=timeout)
                 tools_failed.append(tool_name)
             except Exception as e:
                 self.logger.error("tool_execution_failed", tool=tool_name, error=str(e))
                 tools_failed.append(tool_name)
-        
+
         return findings, tools_run, tools_failed
 
     def _run_rust_tools(
         self, repo_path: str, timeout_seconds: int
     ) -> tuple[list[StaticFinding], list[str], list[str]]:
         """Run Rust static analysis tools.
-        
+
         Args:
             repo_path: Path to repository
             timeout_seconds: Timeout per tool
-            
+
         Returns:
             Tuple of (findings, tools_run, tools_failed)
         """
         findings: list[StaticFinding] = []
         tools_run: list[str] = []
         tools_failed: list[str] = []
-        
+
         for tool_config in STATIC_TOOLS["rust"]:
             tool_name = tool_config["name"]
             cmd = tool_config["cmd"]
             timeout = tool_config["timeout"]
-            
+
             try:
                 # Check if tool is installed
                 check_cmd = [cmd[0], "--version"]
@@ -404,7 +411,7 @@ class StaticAnalysisEngine:
                 self.logger.warning("tool_not_installed", tool=tool_name)
                 tools_failed.append(tool_name)
                 continue
-            
+
             # Run the tool
             try:
                 self.logger.info("running_tool", tool=tool_name, timeout=timeout)
@@ -415,38 +422,40 @@ class StaticAnalysisEngine:
                     cwd=repo_path,
                     text=True,
                 )
-                
+
                 # Parse output
-                tool_findings = self._parse_rust_tool_output(tool_name, result.stdout, result.stderr)
+                tool_findings = self._parse_rust_tool_output(
+                    tool_name, result.stdout, result.stderr
+                )
                 findings.extend(tool_findings)
                 tools_run.append(tool_name)
-                
+
                 self.logger.info("tool_completed", tool=tool_name, findings=len(tool_findings))
-                
+
             except subprocess.TimeoutExpired:
                 self.logger.warning("tool_timeout", tool=tool_name, timeout=timeout)
                 tools_failed.append(tool_name)
             except Exception as e:
                 self.logger.error("tool_execution_failed", tool=tool_name, error=str(e))
                 tools_failed.append(tool_name)
-        
+
         return findings, tools_run, tools_failed
 
     def _parse_python_tool_output(
         self, tool_name: str, stdout: str, stderr: str
     ) -> list[StaticFinding]:
         """Parse Python tool output into normalized findings.
-        
+
         Args:
             tool_name: Name of the tool
             stdout: Standard output from tool
             stderr: Standard error from tool
-            
+
         Returns:
             List of normalized findings
         """
         findings: list[StaticFinding] = []
-        
+
         try:
             if tool_name == "flake8":
                 data = json.loads(stdout) if stdout else {}
@@ -462,7 +471,7 @@ class StaticAnalysisEngine:
                             category="style",
                         )
                         findings.append(finding)
-            
+
             elif tool_name == "bandit":
                 data = json.loads(stdout) if stdout else {}
                 for issue in data.get("results", []):
@@ -476,7 +485,7 @@ class StaticAnalysisEngine:
                         category="security",
                     )
                     findings.append(finding)
-            
+
             elif tool_name == "safety":
                 data = json.loads(stdout) if stdout else {}
                 for vuln in data.get("vulnerabilities", []):
@@ -490,7 +499,7 @@ class StaticAnalysisEngine:
                         category="security",
                     )
                     findings.append(finding)
-            
+
             elif tool_name == "radon":
                 data = json.loads(stdout) if stdout else {}
                 for file_path, metrics in data.items():
@@ -506,29 +515,29 @@ class StaticAnalysisEngine:
                                 category="complexity",
                             )
                             findings.append(finding)
-        
+
         except json.JSONDecodeError as e:
             self.logger.error("json_parse_error", tool=tool_name, error=str(e))
         except Exception as e:
             self.logger.error("parse_error", tool=tool_name, error=str(e))
-        
+
         return findings
 
     def _parse_javascript_tool_output(
         self, tool_name: str, stdout: str, stderr: str
     ) -> list[StaticFinding]:
         """Parse JavaScript/TypeScript tool output into normalized findings.
-        
+
         Args:
             tool_name: Name of the tool
             stdout: Standard output from tool
             stderr: Standard error from tool
-            
+
         Returns:
             List of normalized findings
         """
         findings: list[StaticFinding] = []
-        
+
         try:
             if tool_name == "eslint":
                 data = json.loads(stdout) if stdout else []
@@ -544,12 +553,16 @@ class StaticAnalysisEngine:
                             category="style",
                         )
                         findings.append(finding)
-            
+
             elif tool_name == "npm_audit":
                 data = json.loads(stdout) if stdout else {}
                 for vuln_name, vuln_data in data.get("vulnerabilities", {}).items():
                     via = vuln_data.get("via", [])
-                    message = via[0].get("title", "Vulnerability found") if isinstance(via, list) and via else "Vulnerability found"
+                    message = (
+                        via[0].get("title", "Vulnerability found")
+                        if isinstance(via, list) and via
+                        else "Vulnerability found"
+                    )
                     finding = self._normalize_finding(
                         tool=tool_name,
                         file="package.json",
@@ -560,37 +573,37 @@ class StaticAnalysisEngine:
                         category="security",
                     )
                     findings.append(finding)
-        
+
         except json.JSONDecodeError as e:
             self.logger.error("json_parse_error", tool=tool_name, error=str(e))
         except Exception as e:
             self.logger.error("parse_error", tool=tool_name, error=str(e))
-        
+
         return findings
 
     def _parse_go_tool_output(
         self, tool_name: str, stdout: str, stderr: str
     ) -> list[StaticFinding]:
         """Parse Go tool output into normalized findings.
-        
+
         Args:
             tool_name: Name of the tool
             stdout: Standard output from tool
             stderr: Standard error from tool
-            
+
         Returns:
             List of normalized findings
         """
         findings: list[StaticFinding] = []
-        
+
         try:
             output = stderr if stderr else stdout
-            
-            for line in output.split('\n'):
+
+            for line in output.split("\n"):
                 if not line.strip():
                     continue
-                
-                parts = line.split(':', 3)
+
+                parts = line.split(":", 3)
                 if len(parts) >= 3:
                     finding = self._normalize_finding(
                         tool=tool_name,
@@ -602,30 +615,30 @@ class StaticAnalysisEngine:
                         category="style",
                     )
                     findings.append(finding)
-        
+
         except Exception as e:
             self.logger.error("parse_error", tool=tool_name, error=str(e))
-        
+
         return findings
 
     def _parse_rust_tool_output(
         self, tool_name: str, stdout: str, stderr: str
     ) -> list[StaticFinding]:
         """Parse Rust tool output into normalized findings.
-        
+
         Args:
             tool_name: Name of the tool
             stdout: Standard output from tool
             stderr: Standard error from tool
-            
+
         Returns:
             List of normalized findings
         """
         findings: list[StaticFinding] = []
-        
+
         try:
             if tool_name == "clippy":
-                for line in stdout.split('\n'):
+                for line in stdout.split("\n"):
                     if not line.strip():
                         continue
                     try:
@@ -647,7 +660,7 @@ class StaticAnalysisEngine:
                                 findings.append(finding)
                     except json.JSONDecodeError:
                         continue
-            
+
             elif tool_name == "cargo_audit":
                 data = json.loads(stdout) if stdout else {}
                 for vuln in data.get("vulnerabilities", {}).get("list", []):
@@ -661,12 +674,12 @@ class StaticAnalysisEngine:
                         category="security",
                     )
                     findings.append(finding)
-        
+
         except json.JSONDecodeError as e:
             self.logger.error("json_parse_error", tool=tool_name, error=str(e))
         except Exception as e:
             self.logger.error("parse_error", tool=tool_name, error=str(e))
-        
+
         return findings
 
     def _normalize_finding(
@@ -680,7 +693,7 @@ class StaticAnalysisEngine:
         category: str,
     ) -> StaticFinding:
         """Convert tool-specific output to normalized format.
-        
+
         Args:
             tool: Tool name
             file: File path
@@ -689,12 +702,12 @@ class StaticAnalysisEngine:
             message: Error message
             severity: Severity level
             category: Finding category
-            
+
         Returns:
             Normalized StaticFinding
         """
         recommendation = self._generate_recommendation(category, code, message)
-        
+
         return StaticFinding(
             tool=tool,
             file=file,
@@ -709,32 +722,41 @@ class StaticAnalysisEngine:
 
     def _validate_evidence(self, finding: StaticFinding, repo_path: str) -> None:
         """Verify file and line number exist.
-        
+
         Args:
             finding: Finding to validate (modified in place)
             repo_path: Path to repository
         """
         try:
             file_path = Path(repo_path) / finding.file
-            
+
             if not file_path.exists():
                 finding.verified = False
                 finding.error_message = f"File not found: {finding.file}"
-                self.logger.warning("evidence_validation_failed", file=finding.file, reason="file_not_found")
+                self.logger.warning(
+                    "evidence_validation_failed", file=finding.file, reason="file_not_found"
+                )
                 return
-            
+
             if finding.line is not None:
-                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                with open(file_path, encoding="utf-8", errors="ignore") as f:
                     line_count = sum(1 for _ in f)
-                
+
                 if finding.line > line_count or finding.line < 1:
                     finding.verified = False
-                    finding.error_message = f"Line {finding.line} exceeds file length ({line_count} lines)"
-                    self.logger.warning("evidence_validation_failed", file=finding.file, line=finding.line, reason="invalid_line_number")
+                    finding.error_message = (
+                        f"Line {finding.line} exceeds file length ({line_count} lines)"
+                    )
+                    self.logger.warning(
+                        "evidence_validation_failed",
+                        file=finding.file,
+                        line=finding.line,
+                        reason="invalid_line_number",
+                    )
                     return
-            
+
             finding.verified = True
-            
+
         except Exception as e:
             finding.verified = False
             finding.error_message = f"Validation error: {str(e)}"
@@ -742,12 +764,12 @@ class StaticAnalysisEngine:
 
     def _generate_recommendation(self, category: str, code: str, message: str) -> str:
         """Generate recommendation based on finding category.
-        
+
         Args:
             category: Finding category
             code: Error code
             message: Error message
-            
+
         Returns:
             Recommendation string
         """
@@ -762,25 +784,25 @@ class StaticAnalysisEngine:
 
     def _map_severity(self, code: str) -> Severity:
         """Map error code to severity level.
-        
+
         Args:
             code: Error code
-            
+
         Returns:
             Severity level
         """
-        if code.startswith('E'):
+        if code.startswith("E"):
             return Severity.HIGH
-        elif code.startswith('W'):
+        elif code.startswith("W"):
             return Severity.MEDIUM
         return Severity.LOW
 
     def _map_bandit_severity(self, severity: str) -> Severity:
         """Map Bandit severity to our severity enum.
-        
+
         Args:
             severity: Bandit severity string
-            
+
         Returns:
             Severity level
         """
@@ -793,10 +815,10 @@ class StaticAnalysisEngine:
 
     def _map_eslint_severity(self, severity: int) -> Severity:
         """Map ESLint severity to our severity enum.
-        
+
         Args:
             severity: ESLint severity (1=warning, 2=error)
-            
+
         Returns:
             Severity level
         """
@@ -804,10 +826,10 @@ class StaticAnalysisEngine:
 
     def _map_npm_severity(self, severity: str) -> Severity:
         """Map npm audit severity to our severity enum.
-        
+
         Args:
             severity: npm severity string
-            
+
         Returns:
             Severity level
         """
@@ -821,10 +843,10 @@ class StaticAnalysisEngine:
 
     def _map_rust_severity(self, level: str) -> Severity:
         """Map Rust compiler level to our severity enum.
-        
+
         Args:
             level: Rust level string
-            
+
         Returns:
             Severity level
         """

@@ -19,7 +19,6 @@ from src.models.strategy import (
     Tradeoff,
 )
 
-
 # ============================================================
 # FIXTURES
 # ============================================================
@@ -116,7 +115,7 @@ def sample_strategy_context() -> StrategyAnalysisResult:
 def test_transform_empty_findings(transformer: BrandVoiceTransformer) -> None:
     """Test transformation of empty findings list."""
     result = transformer.transform_findings([], None)
-    
+
     assert result == []
 
 
@@ -134,7 +133,7 @@ def test_transform_bug_hunter_security_finding(
     # The implementation tries to access .value on StrEnum which are already strings
     # This causes the transformation to fail and be skipped
     result = transformer.transform_findings([sample_bug_hunter_finding], None)
-    
+
     # Due to the bug, the finding is skipped
     assert len(result) == 0
 
@@ -149,9 +148,9 @@ def test_transform_bug_hunter_bug_finding(transformer: BrandVoiceTransformer) ->
         category="bug",
         recommendation="Add null check before accessing object properties",
     )
-    
+
     result = transformer.transform_findings([finding], None)
-    
+
     # Due to enum.value bug, BugHunter findings are skipped
     assert len(result) == 0
 
@@ -166,9 +165,9 @@ def test_transform_bug_hunter_testing_finding(transformer: BrandVoiceTransformer
         category="testing",
         recommendation="Add unit tests for login, logout, and token refresh",
     )
-    
+
     result = transformer.transform_findings([finding], None)
-    
+
     # Due to enum.value bug, BugHunter findings are skipped
     assert len(result) == 0
 
@@ -184,16 +183,16 @@ def test_transform_performance_database_finding(
 ) -> None:
     """Test transformation of database finding from Performance agent."""
     result = transformer.transform_findings([sample_performance_finding], None)
-    
+
     assert len(result) == 1
     feedback = result[0]
-    
+
     assert isinstance(feedback, ActionableFeedback)
     assert feedback.priority >= 1 and feedback.priority <= 5
     assert len(feedback.acknowledgment) > 0
     assert len(feedback.context) > 0
     assert len(feedback.business_impact) > 0
-    
+
     # Performance findings may have code examples
     if feedback.code_example:
         assert len(feedback.code_example.vulnerable_code) > 0
@@ -210,12 +209,12 @@ def test_transform_performance_api_finding(transformer: BrandVoiceTransformer) -
         category="api",
         recommendation="Add limit and offset parameters for pagination",
     )
-    
+
     result = transformer.transform_findings([finding], None)
-    
+
     assert len(result) == 1
     feedback = result[0]
-    
+
     assert "pagination" in feedback.finding.lower() or "api" in feedback.finding.lower()
     # Code examples are optional for performance findings
     if feedback.code_example:
@@ -233,16 +232,16 @@ def test_transform_innovation_finding(
 ) -> None:
     """Test transformation of innovation finding."""
     result = transformer.transform_findings([sample_innovation_finding], None)
-    
+
     assert len(result) == 1
     feedback = result[0]
-    
+
     assert isinstance(feedback, ActionableFeedback)
     # Innovation findings should have lower priority (celebrate, not fix)
     assert feedback.priority >= 1 and feedback.priority <= 5
     assert len(feedback.acknowledgment) > 0
     assert len(feedback.context) > 0
-    
+
     # Innovation findings may not have code examples (celebrating, not fixing)
     # But should have positive tone - check for positive words
     positive_words = ["great", "excellent", "good", "nice", "creative", "innovative", "impressive"]
@@ -260,10 +259,10 @@ def test_transform_ai_detection_finding(
 ) -> None:
     """Test transformation of AI detection finding."""
     result = transformer.transform_findings([sample_ai_detection_finding], None)
-    
+
     assert len(result) == 1
     feedback = result[0]
-    
+
     assert isinstance(feedback, ActionableFeedback)
     assert feedback.priority >= 1 and feedback.priority <= 5
     assert len(feedback.acknowledgment) > 0
@@ -283,10 +282,10 @@ def test_transform_multiple_findings(
     """Test transformation of multiple findings."""
     findings = [sample_bug_hunter_finding, sample_performance_finding]
     result = transformer.transform_findings(findings, None)
-    
+
     # BugHunter finding fails due to enum.value bug, only Performance finding succeeds
     assert len(result) == 1
-    
+
     # Verify the performance finding was transformed
     assert isinstance(result[0], ActionableFeedback)
     assert result[0].priority >= 1 and result[0].priority <= 5
@@ -304,7 +303,7 @@ def test_transform_with_strategy_context(
 ) -> None:
     """Test transformation with strategy context."""
     result = transformer.transform_findings([sample_bug_hunter_finding], sample_strategy_context)
-    
+
     # BugHunter finding fails due to enum.value bug
     assert len(result) == 0
 
@@ -353,7 +352,7 @@ def test_transform_tone_removes_negative_words(transformer: BrandVoiceTransforme
     """Test that tone transformation removes negative words."""
     negative_text = "This is a critical error and a bad failure in your code."
     transformed = transformer._transform_tone(negative_text)
-    
+
     # Should not contain harsh negative words
     assert "error" not in transformed.lower() or "opportunity" in transformed.lower()
     assert "failure" not in transformed.lower() or "learning" in transformed.lower()
@@ -363,7 +362,7 @@ def test_transform_tone_adds_encouragement(transformer: BrandVoiceTransformer) -
     """Test that tone transformation adds encouraging phrases."""
     text = "Security vulnerability found"
     transformed = transformer._transform_tone(text)
-    
+
     # Should be more encouraging
     assert len(transformed) >= len(text)  # Should add context
 
@@ -376,7 +375,7 @@ def test_transform_tone_adds_encouragement(transformer: BrandVoiceTransformer) -
 def test_estimate_effort_critical_severity(transformer: BrandVoiceTransformer) -> None:
     """Test effort estimation for critical severity."""
     estimate = transformer._estimate_effort_from_severity(Severity.CRITICAL)
-    
+
     assert isinstance(estimate, EffortEstimate)
     assert estimate.minutes > 0
     assert estimate.difficulty in ["Easy", "Moderate", "Advanced"]
@@ -385,7 +384,7 @@ def test_estimate_effort_critical_severity(transformer: BrandVoiceTransformer) -
 def test_estimate_effort_info_severity(transformer: BrandVoiceTransformer) -> None:
     """Test effort estimation for info severity."""
     estimate = transformer._estimate_effort_from_severity(Severity.INFO)
-    
+
     assert isinstance(estimate, EffortEstimate)
     assert estimate.minutes > 0
     assert estimate.difficulty in ["Easy", "Moderate", "Advanced"]
@@ -399,17 +398,19 @@ def test_estimate_effort_info_severity(transformer: BrandVoiceTransformer) -> No
 def test_generate_learning_resources_security(transformer: BrandVoiceTransformer) -> None:
     """Test learning resource generation for security category."""
     resources = transformer._generate_learning_resources("security")
-    
+
     assert len(resources) > 0
     assert all(isinstance(r, LearningResource) for r in resources)
     assert all(r.url.startswith("http") for r in resources)
-    assert all(r.resource_type in ["documentation", "tutorial", "guide", "video"] for r in resources)
+    assert all(
+        r.resource_type in ["documentation", "tutorial", "guide", "video"] for r in resources
+    )
 
 
 def test_generate_learning_resources_testing(transformer: BrandVoiceTransformer) -> None:
     """Test learning resource generation for testing category."""
     resources = transformer._generate_learning_resources("testing")
-    
+
     assert len(resources) > 0
     assert all(isinstance(r, LearningResource) for r in resources)
 
@@ -417,7 +418,7 @@ def test_generate_learning_resources_testing(transformer: BrandVoiceTransformer)
 def test_generate_learning_resources_database(transformer: BrandVoiceTransformer) -> None:
     """Test learning resource generation for database category."""
     resources = transformer._generate_learning_resources("database")
-    
+
     assert len(resources) > 0
     assert all(isinstance(r, LearningResource) for r in resources)
 
@@ -433,7 +434,7 @@ def test_explain_business_impact_security(
 ) -> None:
     """Test business impact explanation for security finding."""
     impact = transformer._explain_business_impact(sample_bug_hunter_finding)
-    
+
     assert len(impact) > 0
     assert isinstance(impact, str)
     # Security findings should mention business consequences
@@ -446,7 +447,7 @@ def test_explain_business_impact_performance(
 ) -> None:
     """Test business impact explanation for performance finding."""
     impact = transformer._explain_business_impact_performance(sample_performance_finding)
-    
+
     assert len(impact) > 0
     assert isinstance(impact, str)
     # Performance findings should mention user experience or costs
@@ -461,7 +462,7 @@ def test_explain_business_impact_performance(
 def test_generate_acknowledgment_security(transformer: BrandVoiceTransformer) -> None:
     """Test acknowledgment generation for security category."""
     ack = transformer._generate_acknowledgment("security")
-    
+
     assert len(ack) > 0
     assert isinstance(ack, str)
     # Should be positive and encouraging
@@ -471,7 +472,7 @@ def test_generate_acknowledgment_security(transformer: BrandVoiceTransformer) ->
 def test_generate_acknowledgment_testing(transformer: BrandVoiceTransformer) -> None:
     """Test acknowledgment generation for testing category."""
     ack = transformer._generate_acknowledgment("testing")
-    
+
     assert len(ack) > 0
     assert isinstance(ack, str)
 
@@ -484,7 +485,7 @@ def test_generate_acknowledgment_testing(transformer: BrandVoiceTransformer) -> 
 def test_generate_context_security(transformer: BrandVoiceTransformer) -> None:
     """Test context generation for security category."""
     context = transformer._generate_context("security", None)
-    
+
     assert len(context) > 0
     assert isinstance(context, str)
     # Should explain why this is common in hackathons
@@ -510,13 +511,14 @@ def test_generate_context_with_strategy(
 
 def test_transform_invalid_finding_type(transformer: BrandVoiceTransformer) -> None:
     """Test that invalid finding types are handled gracefully."""
+
     # Create a mock object that's not a valid finding type
     class InvalidFinding:
         finding = "Invalid"
-    
+
     # Should not raise exception, should skip invalid finding
     result = transformer.transform_findings([InvalidFinding()], None)  # type: ignore
-    
+
     # Should return empty list (invalid finding skipped)
     assert result == []
 
@@ -533,9 +535,9 @@ def test_transform_finding_with_missing_fields(transformer: BrandVoiceTransforme
         category="architecture",
         recommendation="Fix it",
     )
-    
+
     result = transformer.transform_findings([finding], None)
-    
+
     # Should still transform successfully
     assert len(result) == 1
     assert isinstance(result[0], ActionableFeedback)
@@ -556,9 +558,9 @@ def test_generate_security_example_sql_injection(transformer: BrandVoiceTransfor
         category="security",
         recommendation="Use parameterized queries",
     )
-    
+
     example = transformer._generate_security_example(finding)
-    
+
     assert isinstance(example, CodeExample)
     assert len(example.vulnerable_code) > 0
     assert len(example.fixed_code) > 0
@@ -577,9 +579,9 @@ def test_generate_bug_example(transformer: BrandVoiceTransformer) -> None:
         category="bug",
         recommendation="Add zero check",
     )
-    
+
     example = transformer._generate_bug_example(finding)
-    
+
     assert isinstance(example, CodeExample)
     assert len(example.vulnerable_code) > 0
     assert len(example.fixed_code) > 0
@@ -596,9 +598,9 @@ def test_generate_testing_example(transformer: BrandVoiceTransformer) -> None:
         category="testing",
         recommendation="Add test coverage",
     )
-    
+
     example = transformer._generate_testing_example(finding)
-    
+
     assert isinstance(example, CodeExample)
     assert len(example.vulnerable_code) > 0
     assert len(example.fixed_code) > 0
@@ -615,7 +617,7 @@ def test_calculate_priority_with_effort_critical(transformer: BrandVoiceTransfor
     """Test priority calculation for critical severity with effort."""
     effort = EffortEstimate(minutes=30, difficulty="Moderate")
     priority = transformer._calculate_priority_with_effort(Severity.CRITICAL, effort)
-    
+
     assert priority >= 1 and priority <= 5
     assert priority == 1  # Critical should always be priority 1
 
@@ -624,7 +626,7 @@ def test_calculate_priority_with_effort_low_quick_fix(transformer: BrandVoiceTra
     """Test priority calculation for low severity quick fix."""
     effort = EffortEstimate(minutes=5, difficulty="Easy")
     priority = transformer._calculate_priority_with_effort(Severity.LOW, effort)
-    
+
     assert priority >= 1 and priority <= 5
     # Low severity but quick fix might get slightly higher priority
 
@@ -644,9 +646,9 @@ def test_generate_testing_instructions(transformer: BrandVoiceTransformer) -> No
         category="security",
         recommendation="Use parameterized queries",
     )
-    
+
     instructions = transformer._generate_testing_instructions(finding)
-    
+
     assert len(instructions) > 0
     assert isinstance(instructions, str)
     # Should provide actionable testing steps
@@ -676,9 +678,9 @@ def test_explain_fix(transformer: BrandVoiceTransformer) -> None:
         category="security",
         recommendation="Use parameterized queries",
     )
-    
+
     explanation = transformer._explain_fix(finding)
-    
+
     assert len(explanation) > 0
     assert isinstance(explanation, str)
     # Should explain why the fix works

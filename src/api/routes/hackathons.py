@@ -245,7 +245,6 @@ async def get_leaderboard(
     )
 
 
-
 @router.get("/{hack_id}/intelligence", response_model=OrganizerDashboard)
 async def get_organizer_intelligence(
     hack_id: str,

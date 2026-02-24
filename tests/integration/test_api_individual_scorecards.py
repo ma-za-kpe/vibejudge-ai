@@ -1,51 +1,44 @@
 """Integration tests for individual scorecards endpoint."""
 
+from unittest.mock import MagicMock, patch
+
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import MagicMock, patch
 
 from src.api.main import app
 from src.models.common import SubmissionStatus
-from src.models.submission import SubmissionResponse, RepoMeta
-from src.models.team_dynamics import (
-    ContributorRole,
-    ExpertiseArea,
-    IndividualScorecard,
-    WorkStyle,
-    HiringSignals,
-)
+from src.models.submission import SubmissionResponse
 
 
 @pytest.fixture
 def mock_services():
     """Mock all service dependencies."""
-    with patch("src.api.dependencies.get_submission_service") as mock_sub_service, \
-         patch("src.api.dependencies.get_hackathon_service") as mock_hack_service, \
-         patch("src.api.dependencies.get_organizer_service") as mock_org_service:
-        
+    with (
+        patch("src.api.dependencies.get_submission_service") as mock_sub_service,
+        patch("src.api.dependencies.get_hackathon_service") as mock_hack_service,
+        patch("src.api.dependencies.get_organizer_service") as mock_org_service,
+    ):
         # Mock organizer service for auth
         org_service = MagicMock()
         org_service.verify_api_key.return_value = "org_123"
         org_service.get_organizer.return_value = MagicMock(
             org_id="org_123",
             email="test@example.com",
-            model_dump=lambda: {"org_id": "org_123", "email": "test@example.com"}
+            model_dump=lambda: {"org_id": "org_123", "email": "test@example.com"},
         )
         mock_org_service.return_value = org_service
-        
+
         # Mock hackathon service
         hack_service = MagicMock()
         hack_service.get_hackathon.return_value = MagicMock(
-            hack_id="hack_123",
-            org_id="org_123",
-            name="Test Hackathon"
+            hack_id="hack_123", org_id="org_123", name="Test Hackathon"
         )
         mock_hack_service.return_value = hack_service
-        
+
         # Mock submission service
         sub_service = MagicMock()
         mock_sub_service.return_value = sub_service
-        
+
         yield {
             "submission": sub_service,
             "hackathon": hack_service,
@@ -67,7 +60,7 @@ def test_get_individual_scorecards_success(mock_services):
         updated_at="2024-01-01T00:00:00Z",
     )
     mock_services["submission"].get_submission.return_value = submission
-    
+
     # Setup mock scorecards
     scorecards = [
         {
@@ -101,14 +94,13 @@ def test_get_individual_scorecards_success(mock_services):
         }
     ]
     mock_services["submission"].get_individual_scorecards.return_value = scorecards
-    
+
     # Make request
     client = TestClient(app)
     response = client.get(
-        "/api/v1/submissions/sub_123/individual-scorecards",
-        headers={"X-API-Key": "test_key"}
+        "/api/v1/submissions/sub_123/individual-scorecards", headers={"X-API-Key": "test_key"}
     )
-    
+
     # Verify response
     assert response.status_code == 200
     data = response.json()
@@ -123,13 +115,12 @@ def test_get_individual_scorecards_success(mock_services):
 def test_get_individual_scorecards_not_found(mock_services):
     """Test 404 when submission not found."""
     mock_services["submission"].get_submission.return_value = None
-    
+
     client = TestClient(app)
     response = client.get(
-        "/api/v1/submissions/sub_999/individual-scorecards",
-        headers={"X-API-Key": "test_key"}
+        "/api/v1/submissions/sub_999/individual-scorecards", headers={"X-API-Key": "test_key"}
     )
-    
+
     assert response.status_code == 404
     assert "not found" in response.json()["detail"].lower()
 
@@ -147,20 +138,19 @@ def test_get_individual_scorecards_forbidden(mock_services):
         updated_at="2024-01-01T00:00:00Z",
     )
     mock_services["submission"].get_submission.return_value = submission
-    
+
     # Hackathon owned by different organizer
     mock_services["hackathon"].get_hackathon.return_value = MagicMock(
         hack_id="hack_123",
         org_id="org_999",  # Different org
-        name="Test Hackathon"
+        name="Test Hackathon",
     )
-    
+
     client = TestClient(app)
     response = client.get(
-        "/api/v1/submissions/sub_123/individual-scorecards",
-        headers={"X-API-Key": "test_key"}
+        "/api/v1/submissions/sub_123/individual-scorecards", headers={"X-API-Key": "test_key"}
     )
-    
+
     assert response.status_code == 403
     assert "permission" in response.json()["detail"].lower()
 
@@ -169,7 +159,7 @@ def test_get_individual_scorecards_no_auth(mock_services):
     """Test 401 when no API key provided."""
     client = TestClient(app)
     response = client.get("/api/v1/submissions/sub_123/individual-scorecards")
-    
+
     assert response.status_code == 401
 
 
@@ -186,13 +176,12 @@ def test_get_individual_scorecards_empty(mock_services):
     )
     mock_services["submission"].get_submission.return_value = submission
     mock_services["submission"].get_individual_scorecards.return_value = []
-    
+
     client = TestClient(app)
     response = client.get(
-        "/api/v1/submissions/sub_123/individual-scorecards",
-        headers={"X-API-Key": "test_key"}
+        "/api/v1/submissions/sub_123/individual-scorecards", headers={"X-API-Key": "test_key"}
     )
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["total_count"] == 0

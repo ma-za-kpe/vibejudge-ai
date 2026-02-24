@@ -7,6 +7,7 @@ from src.models.common import VibeJudgeBase
 
 class CodeExample(VibeJudgeBase):
     """Before/after code example."""
+
     vulnerable_code: str
     fixed_code: str
     explanation: str
@@ -14,6 +15,7 @@ class CodeExample(VibeJudgeBase):
 
 class LearningResource(VibeJudgeBase):
     """Learning resource link."""
+
     title: str
     url: str
     resource_type: str  # documentation | tutorial | guide | video
@@ -21,12 +23,14 @@ class LearningResource(VibeJudgeBase):
 
 class EffortEstimate(VibeJudgeBase):
     """Effort estimate for fix."""
+
     minutes: int
     difficulty: str  # Easy | Moderate | Advanced
 
 
 class ActionableFeedback(VibeJudgeBase):
     """Transformed feedback item."""
+
     priority: int = Field(..., ge=1, le=5)
     finding: str
     acknowledgment: str  # What they did right

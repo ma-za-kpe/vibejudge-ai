@@ -98,7 +98,7 @@ The system achieves the 90-second target through:
    - Sequential: 4 agents × 10s each = 40s
    - Parallel: max(agent times) ≈ 10-15s
 
-2. **Optimized Git Operations**: 
+2. **Optimized Git Operations**:
    - Shallow clones (depth=1)
    - Selective file reading
    - Efficient commit history parsing

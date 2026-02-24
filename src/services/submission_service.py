@@ -574,11 +574,9 @@ class SubmissionService:
 
         # Extract individual scorecards from team analysis
         scorecards = team_analysis_record.get("individual_scorecards", [])
-        
+
         logger.info(
-            "individual_scorecards_retrieved",
-            sub_id=sub_id,
-            scorecard_count=len(scorecards)
+            "individual_scorecards_retrieved", sub_id=sub_id, scorecard_count=len(scorecards)
         )
-        
+
         return scorecards

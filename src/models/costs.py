@@ -5,6 +5,7 @@ from src.models.common import AgentName, ServiceTier, VibeJudgeBase
 
 class CostRecord(VibeJudgeBase):
     """Per-agent cost record for a single submission."""
+
     sub_id: str
     hack_id: str
     agent_name: AgentName
@@ -23,13 +24,16 @@ class CostRecord(VibeJudgeBase):
 
 class ComponentPerformanceRecord(VibeJudgeBase):
     """Performance tracking for non-AI components (free static analysis).
-    
+
     These components don't use Bedrock, so they have $0 cost, but we track
     their execution time to show performance and cost savings.
     """
+
     sub_id: str
     hack_id: str
-    component_name: str  # team_analyzer | strategy_detector | brand_voice_transformer | actions_analyzer
+    component_name: (
+        str  # team_analyzer | strategy_detector | brand_voice_transformer | actions_analyzer
+    )
     duration_ms: int
     findings_count: int = 0  # Number of findings/items produced
     success: bool = True
@@ -38,6 +42,7 @@ class ComponentPerformanceRecord(VibeJudgeBase):
 
 class BudgetInfo(VibeJudgeBase):
     """Budget utilization info."""
+
     limit_usd: float
     used_usd: float
     remaining_usd: float
@@ -46,6 +51,7 @@ class BudgetInfo(VibeJudgeBase):
 
 class SubmissionCostResponse(VibeJudgeBase):
     """GET /api/v1/submissions/{sub_id}/costs"""
+
     sub_id: str
     total_cost_usd: float
     total_tokens: int
@@ -59,6 +65,7 @@ class SubmissionCostResponse(VibeJudgeBase):
 
 class HackathonCostResponse(VibeJudgeBase):
     """GET /api/v1/hackathons/{hack_id}/costs"""
+
     hack_id: str
     total_cost_usd: float
     total_input_tokens: int
@@ -97,6 +104,7 @@ class CostEstimateDetail(VibeJudgeBase):
 
 class CostEstimate(VibeJudgeBase):
     """POST /api/v1/hackathons/{hack_id}/analyze/estimate response."""
+
     hack_id: str
     submission_count: int
     agents_enabled: list[str]
