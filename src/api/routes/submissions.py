@@ -10,6 +10,8 @@ from src.api.dependencies import (
 )
 from src.models.costs import CostRecord, SubmissionCostResponse
 from src.models.submission import (
+    IndividualScorecardsResponse,
+    ScorecardResponse,
     SubmissionBatchCreate,
     SubmissionBatchCreateResponse,
     SubmissionListResponse,
@@ -182,3 +184,70 @@ async def get_submission_costs(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get costs: {str(e)}") from e
+
+
+
+@router.get("/submissions/{sub_id}/individual-scorecards", response_model=IndividualScorecardsResponse)
+async def get_individual_scorecards(
+    sub_id: str,
+    submission_service: SubmissionServiceDep,
+    hackathon_service: HackathonServiceDep,
+    current_organizer: CurrentOrganizer,
+) -> IndividualScorecardsResponse:
+    """Get individual contributor scorecards for submission.
+
+    GET /api/v1/submissions/{sub_id}/individual-scorecards
+
+    Requires X-API-Key header for authentication.
+    Accessible by organizer who owns the hackathon or team members (future).
+    """
+    # Get submission to extract hack_id
+    submission = submission_service.get_submission(sub_id)
+    if not submission:
+        raise HTTPException(status_code=404, detail="Submission not found")
+
+    # Verify hackathon ownership
+    hackathon = hackathon_service.get_hackathon(submission.hack_id)
+    if not hackathon:
+        raise HTTPException(status_code=404, detail="Hackathon not found")
+
+    if hackathon.org_id != current_organizer["org_id"]:
+        raise HTTPException(
+            status_code=403, 
+            detail="You do not have permission to access this submission's scorecards"
+        )
+
+    # Get individual scorecards
+    scorecards = submission_service.get_individual_scorecards(sub_id)
+    if scorecards is None:
+        raise HTTPException(status_code=404, detail="Submission not found")
+
+    return IndividualScorecardsResponse(
+        sub_id=submission.sub_id,
+        hack_id=submission.hack_id,
+        team_name=submission.team_name,
+        scorecards=scorecards,
+        total_count=len(scorecards),
+    )
+
+
+@router.get("/submissions/{sub_id}/scorecard", response_model=ScorecardResponse)
+async def get_submission_scorecard(
+    sub_id: str,
+    submission_service: SubmissionServiceDep,
+) -> ScorecardResponse:
+    """Get detailed scorecard for submission with team dynamics, strategy, and feedback.
+
+    GET /api/v1/submissions/{sub_id}/scorecard
+
+    Returns comprehensive scorecard including:
+    - Agent scores with detailed evidence
+    - Team dynamics analysis
+    - Strategy analysis
+    - Actionable feedback with code examples
+    """
+    scorecard = submission_service.get_submission_scorecard(sub_id)
+    if scorecard is None:
+        raise HTTPException(status_code=404, detail="Submission not found")
+    
+    return scorecard

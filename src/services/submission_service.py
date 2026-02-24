@@ -424,6 +424,41 @@ class SubmissionService:
                 }
             )
 
+        # Get team dynamics analysis
+        team_dynamics = None
+        team_analysis_record = self.db.get_team_analysis(sub_id)
+        if team_analysis_record:
+            team_dynamics = {
+                "workload_distribution": team_analysis_record.get("workload_distribution", {}),
+                "collaboration_patterns": team_analysis_record.get("collaboration_patterns", []),
+                "red_flags": team_analysis_record.get("red_flags", []),
+                "individual_scorecards": team_analysis_record.get("individual_scorecards", []),
+                "team_dynamics_grade": team_analysis_record.get("team_dynamics_grade"),
+                "commit_message_quality": team_analysis_record.get("commit_message_quality", 0.0),
+                "panic_push_detected": team_analysis_record.get("panic_push_detected", False),
+                "duration_ms": team_analysis_record.get("duration_ms", 0),
+            }
+
+        # Get strategy analysis
+        strategy_analysis = None
+        strategy_record = self.db.get_strategy_analysis(sub_id)
+        if strategy_record:
+            strategy_analysis = {
+                "test_strategy": strategy_record.get("test_strategy"),
+                "critical_path_focus": strategy_record.get("critical_path_focus", False),
+                "tradeoffs": strategy_record.get("tradeoffs", []),
+                "learning_journey": strategy_record.get("learning_journey"),
+                "maturity_level": strategy_record.get("maturity_level"),
+                "strategic_context": strategy_record.get("strategic_context", ""),
+                "duration_ms": strategy_record.get("duration_ms", 0),
+            }
+
+        # Get actionable feedback
+        actionable_feedback = []
+        feedback_record = self.db.get_actionable_feedback(sub_id)
+        if feedback_record:
+            actionable_feedback = feedback_record.get("feedback_items", [])
+
         return {
             "sub_id": submission.sub_id,
             "hack_id": submission.hack_id,
@@ -444,6 +479,9 @@ class SubmissionService:
             "analyzed_at": submission.analyzed_at,
             "created_at": submission.created_at,
             "updated_at": submission.updated_at,
+            "team_dynamics": team_dynamics,
+            "strategy_analysis": strategy_analysis,
+            "actionable_feedback": actionable_feedback,
         }
 
     def get_submission_evidence(
@@ -513,3 +551,34 @@ class SubmissionService:
             "total_count": len(evidence_items),
             "filtered_by": filtered_by,
         }
+
+    def get_individual_scorecards(self, sub_id: str) -> list[dict] | None:
+        """Get individual contributor scorecards for submission.
+
+        Args:
+            sub_id: Submission ID
+
+        Returns:
+            List of individual scorecard dicts or None if not found
+        """
+        # First verify submission exists
+        submission = self.get_submission(sub_id)
+        if not submission:
+            return None
+
+        # Get team analysis data
+        team_analysis_record = self.db.get_team_analysis(sub_id)
+        if not team_analysis_record:
+            logger.warning("team_analysis_not_found", sub_id=sub_id)
+            return []
+
+        # Extract individual scorecards from team analysis
+        scorecards = team_analysis_record.get("individual_scorecards", [])
+        
+        logger.info(
+            "individual_scorecards_retrieved",
+            sub_id=sub_id,
+            scorecard_count=len(scorecards)
+        )
+        
+        return scorecards

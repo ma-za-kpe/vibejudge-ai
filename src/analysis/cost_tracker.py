@@ -3,7 +3,7 @@
 
 from src.constants import MODEL_RATES
 from src.models.common import AgentName, ServiceTier
-from src.models.costs import CostRecord
+from src.models.costs import ComponentPerformanceRecord, CostRecord
 from src.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -15,6 +15,7 @@ class CostTracker:
     def __init__(self):
         """Initialize cost tracker."""
         self.records: list[CostRecord] = []
+        self.component_records: list[ComponentPerformanceRecord] = []
 
     def record_agent_cost(
         self,
@@ -75,6 +76,52 @@ class CostTracker:
 
         return record
 
+    def record_component_performance(
+        self,
+        sub_id: str,
+        hack_id: str,
+        component_name: str,
+        duration_ms: int,
+        findings_count: int = 0,
+        success: bool = True,
+        error_message: str | None = None,
+    ) -> ComponentPerformanceRecord:
+        """Record performance for a non-AI component (free static analysis).
+
+        Args:
+            sub_id: Submission ID
+            hack_id: Hackathon ID
+            component_name: Component name (team_analyzer, strategy_detector, etc.)
+            duration_ms: Execution duration in milliseconds
+            findings_count: Number of findings/items produced
+            success: Whether the component executed successfully
+            error_message: Error message if failed
+
+        Returns:
+            ComponentPerformanceRecord instance
+        """
+        record = ComponentPerformanceRecord(
+            sub_id=sub_id,
+            hack_id=hack_id,
+            component_name=component_name,
+            duration_ms=duration_ms,
+            findings_count=findings_count,
+            success=success,
+            error_message=error_message,
+        )
+
+        self.component_records.append(record)
+
+        logger.info(
+            "component_performance_recorded",
+            component=component_name,
+            duration_ms=duration_ms,
+            findings_count=findings_count,
+            success=success,
+        )
+
+        return record
+
     def get_total_cost(self) -> float:
         """Get total cost across all recorded agents.
 
@@ -123,6 +170,23 @@ class CostTracker:
         """
         return self.records.copy()
 
+    def get_component_records(self) -> list[ComponentPerformanceRecord]:
+        """Get all component performance records.
+
+        Returns:
+            List of ComponentPerformanceRecord instances
+        """
+        return self.component_records.copy()
+
+    def get_total_component_duration_ms(self) -> int:
+        """Get total duration across all components.
+
+        Returns:
+            Total duration in milliseconds
+        """
+        return sum(r.duration_ms for r in self.component_records)
+
     def clear(self) -> None:
-        """Clear all recorded costs."""
+        """Clear all recorded costs and component performance."""
         self.records.clear()
+        self.component_records.clear()

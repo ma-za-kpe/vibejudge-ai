@@ -635,3 +635,115 @@ class DynamoDBHelper:
         except ClientError as e:
             logger.error("batch_write_failed", error=str(e))
             return False
+
+    # ============================================================
+    # TEAM ANALYSIS ACCESS PATTERNS
+    # ============================================================
+
+    def get_team_analysis(self, sub_id: str) -> dict | None:
+        """Get team analysis for submission.
+
+        Args:
+            sub_id: Submission ID
+
+        Returns:
+            Team analysis record or None
+        """
+        try:
+            response = self.table.get_item(
+                Key={"PK": f"SUB#{sub_id}", "SK": "TEAM_ANALYSIS"}
+            )
+            return response.get("Item")
+        except ClientError as e:
+            logger.error("get_team_analysis_failed", sub_id=sub_id, error=str(e))
+            return None
+
+    def put_team_analysis(self, team_analysis: dict) -> bool:
+        """Create or update team analysis record.
+
+        Args:
+            team_analysis: Team analysis record dict with sub_id
+
+        Returns:
+            True if successful
+        """
+        try:
+            item = self._serialize_item(team_analysis)
+            self.table.put_item(Item=item)
+            logger.info("team_analysis_saved", sub_id=team_analysis.get("sub_id"))
+            return True
+        except ClientError as e:
+            logger.error("put_team_analysis_failed", error=str(e))
+            return False
+
+    def get_strategy_analysis(self, sub_id: str) -> dict | None:
+        """Get strategy analysis for submission.
+
+        Args:
+            sub_id: Submission ID
+
+        Returns:
+            Strategy analysis record or None
+        """
+        try:
+            response = self.table.get_item(
+                Key={"PK": f"SUB#{sub_id}", "SK": "STRATEGY_ANALYSIS"}
+            )
+            return response.get("Item")
+        except ClientError as e:
+            logger.error("get_strategy_analysis_failed", sub_id=sub_id, error=str(e))
+            return None
+
+    def put_strategy_analysis(self, strategy_analysis: dict) -> bool:
+        """Create or update strategy analysis record.
+
+        Args:
+            strategy_analysis: Strategy analysis record dict with sub_id
+
+        Returns:
+            True if successful
+        """
+        try:
+            item = self._serialize_item(strategy_analysis)
+            self.table.put_item(Item=item)
+            logger.info("strategy_analysis_saved", sub_id=strategy_analysis.get("sub_id"))
+            return True
+        except ClientError as e:
+            logger.error("put_strategy_analysis_failed", error=str(e))
+            return False
+
+    def get_actionable_feedback(self, sub_id: str) -> dict | None:
+        """Get actionable feedback for submission.
+
+        Args:
+            sub_id: Submission ID
+
+        Returns:
+            Actionable feedback record or None
+        """
+        try:
+            response = self.table.get_item(
+                Key={"PK": f"SUB#{sub_id}", "SK": "ACTIONABLE_FEEDBACK"}
+            )
+            return response.get("Item")
+        except ClientError as e:
+            logger.error("get_actionable_feedback_failed", sub_id=sub_id, error=str(e))
+            return None
+
+    def put_actionable_feedback(self, actionable_feedback: dict) -> bool:
+        """Create or update actionable feedback record.
+
+        Args:
+            actionable_feedback: Actionable feedback record dict with sub_id
+
+        Returns:
+            True if successful
+        """
+        try:
+            item = self._serialize_item(actionable_feedback)
+            self.table.put_item(Item=item)
+            logger.info("actionable_feedback_saved", sub_id=actionable_feedback.get("sub_id"))
+            return True
+        except ClientError as e:
+            logger.error("put_actionable_feedback_failed", error=str(e))
+            return False

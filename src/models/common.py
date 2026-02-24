@@ -25,6 +25,7 @@ class SubmissionStatus(StrEnum):
     COMPLETED = "completed"
     FAILED = "failed"
     TIMEOUT = "timeout"
+    DISQUALIFIED = "disqualified"
 
 
 class JobStatus(StrEnum):

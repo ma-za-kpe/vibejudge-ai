@@ -2,8 +2,14 @@
 
 from fastapi import APIRouter, HTTPException, Query
 
-from src.api.dependencies import CurrentOrganizer, HackathonServiceDep, SubmissionServiceDep
+from src.api.dependencies import (
+    CurrentOrganizer,
+    HackathonServiceDep,
+    OrganizerIntelligenceServiceDep,
+    SubmissionServiceDep,
+)
 from src.models.common import Recommendation
+from src.models.dashboard import OrganizerDashboard
 from src.models.hackathon import (
     HackathonCreate,
     HackathonListResponse,
@@ -237,3 +243,49 @@ async def get_leaderboard(
         leaderboard=leaderboard_entries,
         statistics=statistics,
     )
+
+
+
+@router.get("/{hack_id}/intelligence", response_model=OrganizerDashboard)
+async def get_organizer_intelligence(
+    hack_id: str,
+    hackathon_service: HackathonServiceDep,
+    intelligence_service: OrganizerIntelligenceServiceDep,
+    current_organizer: CurrentOrganizer,
+) -> OrganizerDashboard:
+    """Get organizer intelligence dashboard for hackathon.
+
+    GET /api/v1/hackathons/{hack_id}/intelligence
+
+    Returns aggregated insights including:
+    - Top performers
+    - Hiring intelligence by role
+    - Technology trends
+    - Common issues with workshop recommendations
+    - Prize recommendations
+    - Standout moments
+    - Next hackathon recommendations
+    - Sponsor follow-up actions
+
+    Requires X-API-Key header for authentication.
+    """
+    # Get hackathon first to verify ownership
+    hackathon = hackathon_service.get_hackathon(hack_id)
+    if not hackathon:
+        raise HTTPException(status_code=404, detail="Hackathon not found")
+
+    # Ownership verification
+    if hackathon.org_id != current_organizer["org_id"]:
+        raise HTTPException(
+            status_code=403, detail="You do not have permission to access this hackathon"
+        )
+
+    try:
+        dashboard = intelligence_service.generate_dashboard(hack_id)
+        return dashboard
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to generate intelligence dashboard: {str(e)}"
+        ) from e

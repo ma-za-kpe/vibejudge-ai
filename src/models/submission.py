@@ -91,6 +91,7 @@ class SubmissionResponse(VibeJudgeBase, TimestampMixin):
     total_tokens: int | None = None
     analysis_duration_ms: int | None = None
     analyzed_at: datetime | None = None
+    disqualification_reason: str | None = None
 
 
 class SubmissionListItem(VibeJudgeBase):
@@ -138,7 +139,7 @@ class AgentScoreDetail(VibeJudgeBase):
 
 
 class ScorecardResponse(VibeJudgeBase, TimestampMixin):
-    """GET /api/v1/hackathons/{hack_id}/submissions/{sub_id}/scorecard"""
+    """GET /api/v1/submissions/{sub_id}/scorecard"""
 
     sub_id: str
     hack_id: str
@@ -157,6 +158,10 @@ class ScorecardResponse(VibeJudgeBase, TimestampMixin):
     total_tokens: int | None = None
     analysis_duration_ms: int | None = None
     analyzed_at: datetime | None = None
+    disqualification_reason: str | None = None
+    team_dynamics: dict | None = None  # TeamAnalysisResult as dict
+    strategy_analysis: dict | None = None  # StrategyAnalysisResult as dict
+    actionable_feedback: list[dict] = Field(default_factory=list)  # List of ActionableFeedback as dicts
 
 
 # --- Evidence Models ---
@@ -184,3 +189,16 @@ class EvidenceResponse(VibeJudgeBase):
     evidence: list[EvidenceItem] = Field(default_factory=list)
     total_count: int = 0
     filtered_by: dict[str, str | bool] = Field(default_factory=dict)
+
+
+# --- Individual Scorecards Response ---
+
+
+class IndividualScorecardsResponse(VibeJudgeBase):
+    """GET /api/v1/submissions/{sub_id}/individual-scorecards"""
+
+    sub_id: str
+    hack_id: str
+    team_name: str
+    scorecards: list[dict] = Field(default_factory=list)  # List of IndividualScorecard dicts
+    total_count: int = 0

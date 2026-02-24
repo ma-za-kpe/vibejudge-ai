@@ -151,6 +151,7 @@ markers = [
     "integration: Integration tests (mocked AWS)",
     "slow: Slow tests (skip with -m 'not slow')",
     "bedrock: Tests requiring Bedrock access",
+    "performance: Performance tests (verify timing targets)",
 ]
 env = [
     "AWS_DEFAULT_REGION=us-east-1",

@@ -21,6 +21,21 @@ class CostRecord(VibeJudgeBase):
     cache_write_tokens: int = 0
 
 
+class ComponentPerformanceRecord(VibeJudgeBase):
+    """Performance tracking for non-AI components (free static analysis).
+    
+    These components don't use Bedrock, so they have $0 cost, but we track
+    their execution time to show performance and cost savings.
+    """
+    sub_id: str
+    hack_id: str
+    component_name: str  # team_analyzer | strategy_detector | brand_voice_transformer | actions_analyzer
+    duration_ms: int
+    findings_count: int = 0  # Number of findings/items produced
+    success: bool = True
+    error_message: str | None = None
+
+
 class BudgetInfo(VibeJudgeBase):
     """Budget utilization info."""
     limit_usd: float
@@ -38,6 +53,8 @@ class SubmissionCostResponse(VibeJudgeBase):
     total_output_tokens: int
     analysis_duration_ms: int
     agents: list[CostRecord]
+    component_performance: list[ComponentPerformanceRecord] = []
+    total_component_duration_ms: int = 0
 
 
 class HackathonCostResponse(VibeJudgeBase):

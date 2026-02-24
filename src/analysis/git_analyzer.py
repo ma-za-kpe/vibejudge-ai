@@ -649,6 +649,7 @@ def clone_and_extract(
     submission_id: str,
     workflow_runs: list = None,
     workflow_definitions: list[str] = None,
+    use_shallow: bool = True,
 ) -> RepoData:
     """Complete extraction pipeline for a repository.
 
@@ -657,6 +658,7 @@ def clone_and_extract(
         submission_id: Submission ID for clone path
         workflow_runs: Optional pre-fetched workflow runs
         workflow_definitions: Optional pre-fetched workflow definitions
+        use_shallow: Use shallow clone for faster performance (default: True)
 
     Returns:
         RepoData object with all extracted information
@@ -669,10 +671,14 @@ def clone_and_extract(
     clone_path = get_clone_path(submission_id)
 
     try:
-        # Clone repository
-        repo = clone_repo(repo_url, clone_path)
+        # Clone repository - use shallow clone by default for performance
+        if use_shallow:
+            logger.info("using_shallow_clone_for_performance", sub_id=submission_id)
+            repo = clone_repo_shallow(repo_url, clone_path)
+        else:
+            repo = clone_repo(repo_url, clone_path)
 
-        # Extract git history
+        # Extract git history (limited to available commits in shallow clone)
         commits = extract_commits(repo, max_commits=100)
         diffs = extract_diff_summary(repo, commits, max_diffs=30)
 
@@ -694,6 +700,7 @@ def clone_and_extract(
             repo=repo_name,
             commits=len(commits),
             files=len(source_files),
+            shallow=use_shallow,
         )
 
         return RepoData(

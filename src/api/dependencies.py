@@ -12,6 +12,7 @@ from src.services import (
     AnalysisService,
     CostService,
     HackathonService,
+    OrganizerIntelligenceService,
     OrganizerService,
     SubmissionService,
 )
@@ -98,6 +99,15 @@ def get_cost_service(
     return CostService(db)
 
 
+def get_organizer_intelligence_service(
+    db: DynamoDBHelper = Depends(get_dynamodb_helper),
+    hackathon_service: HackathonService = Depends(get_hackathon_service),
+    submission_service: SubmissionService = Depends(get_submission_service),
+) -> OrganizerIntelligenceService:
+    """Get organizer intelligence service instance."""
+    return OrganizerIntelligenceService(db, hackathon_service, submission_service)
+
+
 # ============================================================
 # TYPE ALIASES FOR DEPENDENCY INJECTION
 # ============================================================
@@ -113,6 +123,9 @@ HackathonServiceDep = Annotated[HackathonService, Depends(get_hackathon_service)
 SubmissionServiceDep = Annotated[SubmissionService, Depends(get_submission_service)]
 AnalysisServiceDep = Annotated[AnalysisService, Depends(get_analysis_service)]
 CostServiceDep = Annotated[CostService, Depends(get_cost_service)]
+OrganizerIntelligenceServiceDep = Annotated[
+    OrganizerIntelligenceService, Depends(get_organizer_intelligence_service)
+]
 
 
 # ============================================================
