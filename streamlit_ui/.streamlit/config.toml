@@ -1,0 +1,45 @@
+# Streamlit Configuration
+# https://docs.streamlit.io/library/advanced-features/configuration
+
+[theme]
+# Primary color for interactive elements
+primaryColor = "#FF6B6B"
+
+# Background color for the main content area
+backgroundColor = "#FFFFFF"
+
+# Background color for sidebar and most interactive widgets
+secondaryBackgroundColor = "#F0F2F6"
+
+# Color used for almost all text
+textColor = "#262730"
+
+# Font family for all text in the app
+font = "sans serif"
+
+[server]
+# Port where the app runs
+port = 8501
+
+# Enable CORS for API requests
+enableCORS = true
+
+# Enable XSRF protection
+enableXsrfProtection = true
+
+# Max upload size in MB
+maxUploadSize = 200
+
+# Enable WebSocket compression
+enableWebsocketCompression = true
+
+[browser]
+# Automatically open browser on startup
+gatherUsageStats = false
+
+[runner]
+# Automatically rerun script when file changes
+magicEnabled = true
+
+# Fast reruns
+fastReruns = true

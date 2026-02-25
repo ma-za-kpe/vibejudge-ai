@@ -38,7 +38,30 @@ VibeJudge AI automates hackathon judging using 4 specialized AI agents on Amazon
 
 ## 🚀 Quick Start
 
-### 🎉 NEW: Ready to Deploy!
+### 🎉 NEW: Streamlit Organizer Dashboard
+
+**Visual interface for hackathon management** - A Streamlit-based dashboard provides organizers with a user-friendly alternative to the API.
+
+**Status:** ✅ COMPLETE (18/18 tasks, 300 tests)
+- ✅ Authentication with API key
+- ✅ Hackathon creation form
+- ✅ Live monitoring dashboard with auto-refresh
+- ✅ Results and leaderboard with search/sort
+- ✅ Intelligence insights with charts
+- ✅ 27 property-based tests (186 test cases)
+- ✅ 5 integration test suites (35 tests)
+- ✅ Complete documentation
+
+**Try it locally:**
+```bash
+cd streamlit_ui
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+See `streamlit_ui/README.md` for complete documentation.
+
+### Ready to Deploy!
 
 **All development complete!** 385 tests passing (including 142 property-based tests), all features implemented.
 

@@ -1,0 +1,17 @@
+# Streamlit Organizer Dashboard Dependencies
+# Python 3.12 compatible
+
+# Core Framework
+streamlit>=1.30.0,<2.0.0
+
+# HTTP Client
+requests>=2.31.0,<3.0.0
+
+# Data Visualization
+plotly>=5.18.0,<6.0.0
+
+# Auto-refresh for live monitoring
+streamlit-autorefresh>=1.0.0,<2.0.0
+
+# Date/Time Utilities
+python-dateutil>=2.8.0,<3.0.0
