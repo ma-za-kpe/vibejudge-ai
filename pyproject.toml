@@ -109,8 +109,8 @@ exclude = '''
 python_version = "3.12"
 warn_return_any = true
 warn_unused_configs = true
-disallow_untyped_defs = false  # Set to true for strict mode
-disallow_incomplete_defs = false
+disallow_untyped_defs = true  # ✅ STRICT: All functions must have type hints
+disallow_incomplete_defs = true  # ✅ STRICT: No partial type hints
 check_untyped_defs = true
 no_implicit_optional = true
 warn_redundant_casts = true
@@ -186,6 +186,27 @@ exclude_lines = [
 ]
 precision = 2
 show_missing = true
+fail_under = 80  # ✅ ENFORCE: Minimum 80% coverage required
 
 [tool.coverage.html]
 directory = "htmlcov"
+
+
+# ============================================================
+# INTERROGATE CONFIGURATION (Docstring Coverage)
+# ============================================================
+
+[tool.interrogate]
+ignore-init-method = true
+ignore-init-module = true
+ignore-magic = true
+ignore-semiprivate = true
+ignore-private = true
+ignore-property-decorators = true
+ignore-module = true
+ignore-nested-functions = true
+fail-under = 80
+exclude = ["tests", "docs", "build", "dist"]
+verbose = 1
+quiet = false
+color = true

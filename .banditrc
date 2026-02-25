@@ -1,0 +1,30 @@
+# Bandit Security Scanner Configuration
+# https://bandit.readthedocs.io/
+
+[bandit]
+# Exclude test directories and generated code
+exclude_dirs = [
+    '/tests/',
+    '/.venv/',
+    '/venv/',
+    '/__pycache__/',
+    '/.aws-sam/',
+    '/build/',
+    '/dist/'
+]
+
+# Test IDs to skip (with justification)
+skips = [
+    # B101: assert_used - We use asserts in tests (acceptable)
+    # B601: paramiko_calls - Not using paramiko
+    # B603: subprocess_without_shell_equals_true - We validate inputs
+]
+
+# Severity level: LOW, MEDIUM, HIGH
+# Confidence level: LOW, MEDIUM, HIGH
+# Only report issues with at least LOW severity and LOW confidence
+severity = LOW
+confidence = LOW
+
+# Output format
+format = json

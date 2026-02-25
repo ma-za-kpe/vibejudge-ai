@@ -1,38 +1,196 @@
 # Pre-commit hooks for VibeJudge AI
-# Install: pip install pre-commit && pre-commit install
+# Install: pip install pre-commit && pre-commit install && pre-commit install --hook-type commit-msg
 # Run manually: pre-commit run --all-files
 
+# ============================================================
+# PERFORMANCE STRATEGY
+# ============================================================
+# Fast checks on commit (~10-15s): ruff, mypy, unit tests
+# Comprehensive checks on push (~90s): all tests, coverage, security scans
+# This provides fast feedback while ensuring quality before push
+
 repos:
+  # ----------------------------------------------------------
+  # CODE FORMATTING & LINTING
+  # ----------------------------------------------------------
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.2
     hooks:
       # Run the linter
       - id: ruff
         args: [--fix]
+        stages: [commit]
       # Run the formatter
       - id: ruff-format
+        stages: [commit]
 
+  # ----------------------------------------------------------
+  # BASIC FILE CHECKS
+  # ----------------------------------------------------------
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
     hooks:
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]
+        stages: [commit]
       - id: end-of-file-fixer
+        stages: [commit]
       - id: check-yaml
         exclude: ^template\.yaml$  # Exclude CloudFormation templates (use !Sub, !Ref, etc.)
+        stages: [commit]
       - id: check-added-large-files
         args: [--maxkb=500]
+        stages: [commit]
       - id: check-json
+        stages: [commit]
       - id: check-toml
+        stages: [commit]
       - id: check-merge-conflict
+        stages: [commit]
       - id: detect-private-key
+        stages: [commit]
 
+  # ----------------------------------------------------------
+  # SECURITY SCANNING
+  # ----------------------------------------------------------
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.5
+    hooks:
+      - id: bandit
+        args: [-r, src/, -ll, -f, json]  # Low and above severity
+        stages: [push]
+
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args: [--baseline, .secrets.baseline]
+        stages: [commit]
+
+  # ----------------------------------------------------------
+  # IMPORT SORTING
+  # ----------------------------------------------------------
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: [--check-only, --diff]
+        stages: [commit]
+
+  # ----------------------------------------------------------
+  # COMPLEXITY & ANTI-PATTERNS
+  # ----------------------------------------------------------
+  - repo: https://github.com/PyCQA/flake8
+    rev: 7.0.0
+    hooks:
+      - id: flake8
+        additional_dependencies:
+          - flake8-bugbear
+          - flake8-comprehensions
+          - flake8-simplify
+          - mccabe
+        args: [--max-complexity=15, --extend-ignore=E501,W503]
+        stages: [push]
+
+  # ----------------------------------------------------------
+  # DEAD CODE DETECTION
+  # ----------------------------------------------------------
+  - repo: https://github.com/asottile/dead
+    rev: v1.5.2
+    hooks:
+      - id: dead
+        stages: [push]
+
+  # ----------------------------------------------------------
+  # COMMIT MESSAGE VALIDATION
+  # ----------------------------------------------------------
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.0.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+
+  # ----------------------------------------------------------
+  # LOCAL HOOKS (PROJECT-SPECIFIC)
+  # ----------------------------------------------------------
   - repo: local
     hooks:
+      # Type checking (strict mode)
       - id: mypy
-        name: mypy
+        name: mypy type checking
         entry: .venv/bin/mypy
         language: system
         types: [python]
         args: [--config-file=pyproject.toml, src/]
         pass_filenames: false
+        stages: [commit]
+
+      # Fast unit tests on commit
+      - id: pytest-unit
+        name: pytest unit tests
+        entry: .venv/bin/pytest
+        language: system
+        args: [tests/unit/, -v, --tb=short, -x]
+        pass_filenames: false
+        stages: [commit]
+
+      # Full test suite with coverage on push
+      - id: pytest-coverage
+        name: pytest with coverage
+        entry: .venv/bin/pytest
+        language: system
+        args: [tests/, --cov=src, --cov-report=term-missing, --cov-fail-under=80, -v]
+        pass_filenames: false
+        stages: [push]
+
+      # Integration tests on push only
+      - id: pytest-integration
+        name: pytest integration tests
+        entry: .venv/bin/pytest
+        language: system
+        args: [tests/integration/, -v, --tb=short]
+        pass_filenames: false
+        stages: [push]
+
+      # SAM template validation
+      - id: sam-validate
+        name: validate SAM template
+        entry: sam
+        language: system
+        args: [validate, --lint]
+        files: ^template\.yaml$
+        pass_filenames: false
+        stages: [push]
+
+      # No print statements in production code
+      - id: no-print-statements
+        name: no print() in production code
+        entry: bash -c 'grep -rn "print(" src/ && exit 1 || exit 0'
+        language: system
+        pass_filenames: false
+        stages: [commit]
+
+      # No hardcoded AWS credentials
+      - id: check-aws-credentials
+        name: no hardcoded AWS credentials
+        entry: bash -c 'grep -rE "(AKIA[0-9A-Z]{16}|aws_secret_access_key)" src/ && exit 1 || exit 0'
+        language: system
+        pass_filenames: false
+        stages: [commit]
+
+      # Check for large test files
+      - id: check-large-test-files
+        name: check for large test files (>1000 lines)
+        entry: bash -c 'find tests/ -name "*.py" -exec wc -l {} \; | awk "{if (\$1 > 1000) print \$2}" | grep . && exit 1 || exit 0'
+        language: system
+        pass_filenames: false
+        stages: [push]
+
+      # Docstring coverage check
+      - id: interrogate
+        name: check docstring coverage
+        entry: .venv/bin/interrogate
+        language: system
+        args: [src/, --fail-under=80, --ignore-init-method, --ignore-magic, --quiet]
+        pass_filenames: false
+        stages: [push]

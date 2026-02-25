@@ -82,8 +82,9 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 # Install dependencies
 make install-dev
 
-# Install pre-commit hooks (optional but recommended)
+# Install pre-commit hooks (REQUIRED for development)
 pre-commit install
+pre-commit install --hook-type commit-msg
 
 # Create environment file
 make env
@@ -184,7 +185,7 @@ make lint-fix
 # Format code
 make format
 
-# Type checking
+# Type checking (strict mode)
 make type-check
 
 # Run all quality checks
@@ -194,7 +195,24 @@ make quality
 pre-commit run --all-files
 ```
 
-**Pre-commit Hooks:** Automatically run linting, formatting, and validation before each commit. Install with `pre-commit install` (included in dev dependencies).
+**Pre-commit Hooks (REQUIRED):** Comprehensive quality gates run automatically before each commit:
+- **Fast checks on commit (~10-15s):** ruff, mypy, unit tests, security checks
+- **Comprehensive checks on push (~90s):** full test suite, coverage (80% min), integration tests, SAM validation
+
+Install with:
+```bash
+pre-commit install
+pre-commit install --hook-type commit-msg
+```
+
+**Quality Standards Enforced:**
+- ✅ 80% minimum test coverage
+- ✅ Strict type checking (all functions must have type hints)
+- ✅ Security scanning (bandit, detect-secrets)
+- ✅ Complexity limit (max 15 cyclomatic complexity)
+- ✅ Docstring coverage (80% minimum)
+- ✅ No print statements in production code
+- ✅ Conventional commit messages
 
 ### Project Structure
 
