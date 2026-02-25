@@ -1,5 +1,6 @@
 """Integration tests for enhanced AnalysisOrchestrator with intelligence layer."""
 
+import json
 from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
@@ -10,6 +11,30 @@ from src.models.analysis import CommitInfo, RepoData, SourceFile
 from src.models.common import AgentName
 from src.models.hackathon import RubricConfig, RubricDimension
 from src.models.submission import RepoMeta
+from tests.fixtures.complete_mock_responses import (AI_DETECTION_RESPONSE,
+                                                    BUG_HUNTER_RESPONSE,
+                                                    INNOVATION_RESPONSE,
+                                                    PERFORMANCE_RESPONSE)
+
+# ============================================================
+# HELPER FUNCTIONS
+# ============================================================
+
+
+def setup_mock_bedrock_response(mock_bedrock: MagicMock, response_json_str: str) -> None:
+    """Setup mock Bedrock client with complete response.
+
+    Args:
+        mock_bedrock: MagicMock instance of BedrockClient
+        response_json_str: JSON string response from agent
+    """
+    mock_bedrock.converse.return_value = {
+        "content": response_json_str,
+        "usage": {"input_tokens": 1000, "output_tokens": 500, "total_tokens": 1500},
+        "latency_ms": 1200,
+    }
+    mock_bedrock.parse_json_response.return_value = json.loads(response_json_str)
+
 
 # ============================================================
 # FIXTURES
@@ -101,12 +126,8 @@ async def test_analyze_submission_with_intelligence_layer(
         mock_bedrock = MagicMock()
         mock_bedrock_cls.return_value = mock_bedrock
 
-        # Mock agent responses
-        mock_bedrock.converse.return_value = {
-            "content": '{"overall_score": 8.5, "confidence": 0.9, "evidence": []}',
-            "usage": {"input_tokens": 1000, "output_tokens": 500},
-            "latency_ms": 1200,
-        }
+        # Setup mock Bedrock client with complete response
+        setup_mock_bedrock_response(mock_bedrock, BUG_HUNTER_RESPONSE)
 
         orchestrator = AnalysisOrchestrator(bedrock_client=mock_bedrock)
 
@@ -165,16 +186,12 @@ async def test_analyze_submission_with_cicd_parsing(
     """Test analysis with CI/CD log parsing."""
     with (
         patch("src.analysis.orchestrator.BedrockClient") as mock_bedrock_cls,
-        patch("src.analysis.actions_analyzer.ActionsAnalyzer") as mock_actions_cls,
+        patch("src.analysis.orchestrator.ActionsAnalyzer") as mock_actions_cls,
     ):
-        # Setup mocks
+        # Setup mocks with complete Pydantic-compliant data
         mock_bedrock = MagicMock()
         mock_bedrock_cls.return_value = mock_bedrock
-        mock_bedrock.converse.return_value = {
-            "content": '{"overall_score": 8.5, "confidence": 0.9, "evidence": []}',
-            "usage": {"input_tokens": 1000, "output_tokens": 500},
-            "latency_ms": 1200,
-        }
+        setup_mock_bedrock_response(mock_bedrock, BUG_HUNTER_RESPONSE)
 
         mock_actions = MagicMock()
         mock_actions_cls.return_value = mock_actions
@@ -217,11 +234,7 @@ async def test_analyze_submission_cicd_parsing_failure(
     ):
         mock_bedrock = MagicMock()
         mock_bedrock_cls.return_value = mock_bedrock
-        mock_bedrock.converse.return_value = {
-            "content": '{"overall_score": 8.5, "confidence": 0.9, "evidence": []}',
-            "usage": {"input_tokens": 1000, "output_tokens": 500},
-            "latency_ms": 1200,
-        }
+        setup_mock_bedrock_response(mock_bedrock, BUG_HUNTER_RESPONSE)
 
         mock_actions = MagicMock()
         mock_actions_cls.return_value = mock_actions
@@ -244,9 +257,9 @@ async def test_analyze_submission_cicd_parsing_failure(
         assert result["cicd_findings_count"] == 0
 
         component_perf = result["component_performance"]
-        actions_records = [r for r in component_perf if r["component_name"] == "actions_analyzer"]
+        actions_records = [r for r in component_perf if r.component_name == "actions_analyzer"]
         assert len(actions_records) == 1
-        assert actions_records[0]["success"] is False
+        assert actions_records[0].success is False
 
 
 @pytest.mark.asyncio
@@ -258,11 +271,7 @@ async def test_analyze_submission_team_analysis_failure(
     with patch("src.analysis.orchestrator.BedrockClient") as mock_bedrock_cls:
         mock_bedrock = MagicMock()
         mock_bedrock_cls.return_value = mock_bedrock
-        mock_bedrock.converse.return_value = {
-            "content": '{"overall_score": 8.5, "confidence": 0.9, "evidence": []}',
-            "usage": {"input_tokens": 1000, "output_tokens": 500},
-            "latency_ms": 1200,
-        }
+        setup_mock_bedrock_response(mock_bedrock, BUG_HUNTER_RESPONSE)
 
         orchestrator = AnalysisOrchestrator(bedrock_client=mock_bedrock)
 
@@ -283,9 +292,9 @@ async def test_analyze_submission_team_analysis_failure(
             assert result["team_analysis"] is None
 
             component_perf = result["component_performance"]
-            team_records = [r for r in component_perf if r["component_name"] == "team_analyzer"]
+            team_records = [r for r in component_perf if r.component_name == "team_analyzer"]
             assert len(team_records) == 1
-            assert team_records[0]["success"] is False
+            assert team_records[0].success is False
 
 
 @pytest.mark.asyncio
@@ -297,11 +306,7 @@ async def test_component_performance_tracking(
     with patch("src.analysis.orchestrator.BedrockClient") as mock_bedrock_cls:
         mock_bedrock = MagicMock()
         mock_bedrock_cls.return_value = mock_bedrock
-        mock_bedrock.converse.return_value = {
-            "content": '{"overall_score": 8.5, "confidence": 0.9, "evidence": []}',
-            "usage": {"input_tokens": 1000, "output_tokens": 500},
-            "latency_ms": 1200,
-        }
+        setup_mock_bedrock_response(mock_bedrock, BUG_HUNTER_RESPONSE)
 
         orchestrator = AnalysisOrchestrator(bedrock_client=mock_bedrock)
 
@@ -316,18 +321,18 @@ async def test_component_performance_tracking(
         )
 
         component_perf = result["component_performance"]
-        component_names = [r["component_name"] for r in component_perf]
+        component_names = [r.component_name for r in component_perf]
 
         assert "team_analyzer" in component_names
         assert "strategy_detector" in component_names
         assert "brand_voice_transformer" in component_names
 
         for record in component_perf:
-            assert "component_name" in record
-            assert "duration_ms" in record
-            assert "findings_count" in record
-            assert "success" in record
-            assert record["duration_ms"] > 0
+            assert hasattr(record, "component_name")
+            assert hasattr(record, "duration_ms")
+            assert hasattr(record, "findings_count")
+            assert hasattr(record, "success")
+            assert record.duration_ms > 0
 
 
 @pytest.mark.asyncio
@@ -342,21 +347,36 @@ async def test_static_context_passed_to_agents(
     ):
         mock_bedrock = MagicMock()
         mock_bedrock_cls.return_value = mock_bedrock
+        setup_mock_bedrock_response(mock_bedrock, BUG_HUNTER_RESPONSE)
 
         analyze_calls = []
 
         def track_analyze(*args, **kwargs):
+            from src.models.scores import (BugHunterResponse, BugHunterScores,
+                                           CIObservations)
+
             analyze_calls.append(kwargs)
+            # Return proper BugHunterResponse instead of MagicMock
+            response = BugHunterResponse(
+                agent="bug_hunter",
+                prompt_version="v1",
+                overall_score=8.5,
+                summary="Test summary",
+                confidence=0.9,
+                scores=BugHunterScores(
+                    code_quality=8.5,
+                    security=9.0,
+                    test_coverage=7.0,
+                    error_handling=8.0,
+                    dependency_hygiene=8.5,
+                ),
+                evidence=[],
+                ci_observations=CIObservations(),
+            )
             return (
-                MagicMock(overall_score=8.5, confidence=0.9, evidence=[]),
+                response,
                 {"input_tokens": 1000, "output_tokens": 500, "latency_ms": 1200},
             )
-
-        mock_bedrock.converse.return_value = {
-            "content": '{"overall_score": 8.5, "confidence": 0.9, "evidence": []}',
-            "usage": {"input_tokens": 1000, "output_tokens": 500},
-            "latency_ms": 1200,
-        }
 
         mock_actions = MagicMock()
         mock_actions_cls.return_value = mock_actions
@@ -389,6 +409,9 @@ async def test_static_context_passed_to_agents(
         static_ctx = analyze_calls[0]["static_context"]
         assert static_ctx["findings_count"] == 2
         assert len(static_ctx["findings"]) == 2
+        static_ctx = analyze_calls[0]["static_context"]
+        assert static_ctx["findings_count"] == 2
+        assert len(static_ctx["findings"]) == 2
 
 
 @pytest.mark.asyncio
@@ -400,11 +423,37 @@ async def test_multiple_agents_with_intelligence_layer(
     with patch("src.analysis.orchestrator.BedrockClient") as mock_bedrock_cls:
         mock_bedrock = MagicMock()
         mock_bedrock_cls.return_value = mock_bedrock
-        mock_bedrock.converse.return_value = {
-            "content": '{"overall_score": 8.5, "confidence": 0.9, "evidence": []}',
-            "usage": {"input_tokens": 1000, "output_tokens": 500},
-            "latency_ms": 1200,
-        }
+        # Mock responses for each agent type using side_effect
+        mock_bedrock.converse.side_effect = [
+            {
+                "content": BUG_HUNTER_RESPONSE,
+                "usage": {"input_tokens": 1000, "output_tokens": 500, "total_tokens": 1500},
+                "latency_ms": 1200,
+            },
+            {
+                "content": PERFORMANCE_RESPONSE,
+                "usage": {"input_tokens": 1000, "output_tokens": 500, "total_tokens": 1500},
+                "latency_ms": 1200,
+            },
+            {
+                "content": INNOVATION_RESPONSE,
+                "usage": {"input_tokens": 1000, "output_tokens": 500, "total_tokens": 1500},
+                "latency_ms": 1200,
+            },
+            {
+                "content": AI_DETECTION_RESPONSE,
+                "usage": {"input_tokens": 1000, "output_tokens": 500, "total_tokens": 1500},
+                "latency_ms": 1200,
+            },
+        ]
+
+        # Mock parse_json_response to return parsed JSON for each agent
+        mock_bedrock.parse_json_response.side_effect = [
+            json.loads(BUG_HUNTER_RESPONSE),
+            json.loads(PERFORMANCE_RESPONSE),
+            json.loads(INNOVATION_RESPONSE),
+            json.loads(AI_DETECTION_RESPONSE),
+        ]
 
         orchestrator = AnalysisOrchestrator(bedrock_client=mock_bedrock)
 

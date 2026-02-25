@@ -1,5 +1,6 @@
 """Performance test to verify analysis completes within 90 seconds."""
 
+import json
 import time
 from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
@@ -11,6 +12,30 @@ from src.models.analysis import CommitInfo, RepoData, SourceFile
 from src.models.common import AgentName
 from src.models.hackathon import RubricConfig, RubricDimension
 from src.models.submission import RepoMeta
+from tests.fixtures.complete_mock_responses import (AI_DETECTION_RESPONSE,
+                                                    BUG_HUNTER_RESPONSE,
+                                                    INNOVATION_RESPONSE,
+                                                    PERFORMANCE_RESPONSE)
+
+# ============================================================
+# HELPER FUNCTIONS
+# ============================================================
+
+
+def setup_mock_bedrock_response(mock_bedrock: MagicMock, response_json_str: str) -> None:
+    """Setup mock Bedrock client with complete response.
+
+    Args:
+        mock_bedrock: MagicMock instance of BedrockClient
+        response_json_str: JSON string response from agent
+    """
+    mock_bedrock.converse.return_value = {
+        "content": response_json_str,
+        "usage": {"input_tokens": 2000, "output_tokens": 800, "total_tokens": 2800},
+        "latency_ms": 1500,
+    }
+    mock_bedrock.parse_json_response.return_value = json.loads(response_json_str)
+
 
 # ============================================================
 # FIXTURES
@@ -111,13 +136,32 @@ async def test_orchestrator_completes_within_90_seconds(
         def mock_converse(*args, **kwargs):
             # Simulate realistic Bedrock API latency (1-2 seconds per call)
             time.sleep(1.5)
+            # Return appropriate response based on call count
+            call_count = getattr(mock_converse, "call_count", 0)
+            mock_converse.call_count = call_count + 1
+
+            responses = [
+                BUG_HUNTER_RESPONSE,
+                PERFORMANCE_RESPONSE,
+                INNOVATION_RESPONSE,
+                AI_DETECTION_RESPONSE,
+            ]
+
+            content = responses[call_count % len(responses)]
+
             return {
-                "content": '{"overall_score": 8.5, "confidence": 0.9, "evidence": [{"file": "src/main.py", "line": 10, "severity": "medium", "category": "security", "description": "Test finding"}]}',
-                "usage": {"input_tokens": 2000, "output_tokens": 800},
+                "content": content,
+                "usage": {"input_tokens": 2000, "output_tokens": 800, "total_tokens": 2800},
                 "latency_ms": 1500,
             }
 
         mock_bedrock.converse = mock_converse
+
+        # Mock parse_json_response to return parsed JSON
+        def mock_parse_json(content):
+            return json.loads(content)
+
+        mock_bedrock.parse_json_response = mock_parse_json
 
         # Setup mock Actions analyzer with realistic latency
         mock_actions = MagicMock()
@@ -177,9 +221,9 @@ async def test_orchestrator_completes_within_90_seconds(
             print(f"{'-' * 60}")
             total_component_ms = 0
             for record in result["component_performance"]:
-                comp_name = record["component_name"]
-                comp_duration = record["duration_ms"]
-                comp_success = "✅" if record["success"] else "❌"
+                comp_name = record.component_name
+                comp_duration = record.duration_ms
+                comp_success = "✅" if record.success else "❌"
                 total_component_ms += comp_duration
                 print(f"  {comp_success} {comp_name:30s} {comp_duration:8.0f} ms")
             print(f"{'-' * 60}")
@@ -237,12 +281,15 @@ async def test_orchestrator_performance_with_failures(
         def mock_converse(*args, **kwargs):
             time.sleep(1.5)
             return {
-                "content": '{"overall_score": 8.5, "confidence": 0.9, "evidence": []}',
-                "usage": {"input_tokens": 2000, "output_tokens": 800},
+                "content": BUG_HUNTER_RESPONSE,
+                "usage": {"input_tokens": 2000, "output_tokens": 800, "total_tokens": 2800},
                 "latency_ms": 1500,
             }
 
         mock_bedrock.converse = mock_converse
+
+        # Mock parse_json_response to return parsed JSON
+        mock_bedrock.parse_json_response = lambda content: json.loads(content)
 
         # Make Actions analyzer fail
         mock_actions = MagicMock()
@@ -281,24 +328,20 @@ async def test_orchestrator_performance_with_failures(
 
             # Check component performance records show failures
             component_perf = result["component_performance"]
-            actions_records = [
-                r for r in component_perf if r["component_name"] == "actions_analyzer"
-            ]
-            team_records = [r for r in component_perf if r["component_name"] == "team_analyzer"]
+            actions_records = [r for r in component_perf if r.component_name == "actions_analyzer"]
+            team_records = [r for r in component_perf if r.component_name == "team_analyzer"]
 
             assert len(actions_records) == 1
-            assert actions_records[0]["success"] is False
+            assert actions_records[0].success is False
             assert len(team_records) == 1
-            assert team_records[0]["success"] is False
+            assert team_records[0].success is False
 
 
 @pytest.mark.performance
 def test_performance_monitor_tracks_90s_target() -> None:
     """Test that PerformanceMonitor correctly tracks 90-second target."""
-    from src.analysis.performance_monitor import (
-        PERFORMANCE_TARGETS,
-        PerformanceMonitor,
-    )
+    from src.analysis.performance_monitor import (PERFORMANCE_TARGETS,
+                                                  PerformanceMonitor)
 
     monitor = PerformanceMonitor("SUB#test")
 
