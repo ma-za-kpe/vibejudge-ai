@@ -352,43 +352,43 @@ async def test_static_context_passed_to_agents(
                 {"input_tokens": 1000, "output_tokens": 500, "latency_ms": 1200},
             )
 
-            mock_bedrock.converse.return_value = {
-                "content": '{"overall_score": 8.5, "confidence": 0.9, "evidence": []}',
-                "usage": {"input_tokens": 1000, "output_tokens": 500},
-                "latency_ms": 1200,
-            }
+        mock_bedrock.converse.return_value = {
+            "content": '{"overall_score": 8.5, "confidence": 0.9, "evidence": []}',
+            "usage": {"input_tokens": 1000, "output_tokens": 500},
+            "latency_ms": 1200,
+        }
 
-            mock_actions = MagicMock()
-            mock_actions_cls.return_value = mock_actions
-            mock_actions.analyze.return_value = {
-                "linter_findings": [
-                    {"file": "src/main.py", "line": 10, "message": "Line too long"},
-                    {"file": "src/api.py", "line": 25, "message": "Unused import"},
-                ],
-                "test_results": None,
-            }
+        mock_actions = MagicMock()
+        mock_actions_cls.return_value = mock_actions
+        mock_actions.analyze.return_value = {
+            "linter_findings": [
+                {"file": "src/main.py", "line": 10, "message": "Line too long"},
+                {"file": "src/api.py", "line": 25, "message": "Unused import"},
+            ],
+            "test_results": None,
+        }
 
-            orchestrator = AnalysisOrchestrator(bedrock_client=mock_bedrock)
+        orchestrator = AnalysisOrchestrator(bedrock_client=mock_bedrock)
 
-            for agent in orchestrator.agents.values():
-                agent.analyze = track_analyze
+        for agent in orchestrator.agents.values():
+            agent.analyze = track_analyze
 
-            await orchestrator.analyze_submission(
-                repo_data=sample_repo_data,
-                hackathon_name="Test Hackathon",
-                team_name="Test Team",
-                hack_id="HACK#123",
-                sub_id="SUB#456",
-                rubric=sample_rubric,
-                agents_enabled=[AgentName.BUG_HUNTER],
-                github_token="ghp_test_token",
-            )
+        await orchestrator.analyze_submission(
+            repo_data=sample_repo_data,
+            hackathon_name="Test Hackathon",
+            team_name="Test Team",
+            hack_id="HACK#123",
+            sub_id="SUB#456",
+            rubric=sample_rubric,
+            agents_enabled=[AgentName.BUG_HUNTER],
+            github_token="ghp_test_token",
+        )
 
-            assert len(analyze_calls) == 1
-            assert "static_context" in analyze_calls[0]
-            static_ctx = analyze_calls[0]["static_context"]
-            assert static_ctx["findings_count"] == 2
-            assert len(static_ctx["findings"]) == 2
+        assert len(analyze_calls) == 1
+        assert "static_context" in analyze_calls[0]
+        static_ctx = analyze_calls[0]["static_context"]
+        assert static_ctx["findings_count"] == 2
+        assert len(static_ctx["findings"]) == 2
 
 
 @pytest.mark.asyncio

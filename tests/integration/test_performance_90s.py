@@ -134,87 +134,87 @@ async def test_orchestrator_completes_within_90_seconds(
                 "test_results": {"total": 10, "passed": 9, "failed": 1},
             }
 
-            mock_actions.analyze = mock_analyze
+        mock_actions.analyze = mock_analyze
 
-            orchestrator = AnalysisOrchestrator(bedrock_client=mock_bedrock)
+        orchestrator = AnalysisOrchestrator(bedrock_client=mock_bedrock)
 
-            # Start timer
-            start_time = time.time()
+        # Start timer
+        start_time = time.time()
 
-            # Run full analysis with all 4 agents
-            result = await orchestrator.analyze_submission(
-                repo_data=realistic_repo_data,
-                hackathon_name="Test Hackathon 2024",
-                team_name="Awesome Team",
-                hack_id="HACK#test123",
-                sub_id="SUB#test456",
-                rubric=standard_rubric,
-                agents_enabled=[
-                    AgentName.BUG_HUNTER,
-                    AgentName.PERFORMANCE,
-                    AgentName.INNOVATION,
-                    AgentName.AI_DETECTION,
-                ],
-                github_token="ghp_test_token",
-            )
+        # Run full analysis with all 4 agents
+        result = await orchestrator.analyze_submission(
+            repo_data=realistic_repo_data,
+            hackathon_name="Test Hackathon 2024",
+            team_name="Awesome Team",
+            hack_id="HACK#test123",
+            sub_id="SUB#test456",
+            rubric=standard_rubric,
+            agents_enabled=[
+                AgentName.BUG_HUNTER,
+                AgentName.PERFORMANCE,
+                AgentName.INNOVATION,
+                AgentName.AI_DETECTION,
+            ],
+            github_token="ghp_test_token",
+        )
 
-            # Calculate duration
-            duration_seconds = time.time() - start_time
-            duration_ms = duration_seconds * 1000
+        # Calculate duration
+        duration_seconds = time.time() - start_time
+        duration_ms = duration_seconds * 1000
 
-            # Log results
-            print(f"\n{'=' * 60}")
-            print("PERFORMANCE TEST RESULTS")
-            print(f"{'=' * 60}")
-            print(f"Total Duration: {duration_seconds:.2f} seconds ({duration_ms:.0f} ms)")
-            print("Target: 90 seconds (90000 ms)")
-            print(f"Status: {'✅ PASS' if duration_seconds < 90 else '❌ FAIL'}")
-            print(f"{'=' * 60}")
+        # Log results
+        print(f"\n{'=' * 60}")
+        print("PERFORMANCE TEST RESULTS")
+        print(f"{'=' * 60}")
+        print(f"Total Duration: {duration_seconds:.2f} seconds ({duration_ms:.0f} ms)")
+        print("Target: 90 seconds (90000 ms)")
+        print(f"Status: {'✅ PASS' if duration_seconds < 90 else '❌ FAIL'}")
+        print(f"{'=' * 60}")
 
-            # Print component breakdown
-            if "component_performance" in result:
-                print("\nComponent Performance Breakdown:")
-                print(f"{'-' * 60}")
-                total_component_ms = 0
-                for record in result["component_performance"]:
-                    comp_name = record["component_name"]
-                    comp_duration = record["duration_ms"]
-                    comp_success = "✅" if record["success"] else "❌"
-                    total_component_ms += comp_duration
-                    print(f"  {comp_success} {comp_name:30s} {comp_duration:8.0f} ms")
-                print(f"{'-' * 60}")
-                print(f"  {'Total Components':30s} {total_component_ms:8.0f} ms")
-                print(f"  {'Analysis Duration':30s} {result['analysis_duration_ms']:8.0f} ms")
+        # Print component breakdown
+        if "component_performance" in result:
+            print("\nComponent Performance Breakdown:")
+            print(f"{'-' * 60}")
+            total_component_ms = 0
+            for record in result["component_performance"]:
+                comp_name = record["component_name"]
+                comp_duration = record["duration_ms"]
+                comp_success = "✅" if record["success"] else "❌"
+                total_component_ms += comp_duration
+                print(f"  {comp_success} {comp_name:30s} {comp_duration:8.0f} ms")
+            print(f"{'-' * 60}")
+            print(f"  {'Total Components':30s} {total_component_ms:8.0f} ms")
+            print(f"  {'Analysis Duration':30s} {result['analysis_duration_ms']:8.0f} ms")
 
-            # Print agent performance
-            if "cost_records" in result:
-                print("\nAgent Performance:")
-                print(f"{'-' * 60}")
-                for record in result["cost_records"]:
-                    agent_name = (
-                        record.agent_name.value
-                        if hasattr(record.agent_name, "value")
-                        else str(record.agent_name)
-                    )
-                    latency = record.latency_ms
-                    print(f"  {agent_name:30s} {latency:8.0f} ms")
+        # Print agent performance
+        if "cost_records" in result:
+            print("\nAgent Performance:")
+            print(f"{'-' * 60}")
+            for record in result["cost_records"]:
+                agent_name = (
+                    record.agent_name.value
+                    if hasattr(record.agent_name, "value")
+                    else str(record.agent_name)
+                )
+                latency = record.latency_ms
+                print(f"  {agent_name:30s} {latency:8.0f} ms")
 
-            print(f"\n{'=' * 60}\n")
+        print(f"\n{'=' * 60}\n")
 
-            # Assertions
-            assert duration_seconds < 90, (
-                f"Analysis took {duration_seconds:.2f}s, exceeding 90s target. "
-                f"This violates Requirement 10.6."
-            )
+        # Assertions
+        assert duration_seconds < 90, (
+            f"Analysis took {duration_seconds:.2f}s, exceeding 90s target. "
+            f"This violates Requirement 10.6."
+        )
 
-            # Verify all components completed
-            assert result["overall_score"] > 0
-            assert len(result["agent_responses"]) == 4
-            assert result["team_analysis"] is not None
-            assert result["strategy_analysis"] is not None
+        # Verify all components completed
+        assert result["overall_score"] > 0
+        assert len(result["agent_responses"]) == 4
+        assert result["team_analysis"] is not None
+        assert result["strategy_analysis"] is not None
 
-            # Verify performance tracking
-            assert result["analysis_duration_ms"] < 90000
+        # Verify performance tracking
+        assert result["analysis_duration_ms"] < 90000
 
 
 @pytest.mark.asyncio
