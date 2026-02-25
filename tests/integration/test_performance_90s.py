@@ -102,7 +102,7 @@ async def test_orchestrator_completes_within_90_seconds(
     """
     with (
         patch("src.analysis.orchestrator.BedrockClient") as mock_bedrock_cls,
-        patch("src.analysis.orchestrator.ActionsAnalyzer") as mock_actions_cls,
+        patch("src.analysis.actions_analyzer.ActionsAnalyzer") as mock_actions_cls,
     ):
         # Setup mock Bedrock client with realistic latency
         mock_bedrock = MagicMock()
@@ -229,7 +229,7 @@ async def test_orchestrator_performance_with_failures(
     """
     with (
         patch("src.analysis.orchestrator.BedrockClient") as mock_bedrock_cls,
-        patch("src.analysis.orchestrator.ActionsAnalyzer") as mock_actions_cls,
+        patch("src.analysis.actions_analyzer.ActionsAnalyzer") as mock_actions_cls,
     ):
         mock_bedrock = MagicMock()
         mock_bedrock_cls.return_value = mock_bedrock
@@ -295,7 +295,10 @@ async def test_orchestrator_performance_with_failures(
 @pytest.mark.performance
 def test_performance_monitor_tracks_90s_target() -> None:
     """Test that PerformanceMonitor correctly tracks 90-second target."""
-    from src.analysis.performance_monitor import PERFORMANCE_TARGETS, PerformanceMonitor
+    from src.analysis.performance_monitor import (
+        PERFORMANCE_TARGETS,
+        PerformanceMonitor,
+    )
 
     monitor = PerformanceMonitor("SUB#test")
 

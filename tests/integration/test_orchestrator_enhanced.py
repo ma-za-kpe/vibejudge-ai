@@ -165,7 +165,7 @@ async def test_analyze_submission_with_cicd_parsing(
     """Test analysis with CI/CD log parsing."""
     with (
         patch("src.analysis.orchestrator.BedrockClient") as mock_bedrock_cls,
-        patch("src.analysis.orchestrator.ActionsAnalyzer") as mock_actions_cls,
+        patch("src.analysis.actions_analyzer.ActionsAnalyzer") as mock_actions_cls,
     ):
         # Setup mocks
         mock_bedrock = MagicMock()
@@ -213,7 +213,7 @@ async def test_analyze_submission_cicd_parsing_failure(
     """Test analysis continues gracefully when CI/CD parsing fails."""
     with (
         patch("src.analysis.orchestrator.BedrockClient") as mock_bedrock_cls,
-        patch("src.analysis.orchestrator.ActionsAnalyzer") as mock_actions_cls,
+        patch("src.analysis.actions_analyzer.ActionsAnalyzer") as mock_actions_cls,
     ):
         mock_bedrock = MagicMock()
         mock_bedrock_cls.return_value = mock_bedrock
@@ -338,7 +338,7 @@ async def test_static_context_passed_to_agents(
     """Test that static findings from CI/CD are passed to agents as context."""
     with (
         patch("src.analysis.orchestrator.BedrockClient") as mock_bedrock_cls,
-        patch("src.analysis.orchestrator.ActionsAnalyzer") as mock_actions_cls,
+        patch("src.analysis.actions_analyzer.ActionsAnalyzer") as mock_actions_cls,
     ):
         mock_bedrock = MagicMock()
         mock_bedrock_cls.return_value = mock_bedrock
