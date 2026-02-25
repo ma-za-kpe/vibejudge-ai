@@ -1,5 +1,7 @@
 """Submission service — Submission management."""
 
+from typing import Any
+
 from datetime import UTC, datetime
 from decimal import Decimal
 
@@ -52,7 +54,7 @@ class SubmissionService:
             sub_id = generate_sub_id()
 
             # Create submission record
-            record = {
+            record: dict[str, Any] = {
                 "PK": f"HACK#{hack_id}",
                 "SK": f"SUB#{sub_id}",
                 "entity_type": "SUBMISSION",
@@ -367,14 +369,14 @@ class SubmissionService:
         return self.update_submission_results(
             hack_id=hack_id,
             sub_id=sub_id,
-            overall_score=Decimal(str(overall_score)),
+            overall_score=float(overall_score),
             weighted_scores=convert_to_decimal(weighted_scores),
             agent_scores=convert_to_decimal(agent_scores),
             strengths=strengths,
             weaknesses=weaknesses,
             recommendation=recommendation,
             repo_meta=convert_to_decimal(repo_meta),
-            total_cost_usd=Decimal(str(total_cost_usd)),
+            total_cost_usd=float(total_cost_usd),
             total_tokens=total_tokens,
             analysis_duration_ms=analysis_duration_ms,
         )
@@ -392,7 +394,7 @@ class SubmissionService:
         return self.update_submission_status(
             hack_id=hack_id,
             sub_id=sub_id,
-            status=SubmissionStatus.DELETED,
+            status=SubmissionStatus.FAILED,
         )
 
     def get_submission_scorecard(self, sub_id: str) -> dict | None:
@@ -454,7 +456,7 @@ class SubmissionService:
             }
 
         # Get actionable feedback
-        actionable_feedback = []
+        actionable_feedback: list[dict] = []
         feedback_record = self.db.get_actionable_feedback(sub_id)
         if feedback_record:
             actionable_feedback = feedback_record.get("feedback_items", [])
@@ -535,7 +537,7 @@ class SubmissionService:
                     }
                 )
 
-        filtered_by = {}
+        filtered_by: dict[str, str | bool] = {}
         if agent:
             filtered_by["agent"] = agent
         if severity:
@@ -573,7 +575,7 @@ class SubmissionService:
             return []
 
         # Extract individual scorecards from team analysis
-        scorecards = team_analysis_record.get("individual_scorecards", [])
+        scorecards: list[dict] = team_analysis_record.get("individual_scorecards", [])
 
         logger.info(
             "individual_scorecards_retrieved", sub_id=sub_id, scorecard_count=len(scorecards)

@@ -185,12 +185,10 @@ class AnalysisService:
             total_submissions=len(submission_ids),
             completed_submissions=0,
             failed_submissions=0,
-            total_cost_usd=0.0,
+            estimated_cost_usd=len(submission_ids) * COST_PER_SUBMISSION,
             started_at=None,
             completed_at=None,
-            error_message=None,
             created_at=now,
-            updated_at=now,
         )
 
     def get_analysis_status(self, hack_id: str, job_id: str) -> AnalysisJobResponse | None:
@@ -220,16 +218,14 @@ class AnalysisService:
             total_submissions=job_record["total_submissions"],
             completed_submissions=job_record.get("completed_submissions", 0),
             failed_submissions=job_record.get("failed_submissions", 0),
-            total_cost_usd=job_record.get("total_cost_usd", 0.0),
+            estimated_cost_usd=job_record.get("total_cost_usd", 0.0),
             started_at=datetime.fromisoformat(job_record["started_at"])
             if job_record.get("started_at")
             else None,
             completed_at=datetime.fromisoformat(job_record["completed_at"])
             if job_record.get("completed_at")
             else None,
-            error_message=job_record.get("error_message"),
             created_at=datetime.fromisoformat(job_record["created_at"]),
-            updated_at=datetime.fromisoformat(job_record["updated_at"]),
         )
 
     def list_analysis_jobs(self, hack_id: str) -> list[AnalysisJobResponse]:
@@ -251,14 +247,12 @@ class AnalysisService:
                 total_submissions=r["total_submissions"],
                 completed_submissions=r.get("completed_submissions", 0),
                 failed_submissions=r.get("failed_submissions", 0),
-                total_cost_usd=r.get("total_cost_usd", 0.0),
+                estimated_cost_usd=r.get("total_cost_usd", 0.0),
                 started_at=datetime.fromisoformat(r["started_at"]) if r.get("started_at") else None,
                 completed_at=datetime.fromisoformat(r["completed_at"])
                 if r.get("completed_at")
                 else None,
-                error_message=r.get("error_message"),
                 created_at=datetime.fromisoformat(r["created_at"]),
-                updated_at=datetime.fromisoformat(r["updated_at"]),
             )
             for r in records
         ]

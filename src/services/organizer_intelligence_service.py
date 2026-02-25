@@ -1,6 +1,7 @@
 """Organizer intelligence dashboard service."""
 
 from collections import Counter, defaultdict
+from typing import Any
 
 import structlog
 
@@ -12,6 +13,7 @@ from src.models.dashboard import (
     TechnologyTrends,
     TopPerformer,
 )
+from src.models.submission import SubmissionListItem
 from src.models.team_dynamics import ContributorRole
 from src.services.hackathon_service import HackathonService
 from src.services.submission_service import SubmissionService
@@ -104,7 +106,7 @@ class OrganizerIntelligenceService:
         logger.info("dashboard_generated", hack_id=hack_id)
         return dashboard
 
-    def _aggregate_top_performers(self, submissions: list) -> list[TopPerformer]:
+    def _aggregate_top_performers(self, submissions: list[Any]) -> list[TopPerformer]:
         """Identify top teams with key strengths.
 
         Args:
@@ -122,16 +124,15 @@ class OrganizerIntelligenceService:
         top_performers = []
         for submission in sorted_submissions[:10]:  # Top 10
             # Extract key strengths from scorecard if available
-            key_strengths = []
-            sponsor_interest_flags = []
+            key_strengths: list[str] = []
+            sponsor_interest_flags: list[str] = []
 
-            # Try to get full submission details for more context
-            full_submission = self.submission_service.get_submission(submission.sub_id)
-            if full_submission and full_submission.team_analysis:
-                # Extract strengths from team analysis if available
-                team_analysis = full_submission.team_analysis
-                if hasattr(team_analysis, "key_strengths"):
-                    key_strengths = team_analysis.key_strengths[:3]  # Top 3 strengths
+            # Try to get scorecard for team dynamics
+            scorecard = self.submission_service.get_submission_scorecard(submission.sub_id)
+            if scorecard and scorecard.get("team_dynamics"):
+                team_dynamics = scorecard["team_dynamics"]
+                if isinstance(team_dynamics, dict) and "key_strengths" in team_dynamics:
+                    key_strengths = team_dynamics["key_strengths"][:3]  # Top 3 strengths
 
             # Default strengths based on scores
             if not key_strengths:
@@ -149,7 +150,7 @@ class OrganizerIntelligenceService:
 
         return top_performers
 
-    def _generate_hiring_intelligence(self, submissions: list) -> HiringIntelligence:
+    def _generate_hiring_intelligence(self, submissions: list[Any]) -> HiringIntelligence:
         """Categorize candidates by role and seniority.
 
         Args:
@@ -158,40 +159,42 @@ class OrganizerIntelligenceService:
         Returns:
             HiringIntelligence with categorized candidates
         """
-        backend_candidates = []
-        frontend_candidates = []
-        devops_candidates = []
-        full_stack_candidates = []
-        must_interview = []
+        backend_candidates: list[Any] = []
+        frontend_candidates: list[Any] = []
+        devops_candidates: list[Any] = []
+        full_stack_candidates: list[Any] = []
+        must_interview: list[Any] = []
 
         for submission in submissions:
-            # Try to get individual scorecards from full submission
-            full_submission = self.submission_service.get_submission(submission.sub_id)
-            if not full_submission or not full_submission.team_analysis:
+            # Get scorecard with team dynamics
+            scorecard = self.submission_service.get_submission_scorecard(submission.sub_id)
+            if not scorecard:
                 continue
-
-            team_analysis = full_submission.team_analysis
-            if not hasattr(team_analysis, "individual_scorecards"):
+            
+            team_dynamics = scorecard.get("team_dynamics")
+            if not team_dynamics or not isinstance(team_dynamics, dict):
                 continue
-
-            for scorecard in team_analysis.individual_scorecards:
+                
+            individual_scorecards = team_dynamics.get("individual_scorecards", [])
+            
+            for scorecard_item in individual_scorecards:
                 # Categorize by role
-                if scorecard.role == ContributorRole.BACKEND:
-                    backend_candidates.append(scorecard)
-                elif scorecard.role == ContributorRole.FRONTEND:
-                    frontend_candidates.append(scorecard)
-                elif scorecard.role == ContributorRole.DEVOPS:
-                    devops_candidates.append(scorecard)
-                elif scorecard.role == ContributorRole.FULL_STACK:
-                    full_stack_candidates.append(scorecard)
+                if scorecard_item.role == ContributorRole.BACKEND:
+                    backend_candidates.append(scorecard_item)
+                elif scorecard_item.role == ContributorRole.FRONTEND:
+                    frontend_candidates.append(scorecard_item)
+                elif scorecard_item.role == ContributorRole.DEVOPS:
+                    devops_candidates.append(scorecard_item)
+                elif scorecard_item.role == ContributorRole.FULL_STACK:
+                    full_stack_candidates.append(scorecard_item)
 
                 # Check if must interview
                 if (
-                    hasattr(scorecard, "hiring_signals")
-                    and scorecard.hiring_signals
-                    and scorecard.hiring_signals.must_interview
+                    hasattr(scorecard_item, "hiring_signals")
+                    and scorecard_item.hiring_signals
+                    and scorecard_item.hiring_signals.must_interview
                 ):
-                    must_interview.append(scorecard)
+                    must_interview.append(scorecard_item)
 
         return HiringIntelligence(
             backend_candidates=backend_candidates[:20],  # Limit to top 20 per category
@@ -201,7 +204,7 @@ class OrganizerIntelligenceService:
             must_interview=must_interview[:10],  # Top 10 must-interview
         )
 
-    def _analyze_technology_trends(self, submissions: list) -> TechnologyTrends:
+    def _analyze_technology_trends(self, submissions: list[Any]) -> TechnologyTrends:
         """Identify popular stacks and emerging tech.
 
         Args:
@@ -210,27 +213,29 @@ class OrganizerIntelligenceService:
         Returns:
             TechnologyTrends with usage statistics
         """
-        language_counter = Counter()
-        Counter()
-        Counter()
+        language_counter: Counter[str] = Counter()
+        framework_counter: Counter[str] = Counter()
+        stack_counter: Counter[str] = Counter()
 
         for submission in submissions:
-            # Try to extract technology info from repo data
-            full_submission = self.submission_service.get_submission(submission.sub_id)
-            if not full_submission:
+            # Get scorecard for static analysis
+            scorecard = self.submission_service.get_submission_scorecard(submission.sub_id)
+            if not scorecard:
                 continue
 
             # Extract from static analysis if available
-            if full_submission.static_analysis:
-                language = full_submission.static_analysis.language
+            static_analysis = scorecard.get("static_analysis")
+            if static_analysis:
+                language = static_analysis.get("language")
                 if language:
                     language_counter[language] += 1
 
             # Extract from repo metadata if available
-            if hasattr(full_submission, "repo_metadata"):
-                repo_metadata = full_submission.repo_metadata
-                if hasattr(repo_metadata, "primary_language"):
-                    language_counter[repo_metadata.primary_language] += 1
+            repo_meta = scorecard.get("repo_meta")
+            if repo_meta and isinstance(repo_meta, dict):
+                primary_language = repo_meta.get("primary_language")
+                if primary_language:
+                    language_counter[primary_language] += 1
 
         # Most used technologies
         most_used = language_counter.most_common(10)
@@ -239,7 +244,7 @@ class OrganizerIntelligenceService:
         emerging = [tech for tech, count in language_counter.items() if 2 <= count <= 5]
 
         # Popular stacks (for now, just language combinations)
-        popular_stacks = []
+        popular_stacks: list[tuple[str, int]] = []
 
         return TechnologyTrends(
             most_used=most_used,
@@ -247,7 +252,7 @@ class OrganizerIntelligenceService:
             popular_stacks=popular_stacks,
         )
 
-    def _identify_common_issues(self, submissions: list) -> list[CommonIssue]:
+    def _identify_common_issues(self, submissions: list[Any]) -> list[CommonIssue]:
         """Find patterns across submissions.
 
         Args:
@@ -256,17 +261,23 @@ class OrganizerIntelligenceService:
         Returns:
             List of common issues with workshop recommendations
         """
-        issue_counter = defaultdict(list)
+        issue_counter: dict[str, list[str]] = defaultdict(list)
 
         for submission in submissions:
-            full_submission = self.submission_service.get_submission(submission.sub_id)
-            if not full_submission or not full_submission.static_analysis:
+            # Get scorecard for static analysis
+            scorecard = self.submission_service.get_submission_scorecard(submission.sub_id)
+            if not scorecard:
                 continue
 
             # Count issues by category
-            static_analysis = full_submission.static_analysis
-            for finding in static_analysis.findings:
-                issue_counter[finding.category].append(submission.team_name)
+            static_analysis = scorecard.get("static_analysis")
+            if not static_analysis:
+                continue
+                
+            findings = static_analysis.get("findings", [])
+            for finding in findings:
+                category = finding.get("category", "unknown") if isinstance(finding, dict) else getattr(finding, "category", "unknown")
+                issue_counter[category].append(submission.team_name)
 
         # Convert to CommonIssue objects
         common_issues = []
@@ -313,7 +324,7 @@ class OrganizerIntelligenceService:
 
         return recommendations.get(issue_type, f"Workshop: Best Practices for {issue_type.title()}")
 
-    def _recommend_prizes(self, submissions: list) -> list[PrizeRecommendation]:
+    def _recommend_prizes(self, submissions: list[Any]) -> list[PrizeRecommendation]:
         """Recommend prize winners with evidence.
 
         Args:
@@ -340,26 +351,26 @@ class OrganizerIntelligenceService:
         )
 
         # Best Team Dynamics (if team analysis available)
-        teams_with_dynamics = []
+        teams_with_dynamics: list[tuple[SubmissionListItem, dict[str, Any]]] = []
         for submission in submissions:
-            full_submission = self.submission_service.get_submission(submission.sub_id)
-            if full_submission and full_submission.team_analysis:
-                team_analysis = full_submission.team_analysis
-                if hasattr(team_analysis, "team_dynamics_grade"):
-                    teams_with_dynamics.append((submission, team_analysis))
+            scorecard = self.submission_service.get_submission_scorecard(submission.sub_id)
+            if scorecard and scorecard.get("team_dynamics"):
+                team_dynamics = scorecard["team_dynamics"]
+                if "team_dynamics_grade" in team_dynamics:
+                    teams_with_dynamics.append((submission, team_dynamics))
 
         if teams_with_dynamics:
             best_team = max(
                 teams_with_dynamics,
-                key=lambda x: self._grade_to_score(x[1].team_dynamics_grade),
+                key=lambda x: self._grade_to_score(x[1]["team_dynamics_grade"]),
             )
             recommendations.append(
                 PrizeRecommendation(
                     prize_category="Best Team Dynamics",
                     recommended_team=best_team[0].team_name,
                     sub_id=best_team[0].sub_id,
-                    justification=f"Excellent collaboration and teamwork (Grade: {best_team[1].team_dynamics_grade})",
-                    evidence=[f"Team Dynamics Grade: {best_team[1].team_dynamics_grade}"],
+                    justification=f"Excellent collaboration and teamwork (Grade: {best_team[1]['team_dynamics_grade']})",
+                    evidence=[f"Team Dynamics Grade: {best_team[1]['team_dynamics_grade']}"],
                 )
             )
 
@@ -377,7 +388,7 @@ class OrganizerIntelligenceService:
         grade_map = {"A": 95, "B": 85, "C": 75, "D": 65, "F": 50}
         return grade_map.get(grade, 0)
 
-    def _identify_standout_moments(self, submissions: list) -> list[str]:
+    def _identify_standout_moments(self, submissions: list[Any]) -> list[str]:
         """Identify standout moments across submissions.
 
         Args:
@@ -386,7 +397,7 @@ class OrganizerIntelligenceService:
         Returns:
             List of standout moment descriptions
         """
-        standout_moments = []
+        standout_moments: list[str] = []
 
         if not submissions:
             return standout_moments
@@ -436,7 +447,7 @@ class OrganizerIntelligenceService:
         return recommendations
 
     def _generate_sponsor_follow_up_actions(
-        self, submissions: list, technology_trends: TechnologyTrends
+        self, submissions: list[Any], technology_trends: TechnologyTrends
     ) -> list[str]:
         """Generate sponsor follow-up actions.
 

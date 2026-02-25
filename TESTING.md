@@ -1045,5 +1045,60 @@ pytest tests/integration/test_performance_90s.py::test_orchestrator_performance_
 
 ---
 
+## Current Issues (February 24, 2026)
+
+### ⚠️ Mypy Type Errors (25 errors across 10 files) - 79% REDUCTION ✅
+
+**Status:** Significant progress - reduced from 122 to 25 errors (79% reduction)
+
+**Fixed Issues (97 errors resolved):**
+1. ✅ **git_analyzer.py** - Fixed all 13 errors (Any import, type annotations, commit message encoding, workflow_runs defaults)
+2. ✅ **orchestrator.py** - Fixed 5 errors (removed invalid static_findings argument, added type annotations for agent_responses)
+3. ✅ **strategy_detector.py** - Fixed 5 errors (CommitInfo vs string in learning_commits, float/int assignments)
+4. ✅ **cost_tracker.py** - Fixed 3 errors (type annotations, AgentName enum to string conversion)
+5. ✅ **static_analysis_engine.py** - Fixed all 59 errors (TypedDict for tool configs, removed invalid field assignments)
+6. ✅ **organizer_intelligence_service.py** - Fixed 13 errors (type annotations, scorecard dict access)
+7. ✅ **constants.py** - Fixed type annotations for AGENT_CONFIGS
+
+**Remaining Issues (25 errors):**
+1. **orchestrator.py** (6 errors) - BaseException/BaseAgentResponse type compatibility in agent response handling
+2. **dashboard_aggregator.py** (3 errors) - None checks for SubmissionResponse and RepoMeta
+3. **utils/dynamo.py** (4 errors) - Decimal/dict/list type assignments in serialization
+4. **utils/bedrock.py** (3 errors) - InferenceConfig type, response indexing
+5. **utils/logging.py** (1 error) - BoundLogger return type
+6. **services/** (6 errors) - Type compatibility in organizer_service, hackathon_service, submission_service
+7. **agents/base.py** (1 error) - AgentConfig type annotation
+8. **models/test_execution.py** (1 error) - Property decorator issue
+
+**Impact:** Pre-commit hook still blocks commits (as designed) but 79% closer to resolution
+
+**Next Steps:** Continue systematic fixes for remaining 25 errors
+
+### ⚠️ Integration Test Failures (14/16 tests failing)
+
+**File:** `tests/integration/test_api_enhanced.py`
+
+**Status:** AWS credential mocking insufficient
+
+**Root Cause:**
+- Service-level mocking (`patch("src.api.dependencies.get_*_service")`) doesn't prevent boto3 from attempting real AWS calls
+- boto3 still tries to load credentials and make DynamoDB requests
+- Error: "UnrecognizedClientException: The security token included in the request is invalid"
+
+**Tests Passing:** 2/16 (authentication-only tests that don't touch DynamoDB)
+
+**Tests Failing:** 14/16 (all tests requiring DynamoDB access)
+
+**Solutions Required:**
+1. Install and configure `moto` library for proper AWS service mocking
+2. Alternative: Mock at DynamoDB helper level (`src/utils/dynamo.py`) instead of boto3
+3. Ensure all boto3 clients are mocked before FastAPI TestClient makes requests
+
+**Impact:** Integration tests don't block deployment but break CI/CD pipeline
+
+**User Requirement:** Zero tolerance for test failures in commits
+
+---
+
 **Last Updated:** February 24, 2026  
-**Version:** 1.8.0
+**Version:** 1.9.0

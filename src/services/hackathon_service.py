@@ -233,7 +233,10 @@ class HackathonService:
 
         logger.info("hackathon_updated", hack_id=hack_id)
 
-        return self.get_hackathon(hack_id)
+        updated_hackathon = self.get_hackathon(hack_id)
+        if updated_hackathon is None:
+            raise RuntimeError(f"Failed to retrieve updated hackathon {hack_id}")
+        return updated_hackathon
 
     def delete_hackathon(self, hack_id: str, org_id: str) -> bool:
         """Delete hackathon (soft delete by status).

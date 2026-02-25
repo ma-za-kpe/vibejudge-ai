@@ -210,7 +210,6 @@ class AnalysisOrchestrator:
             strategy_analysis = self.strategy_detector.analyze(
                 repo_data=repo_data,
                 test_results=test_results_from_logs,
-                static_findings=cicd_findings,
             )
 
             # Track component performance
@@ -270,22 +269,24 @@ class AnalysisOrchestrator:
         # Wait for all agents to complete
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        # Process results
-        agent_responses = {}
-        failed_agents = []
+        # Process results - filter out exceptions
+        agent_responses: dict[AgentName, BaseAgentResponse] = {}
+        failed_agents: list[AgentName] = []
 
-        for i, result in enumerate(results):
+        for i, agent_result in enumerate(results):
             agent_name = agents_enabled[i]
 
-            if isinstance(result, Exception):
+            if isinstance(agent_result, BaseException):
                 logger.error(
                     "agent_failed",
                     agent=agent_name,
-                    error=str(result),
+                    error=str(agent_result),
                 )
                 failed_agents.append(agent_name)
             else:
-                agent_responses[agent_name] = result
+                # agent_result is BaseAgentResponse (mypy needs assertion)
+                assert isinstance(agent_result, BaseAgentResponse)
+                agent_responses[agent_name] = agent_result
 
         # Check if we have enough successful agents
         if len(agent_responses) == 0:
@@ -427,7 +428,7 @@ class AnalysisOrchestrator:
         agent = self.agents[agent_name]
 
         # Build kwargs for agent
-        kwargs = {}
+        kwargs: dict[str, Any] = {}
         if agent_name == AgentName.AI_DETECTION:
             kwargs["ai_policy_mode"] = ai_policy_mode
 
@@ -509,13 +510,13 @@ class AnalysisOrchestrator:
         recommendation = self._classify_score(overall_score)
 
         # Collect strengths and weaknesses
-        strengths = []
-        weaknesses = []
+        strengths: list[str] = []
+        weaknesses: list[str] = []
 
         for agent_response in agent_responses.values():
-            if hasattr(agent_response, "strengths"):
+            if hasattr(agent_response, "strengths") and agent_response.strengths:
                 strengths.extend(agent_response.strengths[:2])
-            if hasattr(agent_response, "improvements"):
+            if hasattr(agent_response, "improvements") and agent_response.improvements:
                 weaknesses.extend(agent_response.improvements[:2])
 
         # Deduplicate and limit

@@ -101,9 +101,11 @@ class DynamoDBHelper:
             Dictionary with datetime objects converted to ISO strings and floats to Decimal
         """
         from datetime import datetime
+        from datetime import datetime
         from decimal import Decimal
+        from typing import Any
 
-        serialized = {}
+        serialized: dict[str, Any] = {}
         for key, value in item.items():
             if isinstance(value, datetime):
                 serialized[key] = value.isoformat()
@@ -319,11 +321,12 @@ class DynamoDBHelper:
 
             update_expr = "SET #status = :status, updated_at = :updated_at"
             expr_attr_names = {"#status": "status"}
+            updated_at_value = kwargs.get("updated_at")
             expr_attr_values = {
                 ":status": status,
-                ":updated_at": kwargs.get("updated_at").isoformat()
-                if isinstance(kwargs.get("updated_at"), datetime)
-                else kwargs.get("updated_at"),
+                ":updated_at": updated_at_value.isoformat()
+                if isinstance(updated_at_value, datetime)
+                else updated_at_value,
             }
 
             # Add optional fields

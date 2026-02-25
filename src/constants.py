@@ -3,6 +3,8 @@
 Model rates, tier limits, file priorities, and other constants.
 """
 
+from typing import TypedDict
+
 # ============================================================
 # BEDROCK MODEL RATES (USD per token)
 # ============================================================
@@ -46,7 +48,18 @@ AGENT_MODELS = {
 # AGENT INFERENCE CONFIGS
 # ============================================================
 
-AGENT_CONFIGS = {
+
+class AgentConfig(TypedDict):
+    """Configuration for an AI agent."""
+
+    model_id: str
+    temperature: float
+    max_tokens: int
+    top_p: float
+    timeout_seconds: int
+
+
+AGENT_CONFIGS: dict[str, AgentConfig] = {
     "bug_hunter": {
         "model_id": "amazon.nova-lite-v1:0",
         "temperature": 0.1,

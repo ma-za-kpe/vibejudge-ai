@@ -133,7 +133,7 @@ class DashboardAggregator:
 
             # Identify sponsor interest flags based on repo metadata
             sponsor_flags = []
-            if submission.repo_meta:
+            if submission.repo_meta is not None:
                 if submission.repo_meta.has_ci:
                     sponsor_flags.append("ci_cd_sophistication")
                 if submission.repo_meta.has_dockerfile:
@@ -222,9 +222,9 @@ class DashboardAggregator:
             TechnologyTrends with usage statistics
         """
         # Count primary languages
-        language_counter = Counter()
-        framework_counter = Counter()
-        stack_counter = Counter()
+        language_counter: Counter[str] = Counter()
+        framework_counter: Counter[str] = Counter()
+        stack_counter: Counter[str] = Counter()
 
         for submission in submissions:
             if not submission.repo_meta:
@@ -282,7 +282,7 @@ class DashboardAggregator:
         Returns:
             List of detected framework names
         """
-        frameworks = []
+        frameworks: list[str] = []
         repo_meta = submission.repo_meta
 
         if not repo_meta:
@@ -372,8 +372,8 @@ class DashboardAggregator:
 
         # Analyze red flags from team analyses
         for sub_id, team_analysis in team_analyses.items():
-            submission = next((s for s in submissions if s.sub_id == sub_id), None)
-            if not submission:
+            sub: SubmissionResponse | None = next((s for s in submissions if s.sub_id == sub_id), None)
+            if sub is None:
                 continue
 
             for red_flag in team_analysis.red_flags:
@@ -594,7 +594,7 @@ class DashboardAggregator:
 
             # Calculate CI/CD score
             score = 0.0
-            if submission.repo_meta.has_ci:
+            if submission.repo_meta and submission.repo_meta.has_ci:
                 score += 30
             if submission.repo_meta.workflow_success_rate > 0:
                 score += submission.repo_meta.workflow_success_rate * 40
@@ -609,9 +609,9 @@ class DashboardAggregator:
             return None
 
         evidence = [
-            f"CI/CD enabled: {best_team.repo_meta.has_ci}",
-            f"Workflow success rate: {best_team.repo_meta.workflow_success_rate:.1%}",
-            f"Total workflow runs: {best_team.repo_meta.workflow_run_count}",
+            f"CI/CD enabled: {best_team.repo_meta.has_ci if best_team.repo_meta else False}",
+            f"Workflow success rate: {(best_team.repo_meta.workflow_success_rate if best_team.repo_meta else 0.0):.1%}",
+            f"Total workflow runs: {best_team.repo_meta.workflow_run_count if best_team.repo_meta else 0}",
         ]
 
         return PrizeRecommendation(

@@ -37,8 +37,8 @@ class TestExecutionResult(BaseModel):
     timed_out: bool = False
     dependencies_installed: bool = False
 
-    @computed_field
     @property
+    @computed_field
     def pass_rate(self) -> float:
         """Calculate pass rate as passed / total."""
         if self.total_tests == 0:

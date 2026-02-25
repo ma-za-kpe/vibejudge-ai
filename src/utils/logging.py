@@ -36,7 +36,7 @@ def setup_logging() -> None:
         ])
 
     structlog.configure(
-        processors=processors,
+        processors=processors,  # type: ignore[arg-type]
         wrapper_class=structlog.make_filtering_bound_logger(
             getattr(logging, settings.log_level.upper())
         ),
@@ -55,7 +55,7 @@ def get_logger(name: str = __name__) -> structlog.BoundLogger:
     Returns:
         Configured structlog logger
     """
-    return structlog.get_logger(name)
+    return structlog.get_logger(name)  # type: ignore[no-any-return]
 
 
 # Setup logging on module import

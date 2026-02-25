@@ -6,6 +6,7 @@ import subprocess
 import time
 from collections import Counter
 from pathlib import Path
+from typing import TypedDict
 
 import structlog
 
@@ -19,8 +20,16 @@ from src.models.static_analysis import (
 logger = structlog.get_logger()
 
 
+class ToolConfig(TypedDict):
+    """Configuration for a static analysis tool."""
+
+    name: str
+    cmd: list[str]
+    timeout: int
+
+
 # Tool configurations by language
-STATIC_TOOLS = {
+STATIC_TOOLS: dict[str, list[ToolConfig]] = {
     "python": [
         {"name": "flake8", "cmd": ["flake8", "--format=json", "."], "timeout": 30},
         {"name": "bandit", "cmd": ["bandit", "-r", "-f", "json", "."], "timeout": 30},
@@ -732,9 +741,10 @@ class StaticAnalysisEngine:
 
             if not file_path.exists():
                 finding.verified = False
-                finding.error_message = f"File not found: {finding.file}"
                 self.logger.warning(
-                    "evidence_validation_failed", file=finding.file, reason="file_not_found"
+                    "evidence_validation_failed",
+                    file=finding.file,
+                    reason="file_not_found",
                 )
                 return
 
@@ -744,13 +754,11 @@ class StaticAnalysisEngine:
 
                 if finding.line > line_count or finding.line < 1:
                     finding.verified = False
-                    finding.error_message = (
-                        f"Line {finding.line} exceeds file length ({line_count} lines)"
-                    )
                     self.logger.warning(
                         "evidence_validation_failed",
                         file=finding.file,
                         line=finding.line,
+                        line_count=line_count,
                         reason="invalid_line_number",
                     )
                     return
@@ -759,7 +767,7 @@ class StaticAnalysisEngine:
 
         except Exception as e:
             finding.verified = False
-            finding.error_message = f"Validation error: {str(e)}"
+            self.logger.error("evidence_validation_error", file=finding.file, error=str(e))
             self.logger.error("evidence_validation_error", file=finding.file, error=str(e))
 
     def _generate_recommendation(self, category: str, code: str, message: str) -> str:

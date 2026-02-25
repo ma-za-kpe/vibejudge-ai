@@ -884,7 +884,7 @@ class StrategyDetector:
         for commit in commits:
             message_lower = commit.message.lower()
             if any(keyword in message_lower for keyword in learning_keywords):
-                learning_commits.append(commit.message)
+                learning_commits.append(commit)  # Append CommitInfo, not just message
 
         if not learning_commits:
             return None
@@ -903,7 +903,7 @@ class StrategyDetector:
 
         return LearningJourney(
             technology=technology,
-            evidence=learning_commits[:5],  # Top 5 commits
+            evidence=[c.message for c in learning_commits[:5]],  # Top 5 commit messages
             progression=progression,
             impressive=impressive,
         )
@@ -1243,12 +1243,12 @@ class StrategyDetector:
         if not commits:
             return 0.0
 
-        quality_score = 0
+        quality_score = 0.0
         generic_patterns = [r"^fix$", r"^update$", r"^wip$", r"^changes$", r"^stuff$"]
 
         for commit in commits:
             message = commit.message.strip()
-            score = 0
+            score = 0.0
 
             # Length check
             if len(message) > 10:

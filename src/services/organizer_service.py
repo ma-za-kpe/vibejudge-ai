@@ -191,13 +191,13 @@ class OrganizerService:
 
             items = response.get("Items", [])
             for item in items:
-                stored_hash = item.get("api_key_hash", "")
+                stored_hash = str(item.get("api_key_hash", ""))
                 # Use constant-time comparison to prevent timing attacks
                 # Add length check to prevent length-based timing leaks
                 if len(api_key_hash) == len(stored_hash) and secrets.compare_digest(
                     api_key_hash, stored_hash
                 ):
-                    org_id = item.get("org_id")
+                    org_id = str(item.get("org_id"))
                     logger.info("api_key_verified", org_id=org_id)
                     return org_id
 

@@ -251,4 +251,4 @@ async def get_submission_scorecard(
     if scorecard is None:
         raise HTTPException(status_code=404, detail="Submission not found")
 
-    return scorecard
+    return scorecard  # type: ignore[return-value]

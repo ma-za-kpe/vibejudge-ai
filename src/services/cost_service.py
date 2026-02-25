@@ -122,7 +122,7 @@ class CostService:
         )
 
         # Note: CostRecord model expects more fields, but for internal tracking we use dict
-        return record
+        return record  # type: ignore[return-value]
 
     def get_submission_costs(self, sub_id: str) -> dict:
         """Get cost breakdown for submission.
@@ -370,7 +370,7 @@ class CostService:
         # Build cost by model dict (aggregate by model)
         from decimal import Decimal
 
-        cost_by_model = {}
+        cost_by_model: dict[str, float] = {}
         for sub in self.db.list_submissions(hack_id):
             sub_costs = self.db.get_submission_costs(sub["sub_id"])
             for cost in sub_costs:

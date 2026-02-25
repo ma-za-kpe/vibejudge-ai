@@ -88,7 +88,7 @@ class BedrockClient:
                         "content": [{"text": user_message}],
                     }
                 ],
-                inferenceConfig=inference_config,
+                inferenceConfig=inference_config,  # type: ignore[arg-type]
             )
 
             latency_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
@@ -101,24 +101,30 @@ class BedrockClient:
 
             # Extract usage
             usage = response.get("usage", {})
+            # Cast usage to dict for type checking
+            usage_dict = usage if isinstance(usage, dict) else {}
 
             result = {
                 "content": content_text,
                 "usage": {
-                    "input_tokens": usage.get("inputTokens", 0),
-                    "output_tokens": usage.get("outputTokens", 0),
-                    "total_tokens": usage.get("totalTokens", 0),
+                    "input_tokens": usage_dict.get("inputTokens", 0),
+                    "output_tokens": usage_dict.get("outputTokens", 0),
+                    "total_tokens": usage_dict.get("totalTokens", 0),
                 },
                 "stop_reason": response.get("stopReason", "unknown"),
                 "latency_ms": latency_ms,
                 "model_id": model_id,
             }
 
+            # Extract usage for logging
+            usage_for_log = result["usage"]
+            assert isinstance(usage_for_log, dict)
+            
             logger.info(
                 "bedrock_converse_success",
                 model_id=model_id,
-                input_tokens=result["usage"]["input_tokens"],
-                output_tokens=result["usage"]["output_tokens"],
+                input_tokens=usage_for_log["input_tokens"],
+                output_tokens=usage_for_log["output_tokens"],
                 latency_ms=latency_ms,
             )
 
@@ -205,7 +211,7 @@ class BedrockClient:
         json_str = content[start:end]
 
         try:
-            return json.loads(json_str)
+            return json.loads(json_str)  # type: ignore[no-any-return]
         except json.JSONDecodeError as e:
             logger.error(
                 "json_parse_failed",

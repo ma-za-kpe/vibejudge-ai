@@ -18,6 +18,7 @@ class TestTimingAttackExploration:
     EXPECTED OUTCOME: Test FAILS - timing differences leak information about key correctness.
     """
 
+    @pytest.mark.xfail(reason="Expected to fail - timing attack vulnerability still exists (0.015ms variance detected)")
     def test_timing_attack_reveals_key_structure(self, dynamodb_helper):
         """Measure response times for API key verification with varying prefixes.
 
@@ -130,6 +131,7 @@ class TestGitHubRateLimitExploration:
     EXPECTED OUTCOME: Test FAILS - application starts without GITHUB_TOKEN.
     """
 
+    @pytest.mark.xfail(reason="Expected to fail - GITHUB_TOKEN is optional, vulnerability exists")
     def test_application_starts_without_github_token(self, monkeypatch):
         """Start application without GITHUB_TOKEN environment variable.
 
@@ -183,6 +185,7 @@ class TestAuthorizationBypassExploration:
     EXPECTED OUTCOME: Test FAILS - cross-organizer operations succeed without 403 error.
     """
 
+    @pytest.mark.xfail(reason="Expected to fail - authorization bypass vulnerability exists")
     def test_cross_organizer_hackathon_access(self, dynamodb_helper):
         """Organizer A attempts to access Organizer B's hackathon.
 

@@ -5,6 +5,7 @@ import shutil
 from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import git
 
@@ -262,11 +263,17 @@ def extract_commits(repo: git.Repo, max_commits: int = 100) -> list[CommitInfo]:
     try:
         for commit in repo.iter_commits(branch, max_count=max_commits):
             stats = commit.stats.total
+            # Handle commit message encoding (can be str or bytes)
+            message = commit.message
+            if isinstance(message, bytes):
+                message = message.decode("utf-8", errors="replace")
+            message_str: str = message.strip().split("\n")[0][:200]
+            
             commits.append(
                 CommitInfo(
                     hash=commit.hexsha,
                     short_hash=commit.hexsha[:8],
-                    message=commit.message.strip().split("\n")[0][:200],
+                    message=message_str,
                     author=commit.author.name or commit.author.email or "unknown",
                     timestamp=datetime.fromtimestamp(commit.committed_date, tz=UTC),
                     files_changed=stats.get("files", 0),
@@ -355,12 +362,12 @@ def extract_file_tree(clone_path: Path, max_depth: int = 4) -> str:
     Returns:
         File tree string
     """
-    lines = []
+    lines: list[str] = []
     _walk_tree(clone_path, lines, prefix="", depth=0, max_depth=max_depth)
     return "\n".join(lines[:200])  # Cap at 200 lines
 
 
-def _walk_tree(path: Path, lines: list, prefix: str, depth: int, max_depth: int) -> None:
+def _walk_tree(path: Path, lines: list[str], prefix: str, depth: int, max_depth: int) -> None:
     """Recursively walk directory tree."""
     if depth > max_depth:
         return
@@ -527,7 +534,7 @@ def extract_repo_meta(
     repo: git.Repo,
     clone_path: Path,
     commits: list[CommitInfo],
-    workflow_runs: list = None,
+    workflow_runs: list[Any] | None = None,
 ) -> RepoMeta:
     """Build comprehensive repository metadata.
 
@@ -541,7 +548,7 @@ def extract_repo_meta(
         RepoMeta object
     """
     # Count files by language
-    ext_counter = Counter()
+    ext_counter: Counter[str] = Counter()
     total_files = 0
     total_lines = 0
 
@@ -647,8 +654,8 @@ def _has_test_files(clone_path: Path) -> bool:
 def clone_and_extract(
     repo_url: str,
     submission_id: str,
-    workflow_runs: list = None,
-    workflow_definitions: list[str] = None,
+    workflow_runs: list[Any] | None = None,
+    workflow_definitions: list[str] | None = None,
     use_shallow: bool = True,
 ) -> RepoData:
     """Complete extraction pipeline for a repository.

@@ -1,8 +1,9 @@
 """Base agent class with shared logic for all AI agents."""
 
 from abc import ABC, abstractmethod
+from typing import Any
 
-from src.constants import AGENT_CONFIGS
+from src.constants import AGENT_CONFIGS, AgentConfig
 from src.models.analysis import RepoData
 from src.models.scores import BaseAgentResponse
 from src.utils.bedrock import BedrockClient
@@ -25,7 +26,8 @@ class BaseAgent(ABC):
         self.bedrock = bedrock_client or BedrockClient()
 
         # Get agent configuration
-        config = AGENT_CONFIGS.get(agent_name, {})
+        config_value: AgentConfig | None = AGENT_CONFIGS.get(agent_name)
+        config: dict[str, Any] = dict(config_value) if config_value is not None else {}
         self.model_id = config.get("model_id", "amazon.nova-lite-v1:0")
         self.temperature = config.get("temperature", 0.3)
         self.max_tokens = config.get("max_tokens", 2048)
@@ -197,6 +199,10 @@ class BaseAgent(ABC):
         Returns:
             Response with verified evidence flags
         """
+        # Check if response has evidence field (not all agent responses do)
+        if not hasattr(response, 'evidence'):
+            return response
+
         # Build sets of valid files and commits
         valid_files = {sf.path for sf in repo_data.source_files}
         valid_commits = {c.hash for c in repo_data.commit_history}
@@ -205,7 +211,7 @@ class BaseAgent(ABC):
         # Validate each evidence item
         for evidence in response.evidence:
             verified = True
-            verification_notes = []
+            verification_notes: list[str] = []
 
             # Check file exists
             if hasattr(evidence, 'file') and evidence.file and evidence.file not in valid_files:
@@ -224,7 +230,7 @@ class BaseAgent(ABC):
                     evidence.__dict__['verification_notes'] = verification_notes
 
         # Lower confidence if many unverified evidence items
-        if response.evidence:
+        if hasattr(response, 'evidence') and response.evidence:
             unverified_count = sum(
                 1 for e in response.evidence
                 if hasattr(e, '__dict__') and not e.__dict__.get('verified', True)

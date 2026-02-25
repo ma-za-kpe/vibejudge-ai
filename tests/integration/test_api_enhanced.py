@@ -21,21 +21,15 @@ from src.models.dashboard import (
     TechnologyTrends,
     TopPerformer,
 )
-from src.models.feedback import ActionableFeedback, CodeExample, EffortEstimate, LearningResource
-from src.models.strategy import LearningJourney, StrategyAnalysisResult, Tradeoff
 from src.models.submission import (
     ScorecardResponse,
     SubmissionResponse,
 )
 from src.models.team_dynamics import (
-    CollaborationPattern,
     ContributorRole,
     ExpertiseArea,
     HiringSignals,
     IndividualScorecard,
-    RedFlag,
-    RedFlagSeverity,
-    TeamAnalysisResult,
     WorkStyle,
 )
 
@@ -45,7 +39,17 @@ from src.models.team_dynamics import (
 
 
 @pytest.fixture
-def mock_services():
+def mock_aws_credentials(monkeypatch):
+    """Mock AWS credentials to prevent boto3 from trying to load real credentials."""
+    monkeypatch.setenv("AWS_ACCESS_KEY_ID", "testing")
+    monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "testing")
+    monkeypatch.setenv("AWS_SECURITY_TOKEN", "testing")
+    monkeypatch.setenv("AWS_SESSION_TOKEN", "testing")
+    monkeypatch.setenv("AWS_DEFAULT_REGION", "us-east-1")
+
+
+@pytest.fixture
+def mock_services(mock_aws_credentials):
     """Mock all service dependencies."""
     with (
         patch("src.api.dependencies.get_submission_service") as mock_sub_service,
@@ -482,74 +486,77 @@ def test_get_enhanced_scorecard_success(mock_services):
         hack_id="hack_123",
         team_name="Test Team",
         repo_url="https://github.com/test/repo",
+        status=SubmissionStatus.COMPLETED,  # REQUIRED field
         overall_score=85.5,
-        agent_scores={},
-        team_analysis=TeamAnalysisResult(
-            workload_distribution={"Alice": 60.0, "Bob": 40.0},
-            collaboration_patterns=[
-                CollaborationPattern(
-                    pattern_type="pair_programming",
-                    contributors=["Alice", "Bob"],
-                    evidence="Alternating commits on same files",
-                    positive=True,
-                )
+        agent_scores=[],  # List, not dict
+        team_dynamics={  # Changed from team_analysis
+            "workload_distribution": {"Alice": 60.0, "Bob": 40.0},
+            "collaboration_patterns": [
+                {
+                    "pattern_type": "pair_programming",
+                    "contributors": ["Alice", "Bob"],
+                    "evidence": "Alternating commits on same files",
+                    "positive": True,
+                }
             ],
-            red_flags=[],
-            individual_scorecards=[],
-            team_dynamics_grade="A",
-            commit_message_quality=0.85,
-            panic_push_detected=False,
-            duration_ms=150,
-        ),
-        strategy_analysis=StrategyAnalysisResult(
-            test_strategy="unit_focused",
-            critical_path_focus=True,
-            tradeoffs=[
-                Tradeoff(
-                    tradeoff_type="speed_vs_security",
-                    decision="Prioritized speed for demo",
-                    rationale="Hackathon time constraints",
-                    impact_on_score="Minor deduction on security score",
-                )
+            "red_flags": [],
+            "individual_scorecards": [],
+            "team_dynamics_grade": "A",
+            "commit_message_quality": 0.85,
+            "panic_push_detected": False,
+            "duration_ms": 150,
+        },
+        strategy_analysis={  # Dict, not object
+            "test_strategy": "unit_focused",
+            "critical_path_focus": True,
+            "tradeoffs": [
+                {
+                    "tradeoff_type": "speed_vs_security",
+                    "decision": "Prioritized speed for demo",
+                    "rationale": "Hackathon time constraints",
+                    "impact_on_score": "Minor deduction on security score",
+                }
             ],
-            learning_journey=LearningJourney(
-                technology="FastAPI",
-                evidence=["First FastAPI commit", "Learning async patterns"],
-                progression="Rapid improvement in API design",
-                impressive=True,
-            ),
-            maturity_level="mid",
-            strategic_context="Team showed good prioritization for hackathon scope",
-            duration_ms=120,
-        ),
-        actionable_feedback=[
-            ActionableFeedback(
-                priority=1,
-                finding="SQL injection vulnerability in user input",
-                acknowledgment="Great job implementing the authentication system!",
-                context="This is a common issue in hackathons when moving fast",
-                code_example=CodeExample(
-                    vulnerable_code='query = f"SELECT * FROM users WHERE id = {user_id}"',
-                    fixed_code='query = "SELECT * FROM users WHERE id = ?" params = (user_id,)',
-                    explanation="Use parameterized queries to prevent SQL injection",
-                ),
-                why_vulnerable="Allows attackers to inject malicious SQL",
-                why_fixed="Parameterized queries escape user input safely",
-                testing_instructions="Try entering `1 OR 1=1` as user_id",
-                learning_resources=[
-                    LearningResource(
-                        title="OWASP SQL Injection Guide",
-                        url="https://owasp.org/www-community/attacks/SQL_Injection",
-                        resource_type="guide",
-                    )
+            "learning_journey": {
+                "technology": "FastAPI",
+                "evidence": ["First FastAPI commit", "Learning async patterns"],
+                "progression": "Rapid improvement in API design",
+                "impressive": True,
+            },
+            "maturity_level": "mid",
+            "strategic_context": "Team showed good prioritization for hackathon scope",
+            "duration_ms": 120,
+        },
+        actionable_feedback=[  # List of dicts
+            {
+                "priority": 1,
+                "finding": "SQL injection vulnerability in user input",
+                "acknowledgment": "Great job implementing the authentication system!",
+                "context": "This is a common issue in hackathons when moving fast",
+                "code_example": {
+                    "vulnerable_code": 'query = f"SELECT * FROM users WHERE id = {user_id}"',
+                    "fixed_code": 'query = "SELECT * FROM users WHERE id = ?" params = (user_id,)',
+                    "explanation": "Use parameterized queries to prevent SQL injection",
+                },
+                "why_vulnerable": "Allows attackers to inject malicious SQL",
+                "why_fixed": "Parameterized queries escape user input safely",
+                "testing_instructions": "Try entering `1 OR 1=1` as user_id",
+                "learning_resources": [
+                    {
+                        "title": "OWASP SQL Injection Guide",
+                        "url": "https://owasp.org/www-community/attacks/SQL_Injection",
+                        "resource_type": "guide",
+                    }
                 ],
-                effort_estimate=EffortEstimate(
-                    minutes=15,
-                    difficulty="Easy",
-                ),
-                business_impact="Critical: Could expose all user data",
-            )
+                "effort_estimate": {
+                    "minutes": 15,
+                    "difficulty": "Easy",
+                },
+                "business_impact": "Critical: Could expose all user data",
+            }
         ],
+        created_at="2024-01-01T00:00:00Z",
+        updated_at="2024-01-01T00:00:00Z",
     )
 
     mock_services["submission"].get_submission_scorecard.return_value = enhanced_scorecard
@@ -564,11 +571,11 @@ def test_get_enhanced_scorecard_success(mock_services):
     assert data["sub_id"] == "sub_123"
     assert data["overall_score"] == 85.5
 
-    # Verify team analysis
-    assert data["team_analysis"] is not None
-    assert data["team_analysis"]["team_dynamics_grade"] == "A"
-    assert data["team_analysis"]["workload_distribution"]["Alice"] == 60.0
-    assert len(data["team_analysis"]["collaboration_patterns"]) == 1
+    # Verify team dynamics
+    assert data["team_dynamics"] is not None
+    assert data["team_dynamics"]["team_dynamics_grade"] == "A"
+    assert data["team_dynamics"]["workload_distribution"]["Alice"] == 60.0
+    assert len(data["team_dynamics"]["collaboration_patterns"]) == 1
 
     # Verify strategy analysis
     assert data["strategy_analysis"] is not None
@@ -603,39 +610,42 @@ def test_get_enhanced_scorecard_with_red_flags(mock_services):
         hack_id="hack_123",
         team_name="Test Team",
         repo_url="https://github.com/test/repo",
+        status=SubmissionStatus.COMPLETED,
         overall_score=65.0,
-        agent_scores={},
-        team_analysis=TeamAnalysisResult(
-            workload_distribution={"Alice": 95.0, "Bob": 5.0},
-            collaboration_patterns=[],
-            red_flags=[
-                RedFlag(
-                    flag_type="extreme_imbalance",
-                    severity=RedFlagSeverity.CRITICAL,
-                    description="One contributor did 95% of the work",
-                    evidence="Alice: 95 commits, Bob: 5 commits",
-                    impact="Indicates poor team collaboration",
-                    hiring_impact="Disqualifies from team awards",
-                    recommended_action="Review team dynamics and contribution patterns",
-                ),
-                RedFlag(
-                    flag_type="minimal_contribution",
-                    severity=RedFlagSeverity.HIGH,
-                    description="Bob has minimal contributions",
-                    evidence="Only 5 commits in 2-person team",
-                    impact="Questions team member engagement",
-                    hiring_impact="Bob may not be suitable for team roles",
-                    recommended_action="Interview separately to understand circumstances",
-                ),
+        agent_scores=[],
+        team_dynamics={
+            "workload_distribution": {"Alice": 95.0, "Bob": 5.0},
+            "collaboration_patterns": [],
+            "red_flags": [
+                {
+                    "flag_type": "extreme_imbalance",
+                    "severity": "critical",
+                    "description": "One contributor did 95% of the work",
+                    "evidence": "Alice: 95 commits, Bob: 5 commits",
+                    "impact": "Indicates poor team collaboration",
+                    "hiring_impact": "Disqualifies from team awards",
+                    "recommended_action": "Review team dynamics and contribution patterns",
+                },
+                {
+                    "flag_type": "minimal_contribution",
+                    "severity": "high",
+                    "description": "Bob has minimal contributions",
+                    "evidence": "Only 5 commits in 2-person team",
+                    "impact": "Questions team member engagement",
+                    "hiring_impact": "Bob may not be suitable for team roles",
+                    "recommended_action": "Interview separately to understand circumstances",
+                },
             ],
-            individual_scorecards=[],
-            team_dynamics_grade="D",
-            commit_message_quality=0.70,
-            panic_push_detected=True,
-            duration_ms=150,
-        ),
+            "individual_scorecards": [],
+            "team_dynamics_grade": "D",
+            "commit_message_quality": 0.70,
+            "panic_push_detected": True,
+            "duration_ms": 150,
+        },
         strategy_analysis=None,
         actionable_feedback=[],
+        created_at="2024-01-01T00:00:00Z",
+        updated_at="2024-01-01T00:00:00Z",
     )
 
     mock_services["submission"].get_submission_scorecard.return_value = scorecard_with_red_flags
@@ -647,11 +657,11 @@ def test_get_enhanced_scorecard_with_red_flags(mock_services):
     data = response.json()
 
     # Verify red flags
-    assert len(data["team_analysis"]["red_flags"]) == 2
-    assert data["team_analysis"]["red_flags"][0]["severity"] == "critical"
-    assert data["team_analysis"]["red_flags"][0]["flag_type"] == "extreme_imbalance"
-    assert data["team_analysis"]["team_dynamics_grade"] == "D"
-    assert data["team_analysis"]["panic_push_detected"] is True
+    assert len(data["team_dynamics"]["red_flags"]) == 2
+    assert data["team_dynamics"]["red_flags"][0]["severity"] == "critical"
+    assert data["team_dynamics"]["red_flags"][0]["flag_type"] == "extreme_imbalance"
+    assert data["team_dynamics"]["team_dynamics_grade"] == "D"
+    assert data["team_dynamics"]["panic_push_detected"] is True
 
 
 def test_get_enhanced_scorecard_minimal_intelligence(mock_services):
@@ -661,11 +671,14 @@ def test_get_enhanced_scorecard_minimal_intelligence(mock_services):
         hack_id="hack_123",
         team_name="Test Team",
         repo_url="https://github.com/test/repo",
+        status=SubmissionStatus.COMPLETED,
         overall_score=75.0,
-        agent_scores={},
-        team_analysis=None,  # Analysis failed
+        agent_scores=[],
+        team_dynamics=None,  # Analysis failed
         strategy_analysis=None,  # Analysis failed
         actionable_feedback=[],  # No feedback generated
+        created_at="2024-01-01T00:00:00Z",
+        updated_at="2024-01-01T00:00:00Z",
     )
 
     mock_services["submission"].get_submission_scorecard.return_value = minimal_scorecard
@@ -678,7 +691,7 @@ def test_get_enhanced_scorecard_minimal_intelligence(mock_services):
 
     # Verify graceful degradation
     assert data["overall_score"] == 75.0
-    assert data["team_analysis"] is None
+    assert data["team_dynamics"] is None
     assert data["strategy_analysis"] is None
     assert data["actionable_feedback"] == []
 
@@ -754,40 +767,43 @@ def test_scorecard_feedback_references_strategy_context(mock_services):
         hack_id="hack_123",
         team_name="Test Team",
         repo_url="https://github.com/test/repo",
+        status=SubmissionStatus.COMPLETED,
         overall_score=80.0,
-        agent_scores={},
-        team_analysis=None,
-        strategy_analysis=StrategyAnalysisResult(
-            test_strategy="demo_first",
-            critical_path_focus=False,
-            tradeoffs=[
-                Tradeoff(
-                    tradeoff_type="speed_vs_security",
-                    decision="Prioritized demo polish over security",
-                    rationale="Hackathon presentation focus",
-                    impact_on_score="Security score adjusted for context",
-                )
+        agent_scores=[],
+        team_dynamics=None,
+        strategy_analysis={
+            "test_strategy": "demo_first",
+            "critical_path_focus": False,
+            "tradeoffs": [
+                {
+                    "tradeoff_type": "speed_vs_security",
+                    "decision": "Prioritized demo polish over security",
+                    "rationale": "Hackathon presentation focus",
+                    "impact_on_score": "Security score adjusted for context",
+                }
             ],
-            learning_journey=None,
-            maturity_level="junior",
-            strategic_context="Demo-first approach appropriate for hackathon",
-            duration_ms=100,
-        ),
+            "learning_journey": None,
+            "maturity_level": "junior",
+            "strategic_context": "Demo-first approach appropriate for hackathon",
+            "duration_ms": 100,
+        },
         actionable_feedback=[
-            ActionableFeedback(
-                priority=2,
-                finding="Missing input validation",
-                acknowledgment="Great demo! The UI is polished.",
-                context="Given your demo-first strategy, this is understandable",
-                code_example=None,
-                why_vulnerable="Could allow invalid data",
-                why_fixed="Validation ensures data integrity",
-                testing_instructions="Test with edge cases",
-                learning_resources=[],
-                effort_estimate=EffortEstimate(minutes=30, difficulty="Moderate"),
-                business_impact="Medium: Could cause data issues in production",
-            )
+            {
+                "priority": 2,
+                "finding": "Missing input validation",
+                "acknowledgment": "Great demo! The UI is polished.",
+                "context": "Given your demo-first strategy, this is understandable",
+                "code_example": None,
+                "why_vulnerable": "Could allow invalid data",
+                "why_fixed": "Validation ensures data integrity",
+                "testing_instructions": "Test with edge cases",
+                "learning_resources": [],
+                "effort_estimate": {"minutes": 30, "difficulty": "Moderate"},
+                "business_impact": "Medium: Could cause data issues in production",
+            }
         ],
+        created_at="2024-01-01T00:00:00Z",
+        updated_at="2024-01-01T00:00:00Z",
     )
 
     mock_services["submission"].get_submission_scorecard.return_value = scorecard
