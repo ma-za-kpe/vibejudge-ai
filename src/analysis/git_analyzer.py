@@ -9,12 +9,7 @@ from typing import Any
 
 import git
 
-from src.models.analysis import (
-    CommitInfo,
-    DiffEntry,
-    RepoData,
-    SourceFile,
-)
+from src.models.analysis import CommitInfo, DiffEntry, RepoData, SourceFile
 from src.models.submission import RepoMeta
 from src.utils.logging import get_logger
 
@@ -340,7 +335,7 @@ def extract_diff_summary(
     return diffs[:max_diffs]
 
 
-def _diff_change_type(diff_item) -> str:
+def _diff_change_type(diff_item: Any) -> str:
     """Determine change type from diff item."""
     if diff_item.new_file:
         return "added"

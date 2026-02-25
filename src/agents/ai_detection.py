@@ -1,15 +1,18 @@
 """AIDetectionAnalyst Agent - Development authenticity analysis."""
 
+from typing import Any
+
 from src.agents.base import BaseAgent
 from src.models.analysis import RepoData
 from src.models.scores import AIDetectionResponse
 from src.prompts import ai_detection_v1
+from src.utils.bedrock import BedrockClient
 
 
 class AIDetectionAgent(BaseAgent):
     """Agent for analyzing development patterns and AI usage indicators."""
 
-    def __init__(self, bedrock_client=None):
+    def __init__(self, bedrock_client: BedrockClient | None = None) -> None:
         super().__init__("ai_detection", bedrock_client)
 
     def get_system_prompt(self) -> str:
@@ -22,7 +25,7 @@ class AIDetectionAgent(BaseAgent):
         hackathon_name: str,
         team_name: str,
         ai_policy_mode: str = "ai_assisted",
-        **kwargs,
+        **kwargs: Any,
     ) -> str:
         """Build user message for AIDetection."""
 

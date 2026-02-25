@@ -2,6 +2,7 @@
 
 import os
 from datetime import datetime
+from typing import Any
 
 import structlog
 from fastapi import APIRouter, Depends
@@ -43,7 +44,7 @@ class HealthResponse(BaseModel):
 
 @router.get("/health", response_model=HealthResponse)
 async def health_check(
-    table=Depends(get_dynamodb_table),
+    table: Any = Depends(get_dynamodb_table),
 ) -> HealthResponse:
     """Health check endpoint.
 

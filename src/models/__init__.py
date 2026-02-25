@@ -46,10 +46,7 @@ from src.models.costs import (
 )
 
 # Errors
-from src.models.errors import (
-    ErrorDetail,
-    ErrorResponse,
-)
+from src.models.errors import ErrorDetail, ErrorResponse
 
 # Hackathon
 from src.models.hackathon import (

@@ -3,6 +3,7 @@
 import json
 import os
 from datetime import UTC, datetime
+from typing import Any
 
 import boto3
 from botocore.exceptions import ClientError
@@ -30,7 +31,7 @@ class AnalysisService:
         self._lambda_client = None
 
     @property
-    def lambda_client(self):
+    def lambda_client(self) -> Any:
         """Lazy-load Lambda client."""
         if self._lambda_client is None:
             region = os.environ.get("AWS_REGION", "us-east-1")
@@ -262,7 +263,7 @@ class AnalysisService:
         hack_id: str,
         job_id: str,
         status: JobStatus,
-        **kwargs,
+        **kwargs: Any,
     ) -> bool:
         """Update analysis job status.
 

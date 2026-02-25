@@ -23,7 +23,7 @@ class PerformanceMonitor:
         self.start_time = time.time()
 
     @contextmanager
-    def track(self, component: str):
+    def track(self, component: str) -> Any:
         """Context manager to track component execution time.
 
         Args:

@@ -1,5 +1,7 @@
 """DynamoDB helper with all 16 access patterns."""
 
+from typing import Any
+
 import boto3
 from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
@@ -303,7 +305,9 @@ class DynamoDBHelper:
             logger.error("put_submission_failed", error=str(e))
             return False
 
-    def update_submission_status(self, hack_id: str, sub_id: str, status: str, **kwargs) -> bool:
+    def update_submission_status(
+        self, hack_id: str, sub_id: str, status: str, **kwargs: Any
+    ) -> bool:
         """Update submission status and optional fields.
 
         Args:

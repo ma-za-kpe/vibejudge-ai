@@ -69,13 +69,13 @@ app.include_router(costs.router, prefix="/api/v1")
 
 
 @app.on_event("startup")
-async def startup_event():
+async def startup_event() -> None:
     """Log application startup."""
     logger.info("vibejudge_api_starting", version="1.0.0")
 
 
 @app.on_event("shutdown")
-async def shutdown_event():
+async def shutdown_event() -> None:
     """Log application shutdown."""
     logger.info("vibejudge_api_shutting_down")
 

@@ -11,11 +11,7 @@ from typing import TypedDict
 import structlog
 
 from src.models.common import Severity
-from src.models.static_analysis import (
-    PrimaryLanguage,
-    StaticAnalysisResult,
-    StaticFinding,
-)
+from src.models.static_analysis import PrimaryLanguage, StaticAnalysisResult, StaticFinding
 
 logger = structlog.get_logger()
 

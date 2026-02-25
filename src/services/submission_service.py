@@ -221,7 +221,7 @@ class SubmissionService:
         hack_id: str,
         sub_id: str,
         status: SubmissionStatus,
-        **kwargs,
+        **kwargs: Any,
     ) -> bool:
         """Update submission status and optional fields.
 
@@ -347,7 +347,7 @@ class SubmissionService:
         )
 
         # Convert floats to Decimals and datetimes to ISO strings for DynamoDB
-        def convert_to_decimal(obj):
+        def convert_to_decimal(obj: Any) -> Any:
             """Recursively convert floats to Decimals and datetimes to ISO strings for DynamoDB."""
             from datetime import datetime
 

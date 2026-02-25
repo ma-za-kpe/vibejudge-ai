@@ -1,15 +1,18 @@
 """InnovationScorer Agent - Creativity and novelty analysis."""
 
+from typing import Any
+
 from src.agents.base import BaseAgent
 from src.models.analysis import RepoData
 from src.models.scores import InnovationResponse
 from src.prompts import innovation_v1
+from src.utils.bedrock import BedrockClient
 
 
 class InnovationScorerAgent(BaseAgent):
     """Agent for technical innovation, creativity, and documentation analysis."""
 
-    def __init__(self, bedrock_client=None):
+    def __init__(self, bedrock_client: BedrockClient | None = None) -> None:
         super().__init__("innovation", bedrock_client)
 
     def get_system_prompt(self) -> str:
@@ -17,7 +20,7 @@ class InnovationScorerAgent(BaseAgent):
         return innovation_v1.SYSTEM_PROMPT
 
     def build_user_message(
-        self, repo_data: RepoData, hackathon_name: str, team_name: str, **kwargs
+        self, repo_data: RepoData, hackathon_name: str, team_name: str, **kwargs: Any
     ) -> str:
         """Build user message for InnovationScorer."""
 

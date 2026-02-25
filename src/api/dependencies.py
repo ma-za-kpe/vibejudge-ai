@@ -1,7 +1,7 @@
 """FastAPI dependency injection for AWS services and authentication."""
 
 import os
-from typing import Annotated
+from typing import Annotated, Any
 
 import boto3
 import structlog
@@ -29,7 +29,7 @@ api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 # ============================================================
 
 
-def get_dynamodb_table():
+def get_dynamodb_table() -> Any:
     """Get DynamoDB table resource."""
     table_name = os.environ.get("TABLE_NAME", "VibeJudgeTable")
     endpoint_url = os.environ.get("DYNAMODB_ENDPOINT_URL")
@@ -44,19 +44,19 @@ def get_dynamodb_table():
     return dynamodb.Table(table_name)
 
 
-def get_dynamodb_helper():
+def get_dynamodb_helper() -> DynamoDBHelper:
     """Get DynamoDB helper instance."""
     table_name = os.environ.get("TABLE_NAME", "VibeJudgeTable")
     return DynamoDBHelper(table_name)
 
 
-def get_bedrock_client():
+def get_bedrock_client() -> Any:
     """Get Bedrock Runtime client."""
     region = os.environ.get("AWS_REGION", "us-east-1")
     return boto3.client("bedrock-runtime", region_name=region)
 
 
-def get_s3_client():
+def get_s3_client() -> Any:
     """Get S3 client."""
     return boto3.client("s3")
 
@@ -116,7 +116,7 @@ def get_organizer_intelligence_service(
 
 DynamoDBTable = Annotated[object, Depends(get_dynamodb_table)]
 DynamoDBHelperDep = Annotated[DynamoDBHelper, Depends(get_dynamodb_helper)]
-BedrockClient = Annotated[object, Depends(get_bedrock_client)]
+BedrockClientDep = Annotated[object, Depends(get_bedrock_client)]
 S3Client = Annotated[object, Depends(get_s3_client)]
 
 # Service dependencies

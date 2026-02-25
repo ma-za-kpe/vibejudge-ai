@@ -9,11 +9,7 @@ from src.api.dependencies import (
     HackathonServiceDep,
     SubmissionServiceDep,
 )
-from src.models.analysis import (
-    AnalysisJobResponse,
-    AnalysisStatusResponse,
-    AnalysisTrigger,
-)
+from src.models.analysis import AnalysisJobResponse, AnalysisStatusResponse, AnalysisTrigger
 from src.models.costs import CostEstimate
 
 router = APIRouter(tags=["analysis"])

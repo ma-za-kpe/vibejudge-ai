@@ -45,7 +45,7 @@ class BaseAgent(ABC):
 
     @abstractmethod
     def build_user_message(
-        self, repo_data: RepoData, hackathon_name: str, team_name: str, **kwargs
+        self, repo_data: RepoData, hackathon_name: str, team_name: str, **kwargs: Any
     ) -> str:
         """Build the user message for this agent.
 
@@ -73,7 +73,7 @@ class BaseAgent(ABC):
         pass
 
     def analyze(
-        self, repo_data: RepoData, hackathon_name: str, team_name: str, **kwargs
+        self, repo_data: RepoData, hackathon_name: str, team_name: str, **kwargs: Any
     ) -> tuple[BaseAgentResponse, dict]:
         """Run agent analysis on repository data.
 

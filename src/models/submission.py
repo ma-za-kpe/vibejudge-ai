@@ -4,12 +4,7 @@ from datetime import datetime
 
 from pydantic import Field
 
-from src.models.common import (
-    Recommendation,
-    SubmissionStatus,
-    TimestampMixin,
-    VibeJudgeBase,
-)
+from src.models.common import Recommendation, SubmissionStatus, TimestampMixin, VibeJudgeBase
 
 # --- Request Models ---
 

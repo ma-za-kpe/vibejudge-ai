@@ -306,7 +306,7 @@ class ActionsAnalyzer:
             logger.error("log_extraction_failed", error=str(e))
             return ""
 
-    def close(self):
+    def close(self) -> None:
         """Close the GitHub client."""
         self.client.close()
 

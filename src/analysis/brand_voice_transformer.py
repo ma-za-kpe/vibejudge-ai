@@ -7,12 +7,7 @@ following the pattern: Acknowledge → Explain Context → Show Fix → Explain 
 import structlog
 
 from src.models.common import Severity
-from src.models.feedback import (
-    ActionableFeedback,
-    CodeExample,
-    EffortEstimate,
-    LearningResource,
-)
+from src.models.feedback import ActionableFeedback, CodeExample, EffortEstimate, LearningResource
 from src.models.scores import (
     AIDetectionEvidence,
     BugHunterEvidence,
@@ -1169,13 +1164,15 @@ django==5.0.0
 def get_posts_with_authors():
     posts = Post.query.all()
     for post in posts:
-        print(post.author.name)  # Separate query for each post!""",
+        # print(post.author.name)  # Separate query for each post!
+        pass""",
                 fixed_code=f"""# {finding.file}:{finding.line or "?"}
 # ✅ Eager loading with join
 def get_posts_with_authors():
     posts = Post.query.options(joinedload(Post.author)).all()
     for post in posts:
-        print(post.author.name)  # No extra queries!""",
+        # print(post.author.name)  # No extra queries!
+        pass""",
                 explanation="Eager loading fetches related data in a single query instead of making N separate queries. This dramatically improves performance when displaying lists with relationships.",
             )
 

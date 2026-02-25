@@ -6,12 +6,7 @@ from typing import Any
 
 import boto3
 from botocore.exceptions import ClientError
-from tenacity import (
-    retry,
-    retry_if_exception_type,
-    stop_after_attempt,
-    wait_exponential,
-)
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from src.constants import BEDROCK_RETRY_ATTEMPTS, MODEL_RATES
 from src.utils.logging import get_logger

@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import Field, field_validator
+from pydantic import Field, ValidationInfo, field_validator
 
 from src.models.common import (
     AgentName,
@@ -59,7 +59,7 @@ class HackathonCreate(VibeJudgeBase):
 
     @field_validator("end_date")
     @classmethod
-    def end_after_start(cls, v, info):
+    def end_after_start(cls, v: datetime | None, info: ValidationInfo) -> datetime | None:
         start = info.data.get("start_date")
         if v and start and v <= start:
             raise ValueError("end_date must be after start_date")
@@ -67,7 +67,9 @@ class HackathonCreate(VibeJudgeBase):
 
     @field_validator("agents_enabled")
     @classmethod
-    def validate_agents_match_rubric(cls, v, info):
+    def validate_agents_match_rubric(
+        cls, v: list[AgentName], info: ValidationInfo
+    ) -> list[AgentName]:
         rubric = info.data.get("rubric")
         if rubric:
             rubric_agents = {d.agent for d in rubric.dimensions}

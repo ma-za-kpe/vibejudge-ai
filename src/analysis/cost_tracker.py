@@ -11,7 +11,7 @@ logger = get_logger(__name__)
 class CostTracker:
     """Track token usage and costs for agent analysis."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize cost tracker."""
         self.records: list[CostRecord] = []
         self.component_records: list[ComponentPerformanceRecord] = []

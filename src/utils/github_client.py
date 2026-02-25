@@ -134,6 +134,6 @@ class GitHubClient:
 
         return definitions
 
-    def close(self):
+    def close(self) -> None:
         """Close the HTTP client."""
         self.client.close()

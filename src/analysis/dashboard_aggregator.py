@@ -14,11 +14,7 @@ from src.models.dashboard import (
 )
 from src.models.strategy import StrategyAnalysisResult
 from src.models.submission import SubmissionResponse
-from src.models.team_dynamics import (
-    ContributorRole,
-    IndividualScorecard,
-    TeamAnalysisResult,
-)
+from src.models.team_dynamics import ContributorRole, IndividualScorecard, TeamAnalysisResult
 
 logger = structlog.get_logger()
 
