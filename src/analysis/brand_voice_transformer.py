@@ -90,6 +90,25 @@ class BrandVoiceTransformer:
 
         return actionable_feedback
 
+    def _normalize_severity(self, severity: Severity | str) -> Severity:
+        """Normalize severity to Severity enum.
+
+        Args:
+            severity: Severity as enum or string
+
+        Returns:
+            Severity enum
+        """
+        if isinstance(severity, Severity):
+            return severity
+
+        # Convert string to Severity enum
+        try:
+            return Severity(severity.lower())
+        except (ValueError, AttributeError):
+            self.logger.warning("invalid_severity", severity=severity)
+            return Severity.MEDIUM  # Default to medium
+
     def _transform_bug_hunter_finding(
         self,
         finding: BugHunterEvidence,
@@ -104,6 +123,9 @@ class BrandVoiceTransformer:
         Returns:
             ActionableFeedback with warm educational tone
         """
+        # Normalize severity to enum (handles both string and enum)
+        severity = self._normalize_severity(finding.severity)
+
         # Generate acknowledgment
         acknowledgment = self._generate_acknowledgment(finding.category)
 
@@ -127,7 +149,7 @@ class BrandVoiceTransformer:
         effort_estimate = self._estimate_effort(finding)
 
         # Calculate priority considering both severity and effort
-        priority = self._calculate_priority_with_effort(finding.severity, effort_estimate)
+        priority = self._calculate_priority_with_effort(severity, effort_estimate)
 
         # Explain business impact
         business_impact = self._explain_business_impact(finding)
@@ -247,7 +269,10 @@ class BrandVoiceTransformer:
         Returns:
             ActionableFeedback with warm educational tone
         """
-        priority = self._severity_to_priority(finding.severity)
+        # Normalize severity to enum (handles both string and enum)
+        severity = self._normalize_severity(finding.severity)
+
+        priority = self._severity_to_priority(severity)
         acknowledgment = self._generate_acknowledgment(finding.category)
         context = self._generate_context(finding.category, strategy_context)
 
@@ -261,7 +286,7 @@ class BrandVoiceTransformer:
             why_fixed=finding.recommendation,
             testing_instructions="Test performance under load to verify improvements.",
             learning_resources=self._generate_learning_resources(finding.category),
-            effort_estimate=self._estimate_effort_from_severity(finding.severity),
+            effort_estimate=self._estimate_effort_from_severity(severity),
             business_impact=self._explain_business_impact_performance(finding),
         )
 
@@ -439,7 +464,10 @@ class BrandVoiceTransformer:
         Returns:
             Explanation of vulnerability
         """
-        return f"The current implementation in {finding.file} has a {finding.severity.value} severity {finding.category} issue: {finding.finding}"
+        severity_str = (
+            finding.severity.value if hasattr(finding.severity, "value") else str(finding.severity)
+        )
+        return f"The current implementation in {finding.file} has a {severity_str} severity {finding.category} issue: {finding.finding}"
 
     def _explain_fix(self, finding: BugHunterEvidence) -> str:
         """Explain why the fix solves the problem.
@@ -701,7 +729,8 @@ class BrandVoiceTransformer:
         """
         # Category-specific effort estimation
         category = finding.category.lower()
-        severity = finding.severity
+        # Normalize severity to enum (handles both string and enum)
+        severity = self._normalize_severity(finding.severity)
 
         # Quick fixes (5-15 minutes) - Easy difficulty
         if category in ["style", "complexity"] and severity in [Severity.LOW, Severity.INFO]:

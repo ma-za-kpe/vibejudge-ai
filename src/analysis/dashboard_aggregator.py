@@ -168,19 +168,38 @@ class DashboardAggregator:
         must_interview = []
 
         for scorecard in scorecards:
-            # Add to role-specific lists
-            if scorecard.role == ContributorRole.BACKEND:
+            # Add to role-specific lists (scorecard might be dict or object)
+            if isinstance(scorecard, dict):
+                role_value = scorecard.get("role")
+            else:
+                role_value = scorecard.role if hasattr(scorecard, "role") else None
+
+            # Convert role to string for comparison
+            role_str = str(role_value) if role_value else None
+
+            if role_str == "backend" or role_str == ContributorRole.BACKEND.value:
                 backend_candidates.append(scorecard)
-            elif scorecard.role == ContributorRole.FRONTEND:
+            elif role_str == "frontend" or role_str == ContributorRole.FRONTEND.value:
                 frontend_candidates.append(scorecard)
-            elif scorecard.role == ContributorRole.DEVOPS:
+            elif role_str == "devops" or role_str == ContributorRole.DEVOPS.value:
                 devops_candidates.append(scorecard)
-            elif scorecard.role == ContributorRole.FULL_STACK:
+            elif role_str == "full_stack" or role_str == ContributorRole.FULL_STACK.value:
                 full_stack_candidates.append(scorecard)
 
             # Add to must-interview if flagged
-            if scorecard.hiring_signals.must_interview:
-                must_interview.append(scorecard)
+            if isinstance(scorecard, dict):
+                hiring_signals_dict = scorecard.get("hiring_signals", {})
+                if isinstance(hiring_signals_dict, dict):
+                    must_interview_flag = hiring_signals_dict.get("must_interview")
+                    if must_interview_flag is True:
+                        must_interview.append(scorecard)
+            elif hasattr(scorecard, "hiring_signals"):
+                hiring_signals_obj = scorecard.hiring_signals
+                if (
+                    hasattr(hiring_signals_obj, "must_interview")
+                    and hiring_signals_obj.must_interview
+                ):
+                    must_interview.append(scorecard)
 
         # Sort each category by seniority (senior first)
         seniority_order = {"senior": 0, "mid": 1, "junior": 2}
@@ -375,7 +394,7 @@ class DashboardAggregator:
                 continue
 
             for red_flag in team_analysis.red_flags:
-                issue_counter[red_flag.flag_type].append(submission.team_name)
+                issue_counter[red_flag.flag_type].append(sub.team_name)
 
         # Create common issues (affecting >20% of teams)
         common_issues = []

@@ -178,22 +178,20 @@ class OrganizerIntelligenceService:
             individual_scorecards = team_dynamics.get("individual_scorecards", [])
 
             for scorecard_item in individual_scorecards:
-                # Categorize by role
-                if scorecard_item.role == ContributorRole.BACKEND:
+                # Categorize by role (scorecard_item is a dict from DynamoDB)
+                role = scorecard_item.get("role")
+                if role == "backend" or role == ContributorRole.BACKEND:
                     backend_candidates.append(scorecard_item)
-                elif scorecard_item.role == ContributorRole.FRONTEND:
+                elif role == "frontend" or role == ContributorRole.FRONTEND:
                     frontend_candidates.append(scorecard_item)
-                elif scorecard_item.role == ContributorRole.DEVOPS:
+                elif role == "devops" or role == ContributorRole.DEVOPS:
                     devops_candidates.append(scorecard_item)
-                elif scorecard_item.role == ContributorRole.FULL_STACK:
+                elif role == "full_stack" or role == ContributorRole.FULL_STACK:
                     full_stack_candidates.append(scorecard_item)
 
-                # Check if must interview
-                if (
-                    hasattr(scorecard_item, "hiring_signals")
-                    and scorecard_item.hiring_signals
-                    and scorecard_item.hiring_signals.must_interview
-                ):
+                # Check if must interview (scorecard_item is a dict)
+                hiring_signals = scorecard_item.get("hiring_signals", {})
+                if isinstance(hiring_signals, dict) and hiring_signals.get("must_interview"):
                     must_interview.append(scorecard_item)
 
         return HiringIntelligence(

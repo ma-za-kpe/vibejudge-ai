@@ -156,9 +156,16 @@ def handler(event: dict, context: Any) -> dict:
                     )
 
                     # Store team analysis if available
-                    if result.get("team_analysis"):
+                    team_analysis_data = result.get("team_analysis")
+                    logger.info(
+                        "team_analysis_check",
+                        sub_id=sub_id,
+                        has_team_analysis=team_analysis_data is not None,
+                        type=type(team_analysis_data).__name__ if team_analysis_data else "None",
+                    )
+                    if team_analysis_data is not None:
                         try:
-                            team_analysis = result["team_analysis"]
+                            team_analysis = team_analysis_data
                             db.put_team_analysis(
                                 {
                                     "PK": f"SUB#{sub_id}",
@@ -187,9 +194,18 @@ def handler(event: dict, context: Any) -> dict:
                             )
 
                     # Store strategy analysis if available
-                    if result.get("strategy_analysis"):
+                    strategy_analysis_data = result.get("strategy_analysis")
+                    logger.info(
+                        "strategy_analysis_check",
+                        sub_id=sub_id,
+                        has_strategy_analysis=strategy_analysis_data is not None,
+                        type=type(strategy_analysis_data).__name__
+                        if strategy_analysis_data
+                        else "None",
+                    )
+                    if strategy_analysis_data is not None:
                         try:
-                            strategy_analysis = result["strategy_analysis"]
+                            strategy_analysis = strategy_analysis_data
                             db.put_strategy_analysis(
                                 {
                                     "PK": f"SUB#{sub_id}",
@@ -197,7 +213,7 @@ def handler(event: dict, context: Any) -> dict:
                                     "entity_type": "STRATEGY_ANALYSIS",
                                     "sub_id": sub_id,
                                     "hack_id": hack_id,
-                                    "test_strategy": strategy_analysis.test_strategy.value,
+                                    "test_strategy": str(strategy_analysis.test_strategy),
                                     "critical_path_focus": strategy_analysis.critical_path_focus,
                                     "tradeoffs": [
                                         t.model_dump() for t in strategy_analysis.tradeoffs
@@ -205,7 +221,7 @@ def handler(event: dict, context: Any) -> dict:
                                     "learning_journey": strategy_analysis.learning_journey.model_dump()
                                     if strategy_analysis.learning_journey
                                     else None,
-                                    "maturity_level": strategy_analysis.maturity_level.value,
+                                    "maturity_level": str(strategy_analysis.maturity_level),
                                     "strategic_context": strategy_analysis.strategic_context,
                                     "duration_ms": strategy_analysis.duration_ms,
                                 }
@@ -514,6 +530,59 @@ def analyze_single_submission(
             agent_key = agent_name.value if hasattr(agent_name, "value") else str(agent_name)
             agent_scores[agent_key] = response.model_dump()
 
+        # Store detailed agent score records in DynamoDB
+        # Each agent gets a separate record with SK = SCORE#{agent_name}
+        for agent_name, response in result["agent_responses"].items():
+            try:
+                agent_key = agent_name.value if hasattr(agent_name, "value") else str(agent_name)
+
+                # Build agent score record
+                agent_score_record = {
+                    "PK": f"SUB#{submission.sub_id}",
+                    "SK": f"SCORE#{agent_key}",
+                    "entity_type": "AGENT_SCORE",
+                    "sub_id": submission.sub_id,
+                    "hack_id": submission.hack_id,
+                    "agent_name": agent_key,
+                    "overall_score": response.overall_score,
+                    "confidence": response.confidence,
+                    "summary": response.summary,
+                    "scores": response.scores.model_dump(),
+                    "evidence": [e.model_dump() for e in response.evidence],
+                }
+
+                # Add agent-specific observations
+                if hasattr(response, "ci_observations"):
+                    agent_score_record["ci_observations"] = response.ci_observations.model_dump()
+                if hasattr(response, "tech_stack_assessment"):
+                    agent_score_record["tech_stack_assessment"] = (
+                        response.tech_stack_assessment.model_dump()
+                    )
+                if hasattr(response, "innovation_highlights"):
+                    agent_score_record["innovation_highlights"] = response.innovation_highlights
+                if hasattr(response, "development_story"):
+                    agent_score_record["development_story"] = response.development_story
+                if hasattr(response, "hackathon_context_assessment"):
+                    agent_score_record["hackathon_context_assessment"] = (
+                        response.hackathon_context_assessment
+                    )
+                if hasattr(response, "commit_analysis"):
+                    agent_score_record["commit_analysis"] = response.commit_analysis.model_dump()
+                if hasattr(response, "ai_policy_observation"):
+                    agent_score_record["ai_policy_observation"] = response.ai_policy_observation
+
+                # Store in DynamoDB
+                db.put_agent_score(agent_score_record)
+                logger.info("agent_score_stored", sub_id=submission.sub_id, agent=agent_key)
+
+            except Exception as e:
+                logger.error(
+                    "agent_score_storage_failed",
+                    sub_id=submission.sub_id,
+                    agent=agent_key,
+                    error=str(e),
+                )
+
         # Build dimension_scores dict
         dimension_scores = {}
         for dim_name, weighted_score in result["weighted_scores"].items():
@@ -534,6 +603,10 @@ def analyze_single_submission(
             "tokens": result["total_tokens"],
             "duration_ms": result["analysis_duration_ms"],
             "cost_records": result["cost_records"],
+            # Intelligence layer data
+            "team_analysis": result.get("team_analysis"),
+            "strategy_analysis": result.get("strategy_analysis"),
+            "actionable_feedback": result.get("actionable_feedback"),
         }
 
     except Exception as e:

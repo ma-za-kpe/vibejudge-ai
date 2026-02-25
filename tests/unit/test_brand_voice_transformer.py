@@ -129,13 +129,16 @@ def test_transform_bug_hunter_security_finding(
     sample_bug_hunter_finding: BugHunterEvidence,
 ) -> None:
     """Test transformation of security finding from BugHunter."""
-    # Note: BugHunter findings currently fail due to enum.value bug in _explain_vulnerability
-    # The implementation tries to access .value on StrEnum which are already strings
-    # This causes the transformation to fail and be skipped
     result = transformer.transform_findings([sample_bug_hunter_finding], None)
 
-    # Due to the bug, the finding is skipped
-    assert len(result) == 0
+    # Should successfully transform the finding
+    assert len(result) == 1
+    assert result[0].finding == "SQL injection vulnerability in user login"
+    assert result[0].priority == 1  # Critical severity = priority 1
+    assert (
+        "security" in result[0].acknowledgment.lower()
+        or "start" in result[0].acknowledgment.lower()
+    )
 
 
 def test_transform_bug_hunter_bug_finding(transformer: BrandVoiceTransformer) -> None:
@@ -151,8 +154,10 @@ def test_transform_bug_hunter_bug_finding(transformer: BrandVoiceTransformer) ->
 
     result = transformer.transform_findings([finding], None)
 
-    # Due to enum.value bug, BugHunter findings are skipped
-    assert len(result) == 0
+    # Should successfully transform the finding
+    assert len(result) == 1
+    assert result[0].finding == "Null pointer dereference in payment processing"
+    assert result[0].priority == 2  # High severity = priority 2
 
 
 def test_transform_bug_hunter_testing_finding(transformer: BrandVoiceTransformer) -> None:
@@ -168,8 +173,10 @@ def test_transform_bug_hunter_testing_finding(transformer: BrandVoiceTransformer
 
     result = transformer.transform_findings([finding], None)
 
-    # Due to enum.value bug, BugHunter findings are skipped
-    assert len(result) == 0
+    # Should successfully transform the finding (bug was fixed)
+    assert len(result) == 1
+    assert result[0].finding == "Missing test coverage for authentication module"
+    assert result[0].priority == 3  # Medium severity = priority 3
 
 
 # ============================================================
@@ -283,12 +290,14 @@ def test_transform_multiple_findings(
     findings = [sample_bug_hunter_finding, sample_performance_finding]
     result = transformer.transform_findings(findings, None)
 
-    # BugHunter finding fails due to enum.value bug, only Performance finding succeeds
-    assert len(result) == 1
+    # Both findings should be successfully transformed (bug was fixed)
+    assert len(result) == 2
 
-    # Verify the performance finding was transformed
+    # Verify both findings were transformed
     assert isinstance(result[0], ActionableFeedback)
+    assert isinstance(result[1], ActionableFeedback)
     assert result[0].priority >= 1 and result[0].priority <= 5
+    assert result[1].priority >= 1 and result[1].priority <= 5
 
 
 # ============================================================
