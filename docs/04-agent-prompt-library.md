@@ -724,14 +724,14 @@ class AnalysisOrchestrator:
     3. COLLECT: Parse JSON responses, validate schema
     4. AGGREGATE: Calculate weighted scores using rubric
     5. RECORD: Write scores, costs, summary to DynamoDB
-    
+
     Error handling:
     - Invalid JSON: retry ONCE with correction prompt
     - Retry fails: mark agent "failed", continue with remaining
     - 2+ agents fail: mark submission "partial_analysis"
     - ALL fail: mark submission "failed"
     """
-    
+
     AGENT_CONFIGS = {
         "bug_hunter": {
             "model": "amazon.nova-lite-v1:0",
@@ -762,8 +762,8 @@ class AnalysisOrchestrator:
             "timeout_seconds": 90,
         },
     }
-    
-    JSON_RETRY_PROMPT = """Your previous response was not valid JSON. 
+
+    JSON_RETRY_PROMPT = """Your previous response was not valid JSON.
     Respond with ONLY a valid JSON object per your system prompt schema.
     No markdown, no code blocks, no text outside JSON.
     Previous response snippet: {previous_response_snippet}
@@ -784,18 +784,18 @@ def aggregate_scores(agent_results, rubric):
       authenticity:  ai_detection.overall(8.00) x 0.20 = 1.6000
                                                   Total: 7.6225
       Scaled to 100:                              76.23
-    
+
     Confidence = minimum of all agent confidences
     If any agent confidence < 0.5: flag for human review
     """
     weighted_total = 0.0
     min_confidence = 1.0
-    
+
     for dimension in rubric.dimensions:
         agent_result = agent_results[dimension.agent]
         weighted_total += agent_result.overall_score * dimension.weight
         min_confidence = min(min_confidence, agent_result.confidence)
-    
+
     return {
         "overall_score": round(weighted_total * 10, 2),
         "confidence": min_confidence,
@@ -938,14 +938,14 @@ FILE_PRIORITY = [
     # P1: Always include (max 30% budget)
     "README.md", "package.json", "requirements.txt", "pyproject.toml",
     "Dockerfile", "docker-compose.yml", ".github/workflows/*.yml",
-    
+
     # P2: Include if budget allows (max 40%)
     "main.py", "app.py", "index.js", "index.ts", "server.py",
     "src/main.*", "src/app.*", "src/index.*",
-    
+
     # P3: Include remaining budget (first 200 lines each)
     # API routes, models, core business logic
-    
+
     # P4: Summarize only (filename + line count)
     # Static assets, generated files, vendor code
 ]

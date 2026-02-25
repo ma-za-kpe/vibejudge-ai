@@ -145,7 +145,11 @@ class CostTracker:
         """
         costs: dict[str, float] = {}
         for record in self.records:
-            agent = record.agent_name.value if hasattr(record.agent_name, 'value') else str(record.agent_name)
+            agent = (
+                record.agent_name.value
+                if hasattr(record.agent_name, "value")
+                else str(record.agent_name)
+            )
             costs[agent] = costs.get(agent, 0.0) + record.total_cost_usd
         return costs
 

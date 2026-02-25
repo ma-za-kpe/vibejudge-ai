@@ -617,20 +617,20 @@ def validate_evidence(evidence: Evidence, repo_data: RepoData) -> bool:
             evidence.verified = False
             evidence.error = "File not found in repository"
             return False
-    
+
     if evidence.line:
         file_line_count = repo_data.file_line_counts.get(evidence.file, 0)
         if evidence.line > file_line_count:
             evidence.verified = False
             evidence.error = f"Line {evidence.line} exceeds file length {file_line_count}"
             return False
-    
+
     if evidence.commit:
         if evidence.commit not in repo_data.commit_hashes:
             evidence.verified = False
             evidence.error = "Commit not found in history"
             return False
-    
+
     evidence.verified = True
     return True
 ```
@@ -1400,7 +1400,7 @@ def test_weighted_score_always_in_range(scores, weights):
     # Ensure same length
     n = min(len(scores), len(weights))
     scores, weights = scores[:n], weights[:n]
-    
+
     weighted = sum(s * w for s, w in zip(scores, weights)) * 10
     assert 0.0 <= weighted <= 100.0
 ```
@@ -1460,7 +1460,7 @@ def test_leaderboard_always_sorted_descending(submissions):
 ```python
 def test_complete_hackathon_workflow(client, sample_repo_url):
     """E2E: Create org → hackathon → submissions → analyze → leaderboard"""
-    
+
     # 1. Create organizer
     org_resp = client.post("/organizers", json={
         "email": "test@example.com",
@@ -1469,7 +1469,7 @@ def test_complete_hackathon_workflow(client, sample_repo_url):
     assert org_resp.status_code == 201
     api_key = org_resp.json()["api_key"]
     headers = {"X-API-Key": api_key}
-    
+
     # 2. Create hackathon
     hack_resp = client.post("/hackathons", json={
         "name": "Test Hack",
@@ -1477,7 +1477,7 @@ def test_complete_hackathon_workflow(client, sample_repo_url):
         "agents_enabled": ["bug_hunter", "innovation"],
     }, headers=headers)
     hack_id = hack_resp.json()["hack_id"]
-    
+
     # 3. Add submissions
     sub_resp = client.post(f"/hackathons/{hack_id}/submissions", json={
         "submissions": [
@@ -1485,7 +1485,7 @@ def test_complete_hackathon_workflow(client, sample_repo_url):
         ]
     }, headers=headers)
     assert sub_resp.status_code == 201
-    
+
     # 4. Trigger analysis
     analyze_resp = client.post(
         f"/hackathons/{hack_id}/analyze",
@@ -1493,14 +1493,14 @@ def test_complete_hackathon_workflow(client, sample_repo_url):
     )
     assert analyze_resp.status_code == 202
     job_id = analyze_resp.json()["job_id"]
-    
+
     # 5. Poll until complete (mocked to complete immediately)
     job_resp = client.get(
         f"/hackathons/{hack_id}/jobs/{job_id}",
         headers=headers
     )
     assert job_resp.json()["status"] == "completed"
-    
+
     # 6. Get leaderboard
     lb_resp = client.get(
         f"/hackathons/{hack_id}/leaderboard",
@@ -1508,7 +1508,7 @@ def test_complete_hackathon_workflow(client, sample_repo_url):
     )
     assert lb_resp.status_code == 200
     assert len(lb_resp.json()["leaderboard"]) == 1
-    
+
     # 7. Get scorecard
     sub_id = sub_resp.json()["submissions"][0]["sub_id"]
     sc_resp = client.get(
@@ -1912,4 +1912,3 @@ All phases completed successfully:
 ---
 
 **END OF SPECIFICATION**
-

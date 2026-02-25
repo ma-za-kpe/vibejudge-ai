@@ -25,7 +25,7 @@ The bug manifests when `db.put_cost_record()` returns `False` (indicating a Dyna
 FUNCTION isBugCondition(input)
   INPUT: input of type CostRecordWriteAttempt
   OUTPUT: boolean
-  
+
   RETURN input.db_write_result == False
          AND input.exception_raised == False
          AND input.agent_name_is_enum == True

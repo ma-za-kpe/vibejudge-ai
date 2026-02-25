@@ -53,15 +53,15 @@ import git
 
 def clone_repo(repo_url: str, clone_path: Path, timeout: int = 120) -> git.Repo:
     """Clone repository with full history.
-    
+
     Args:
         repo_url: GitHub HTTPS URL
         clone_path: Local path for clone
         timeout: Git operation timeout in seconds
-    
+
     Returns:
         GitPython Repo object
-    
+
     Raises:
         git.GitCommandError: Clone failed (404, auth, timeout)
     """
@@ -129,7 +129,7 @@ def extract_commits(repo: git.Repo, max_commits: int = 100) -> list[CommitInfo]:
     """Extract commit history from default branch."""
     branch = _get_default_branch(repo)
     commits = []
-    
+
     for commit in repo.iter_commits(branch, max_count=max_commits):
         stats = commit.stats.total
         commits.append(CommitInfo(
@@ -142,7 +142,7 @@ def extract_commits(repo: git.Repo, max_commits: int = 100) -> list[CommitInfo]:
             insertions=stats.get("insertions", 0),
             deletions=stats.get("deletions", 0),
         ))
-    
+
     return commits
 
 
@@ -163,28 +163,28 @@ def _get_default_branch(repo: git.Repo) -> str:
 from models.analysis import DiffEntry
 
 def extract_diff_summary(
-    repo: git.Repo, 
-    commits: list[CommitInfo], 
+    repo: git.Repo,
+    commits: list[CommitInfo],
     max_diffs: int = 30
 ) -> list[DiffEntry]:
     """Extract significant diffs from commit history.
-    
+
     Strategy: Focus on commits with the most changes (likely feature additions)
     and commits with fixes/refactors (indicate iteration).
     """
     diffs = []
-    
+
     # Sort commits by total changes (insertions + deletions)
     sorted_commits = sorted(
         commits,
         key=lambda c: c.insertions + c.deletions,
         reverse=True,
     )
-    
+
     for commit_info in sorted_commits[:max_diffs]:
         commit = repo.commit(commit_info.hash)
         parent = commit.parents[0] if commit.parents else git.NULL_TREE
-        
+
         for diff_item in commit.diff(parent):
             change_type = _diff_change_type(diff_item)
             diffs.append(DiffEntry(
@@ -195,10 +195,10 @@ def extract_diff_summary(
                 deletions=0,
                 summary=f"{change_type}: {diff_item.b_path or diff_item.a_path}",
             ))
-        
+
         if len(diffs) >= max_diffs:
             break
-    
+
     return diffs[:max_diffs]
 
 
@@ -242,15 +242,15 @@ def _walk_tree(
 ) -> None:
     if depth > max_depth:
         return
-    
+
     entries = sorted(path.iterdir(), key=lambda p: (not p.is_dir(), p.name))
     filtered = [e for e in entries if e.name not in IGNORE_PATTERNS]
-    
+
     for i, entry in enumerate(filtered):
         is_last = i == len(filtered) - 1
         connector = "└── " if is_last else "├── "
         lines.append(f"{prefix}{connector}{entry.name}")
-        
+
         if entry.is_dir():
             extension = "    " if is_last else "│   "
             _walk_tree(entry, lines, prefix + extension, depth + 1, max_depth)
@@ -267,16 +267,16 @@ FILE_PRIORITIES = {
     "main.py": 100, "app.py": 100, "server.py": 100,
     "index.js": 100, "index.ts": 100, "main.go": 100,
     "main.rs": 100, "Program.cs": 100,
-    
+
     # Configuration
     "requirements.txt": 90, "pyproject.toml": 90,
     "package.json": 90, "Cargo.toml": 90,
     "Dockerfile": 85, "docker-compose.yml": 85, "docker-compose.yaml": 85,
-    
+
     # IaC
     "template.yaml": 80, "template.yml": 80,
     "serverless.yml": 80, "cdk.json": 80,
-    
+
     # README always included via separate field
 }
 
@@ -298,26 +298,26 @@ MAX_FILES = 25
 
 
 def extract_source_files(
-    clone_path: Path, 
+    clone_path: Path,
     max_files: int = MAX_FILES,
     max_lines_per_file: int = MAX_FILE_LINES,
 ) -> list[SourceFile]:
     """Select and extract the most important source files."""
     candidates = []
-    
+
     for file_path in clone_path.rglob("*"):
         if not file_path.is_file():
             continue
         if any(p in file_path.parts for p in IGNORE_PATTERNS):
             continue
-        
+
         relative = file_path.relative_to(clone_path)
         ext = file_path.suffix.lower()
         name = file_path.name
-        
+
         # Determine priority
         priority = FILE_PRIORITIES.get(name, 0)
-        
+
         if ext in SOURCE_EXTENSIONS:
             priority = max(priority, 50)
         elif ext in CONFIG_EXTENSIONS:
@@ -328,7 +328,7 @@ def extract_source_files(
             priority = max(priority, 80)  # CI/CD definitions
         else:
             continue  # Skip non-code files (images, binaries, etc.)
-        
+
         # Read file content
         try:
             content = file_path.read_text(encoding="utf-8", errors="replace")
@@ -336,7 +336,7 @@ def extract_source_files(
             line_count = len(lines)
         except (OSError, UnicodeDecodeError):
             continue
-        
+
         # Skip very large files (likely generated/vendor)
         if line_count > 5000:
             content = "\n".join(lines[:max_lines_per_file])
@@ -345,7 +345,7 @@ def extract_source_files(
         elif line_count > max_lines_per_file:
             content = "\n".join(lines[:max_lines_per_file])
             content += f"\n\n... [TRUNCATED: {line_count} total lines]"
-        
+
         candidates.append(SourceFile(
             path=str(relative),
             content=content,
@@ -353,7 +353,7 @@ def extract_source_files(
             language=_detect_language(ext),
             priority=priority,
         ))
-    
+
     # Sort by priority (highest first), then by line count (larger = more important)
     candidates.sort(key=lambda f: (-f.priority, -f.lines))
     return candidates[:max_files]
@@ -382,7 +382,7 @@ def extract_readme(clone_path: Path, max_chars: int = 12000) -> str:
         "README.md", "README.MD", "readme.md",
         "README.rst", "README.txt", "README",
     ]
-    
+
     for name in readme_names:
         readme_path = clone_path / name
         if readme_path.exists():
@@ -393,7 +393,7 @@ def extract_readme(clone_path: Path, max_chars: int = 12000) -> str:
                 return content
             except OSError:
                 continue
-    
+
     return "[No README found]"
 ```
 
@@ -412,18 +412,18 @@ def extract_repo_meta(
     workflow_runs: list = None,
 ) -> RepoMeta:
     """Build comprehensive repo metadata."""
-    
+
     # Count files by extension
     ext_counter = Counter()
     total_files = 0
     total_lines = 0
-    
+
     for file_path in clone_path.rglob("*"):
         if not file_path.is_file():
             continue
         if any(p in file_path.parts for p in IGNORE_PATTERNS):
             continue
-        
+
         ext = file_path.suffix.lower()
         if ext in SOURCE_EXTENSIONS or ext in CONFIG_EXTENSIONS:
             total_files += 1
@@ -435,7 +435,7 @@ def extract_repo_meta(
                     ext_counter[lang] += line_count
             except OSError:
                 pass
-    
+
     # Calculate language percentages
     total_lang_lines = sum(ext_counter.values()) or 1
     languages = {
@@ -443,7 +443,7 @@ def extract_repo_meta(
         for lang, count in ext_counter.most_common(10)
     }
     primary_language = ext_counter.most_common(1)[0][0] if ext_counter else None
-    
+
     # Development duration
     first_commit_at = commits[-1].timestamp if commits else None
     last_commit_at = commits[0].timestamp if commits else None
@@ -451,21 +451,21 @@ def extract_repo_meta(
     if first_commit_at and last_commit_at:
         delta = last_commit_at - first_commit_at
         dev_hours = round(delta.total_seconds() / 3600, 2)
-    
+
     # Contributors
     authors = set(c.author for c in commits)
-    
+
     # Detect features
     has_readme = (clone_path / "README.md").exists() or (clone_path / "readme.md").exists()
     has_tests = _has_test_files(clone_path)
     has_ci = (clone_path / ".github" / "workflows").exists()
     has_dockerfile = (clone_path / "Dockerfile").exists()
-    
+
     # Workflow stats
     wf_count = len(workflow_runs) if workflow_runs else 0
     wf_success = sum(1 for r in (workflow_runs or []) if r.conclusion == "success")
     wf_rate = round(wf_success / wf_count, 2) if wf_count > 0 else 0.0
-    
+
     return RepoMeta(
         commit_count=len(commits),
         branch_count=len(list(repo.branches)),
@@ -494,14 +494,14 @@ def _has_test_files(clone_path: Path) -> bool:
     ]
     tests_dir = clone_path / "tests"
     test_dir = clone_path / "test"
-    
+
     if tests_dir.exists() or test_dir.exists():
         return True
-    
+
     for pattern in test_patterns:
         if list(clone_path.rglob(pattern)):
             return True
-    
+
     return False
 ```
 
@@ -518,9 +518,9 @@ from models.analysis import WorkflowRun
 
 class ActionsAnalyzer:
     """Fetch GitHub Actions data for a repository."""
-    
+
     BASE_URL = "https://api.github.com"
-    
+
     def __init__(self, token: str | None = None):
         headers = {
             "Accept": "application/vnd.github+json",
@@ -528,13 +528,13 @@ class ActionsAnalyzer:
         }
         if token:
             headers["Authorization"] = f"Bearer {token}"
-        
+
         self.client = httpx.Client(
             base_url=self.BASE_URL,
             headers=headers,
             timeout=30.0,
         )
-    
+
     def fetch_workflow_runs(
         self, owner: str, repo: str, max_runs: int = 50
     ) -> list[WorkflowRun]:
@@ -548,7 +548,7 @@ class ActionsAnalyzer:
             if resp.status_code == 404:
                 return []  # No Actions or private repo without auth
             resp.raise_for_status()
-            
+
             for run in resp.json().get("workflow_runs", []):
                 runs.append(WorkflowRun(
                     run_id=run["id"],
@@ -561,9 +561,9 @@ class ActionsAnalyzer:
                 ))
         except httpx.HTTPError:
             pass  # Actions data is supplementary; failure is non-fatal
-        
+
         return runs[:max_runs]
-    
+
     def fetch_workflow_files(self, owner: str, repo: str) -> list[str]:
         """Fetch workflow definition YAML files."""
         definitions = []
@@ -573,7 +573,7 @@ class ActionsAnalyzer:
             )
             if resp.status_code != 200:
                 return []
-            
+
             for item in resp.json():
                 if item["name"].endswith((".yml", ".yaml")):
                     file_resp = self.client.get(item["download_url"])
@@ -583,7 +583,7 @@ class ActionsAnalyzer:
                         )
         except httpx.HTTPError:
             pass
-        
+
         return definitions
 ```
 
@@ -604,10 +604,10 @@ def assemble_repo_context(
     rubric_json: str,
 ) -> str:
     """Assemble the full repo context string for agent consumption.
-    
+
     Uses the REPO_CONTEXT_TEMPLATE from Deliverable #4 (Agent Prompt Library).
     """
-    
+
     # Format source files block
     source_files_block = ""
     for sf in repo_data.source_files:
@@ -615,7 +615,7 @@ def assemble_repo_context(
         source_files_block += f"```{sf.language.lower() if sf.language else ''}\n"
         source_files_block += sf.content
         source_files_block += "\n```\n"
-    
+
     # Format commit history block
     commit_block = ""
     for c in repo_data.commit_history:
@@ -623,12 +623,12 @@ def assemble_repo_context(
             f"  {c.short_hash} | {c.timestamp.strftime('%Y-%m-%d %H:%M')} | "
             f"{c.author} | +{c.insertions}/-{c.deletions} | {c.message}\n"
         )
-    
+
     # Format diff summary
     diff_block = ""
     for d in repo_data.diff_summary:
         diff_block += f"  [{d.commit_hash}] {d.change_type}: {d.file_path}\n"
-    
+
     # Format workflow runs
     runs_block = ""
     for r in repo_data.workflow_runs[:20]:
@@ -636,10 +636,10 @@ def assemble_repo_context(
             f"  {r.name} | {r.status}/{r.conclusion or 'pending'} | "
             f"{r.created_at.strftime('%Y-%m-%d %H:%M')}\n"
         )
-    
+
     # Format workflow definitions
     wf_defs = "\n".join(repo_data.workflow_definitions) if repo_data.workflow_definitions else "[No workflow files found]"
-    
+
     # Build context from template
     context = REPO_CONTEXT_TEMPLATE.format(
         repo_owner=repo_data.repo_owner,
@@ -676,7 +676,7 @@ def assemble_repo_context(
         recent_runs_block=runs_block,
         rubric_json=rubric_json,
     )
-    
+
     return context
 ```
 
@@ -691,31 +691,31 @@ async def analyze_submission(
     hackathon_config: HackathonDetail,
 ) -> RepoData:
     """Complete extraction pipeline for a single submission."""
-    
+
     owner, repo_name = parse_github_url(repo_url)
     clone_path = get_clone_path(submission_id)
-    
+
     try:
         # 1. Clone
         repo = clone_repo(repo_url, clone_path)
-        
+
         # 2. Extract git history
         commits = extract_commits(repo, max_commits=100)
         diffs = extract_diff_summary(repo, commits, max_diffs=30)
-        
+
         # 3. Extract files
         file_tree = extract_file_tree(clone_path)
         source_files = extract_source_files(clone_path)
         readme = extract_readme(clone_path)
-        
+
         # 4. Fetch GitHub Actions (parallel with extraction)
         actions = ActionsAnalyzer(token=None)  # Public repos, no auth needed
         workflow_runs = actions.fetch_workflow_runs(owner, repo_name)
         workflow_defs = actions.fetch_workflow_files(owner, repo_name)
-        
+
         # 5. Build metadata
         meta = extract_repo_meta(repo, clone_path, commits, workflow_runs)
-        
+
         # 6. Assemble RepoData
         return RepoData(
             repo_url=repo_url,
@@ -731,7 +731,7 @@ async def analyze_submission(
             workflow_definitions=workflow_defs,
             workflow_runs=workflow_runs,
         )
-    
+
     finally:
         # ALWAYS clean up, even on error
         cleanup_clone(submission_id)

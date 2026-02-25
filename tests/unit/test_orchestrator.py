@@ -22,10 +22,11 @@ from tests.conftest import (
 # ORCHESTRATOR INITIALIZATION TESTS
 # ============================================================
 
+
 class TestOrchestratorInitialization:
     """Tests for orchestrator initialization."""
 
-    @patch('src.analysis.orchestrator.BedrockClient')
+    @patch("src.analysis.orchestrator.BedrockClient")
     def test_initialization_with_default_client(self, mock_bedrock_class):
         """Test orchestrator initialization with default Bedrock client."""
         mock_client = MagicMock()
@@ -51,6 +52,7 @@ class TestOrchestratorInitialization:
 # ============================================================
 # PARALLEL EXECUTION TESTS
 # ============================================================
+
 
 class TestParallelExecution:
     """Tests for parallel agent execution."""
@@ -146,6 +148,7 @@ class TestParallelExecution:
 # ============================================================
 # GRACEFUL DEGRADATION TESTS
 # ============================================================
+
 
 class TestGracefulDegradation:
     """Tests for graceful degradation when agents fail."""
@@ -281,6 +284,7 @@ class TestGracefulDegradation:
 # WEIGHTED SCORING TESTS
 # ============================================================
 
+
 class TestWeightedScoring:
     """Tests for weighted scoring aggregation."""
 
@@ -380,20 +384,24 @@ class TestWeightedScoring:
 # RECOMMENDATION CLASSIFICATION TESTS
 # ============================================================
 
+
 class TestRecommendationClassification:
     """Tests for score-to-recommendation classification."""
 
     @pytest.mark.asyncio
-    @pytest.mark.parametrize("score,expected_recommendation", [
-        (85.0, Recommendation.STRONG_CONTENDER),  # 8.5/10 >= 8.0
-        (80.0, Recommendation.STRONG_CONTENDER),  # 8.0/10 >= 8.0
-        (75.0, Recommendation.SOLID_SUBMISSION),  # 7.5/10 >= 6.5
-        (65.0, Recommendation.SOLID_SUBMISSION),  # 6.5/10 >= 6.5
-        (50.0, Recommendation.NEEDS_IMPROVEMENT),  # 5.0/10 >= 4.5
-        (45.0, Recommendation.NEEDS_IMPROVEMENT),  # 4.5/10 >= 4.5
-        (40.0, Recommendation.CONCERNS_FLAGGED),  # 4.0/10 < 4.5
-        (20.0, Recommendation.CONCERNS_FLAGGED),  # 2.0/10 < 4.5
-    ])
+    @pytest.mark.parametrize(
+        "score,expected_recommendation",
+        [
+            (85.0, Recommendation.STRONG_CONTENDER),  # 8.5/10 >= 8.0
+            (80.0, Recommendation.STRONG_CONTENDER),  # 8.0/10 >= 8.0
+            (75.0, Recommendation.SOLID_SUBMISSION),  # 7.5/10 >= 6.5
+            (65.0, Recommendation.SOLID_SUBMISSION),  # 6.5/10 >= 6.5
+            (50.0, Recommendation.NEEDS_IMPROVEMENT),  # 5.0/10 >= 4.5
+            (45.0, Recommendation.NEEDS_IMPROVEMENT),  # 4.5/10 >= 4.5
+            (40.0, Recommendation.CONCERNS_FLAGGED),  # 4.0/10 < 4.5
+            (20.0, Recommendation.CONCERNS_FLAGGED),  # 2.0/10 < 4.5
+        ],
+    )
     async def test_recommendation_classification(
         self,
         mock_bedrock_client,
@@ -443,6 +451,7 @@ class TestRecommendationClassification:
 # ============================================================
 # COST TRACKING TESTS
 # ============================================================
+
 
 class TestCostTracking:
     """Tests for cost tracking in orchestrator."""
@@ -533,6 +542,7 @@ class TestCostTracking:
 # ============================================================
 # STRENGTHS AND WEAKNESSES AGGREGATION TESTS
 # ============================================================
+
 
 class TestStrengthsWeaknessesAggregation:
     """Tests for aggregating strengths and weaknesses."""

@@ -8,8 +8,10 @@ from src.models.common import Severity, VibeJudgeBase
 # EVIDENCE MODELS
 # ============================================================
 
+
 class BugHunterEvidence(VibeJudgeBase):
     """Evidence item from BugHunter agent."""
+
     finding: str
     file: str
     line: int | None = None
@@ -20,6 +22,7 @@ class BugHunterEvidence(VibeJudgeBase):
 
 class PerformanceEvidence(VibeJudgeBase):
     """Evidence item from PerformanceAnalyzer agent."""
+
     finding: str
     file: str
     line: int | None = None
@@ -30,6 +33,7 @@ class PerformanceEvidence(VibeJudgeBase):
 
 class InnovationEvidence(VibeJudgeBase):
     """Evidence item from InnovationScorer agent."""
+
     finding: str
     file: str  # Can be "git_history" or "README.md"
     line: int | None = None
@@ -40,6 +44,7 @@ class InnovationEvidence(VibeJudgeBase):
 
 class AIDetectionEvidence(VibeJudgeBase):
     """Evidence item from AIDetectionAnalyst agent."""
+
     finding: str
     source: str  # commit_history | file_analysis | actions_data | timing_analysis
     detail: str
@@ -51,8 +56,10 @@ class AIDetectionEvidence(VibeJudgeBase):
 # CI OBSERVATIONS
 # ============================================================
 
+
 class CIObservations(VibeJudgeBase):
     """CI/CD observations from BugHunter."""
+
     has_ci: bool = False
     has_automated_tests: bool = False
     has_linting: bool = False
@@ -63,6 +70,7 @@ class CIObservations(VibeJudgeBase):
 
 class PerformanceCIObservations(VibeJudgeBase):
     """CI/CD observations from PerformanceAnalyzer."""
+
     has_ci: bool = False
     build_optimization: str | None = None
     deployment_sophistication: str = "none"  # none | basic | intermediate | advanced
@@ -72,6 +80,7 @@ class PerformanceCIObservations(VibeJudgeBase):
 
 class TechStackAssessment(VibeJudgeBase):
     """Technology stack assessment from PerformanceAnalyzer."""
+
     technologies_identified: list[str] = Field(default_factory=list)
     stack_appropriateness: str = ""
     notable_choices: str = ""
@@ -79,6 +88,7 @@ class TechStackAssessment(VibeJudgeBase):
 
 class CommitAnalysis(VibeJudgeBase):
     """Commit pattern analysis from AIDetectionAnalyst."""
+
     total_commits: int = 0
     avg_lines_per_commit: float = 0
     largest_commit_lines: int = 0
@@ -92,8 +102,10 @@ class CommitAnalysis(VibeJudgeBase):
 # AGENT RESPONSE MODELS (parsed from LLM JSON output)
 # ============================================================
 
+
 class BaseAgentResponse(VibeJudgeBase):
     """Base fields shared by all agent responses."""
+
     agent: str
     prompt_version: str
     overall_score: float = Field(..., ge=0, le=10)
@@ -116,6 +128,7 @@ class BugHunterScores(VibeJudgeBase):
 
 class BugHunterResponse(BaseAgentResponse):
     """Validated output from BugHunter agent."""
+
     agent: str = "bug_hunter"
     scores: BugHunterScores
     evidence: list[BugHunterEvidence] = Field(default_factory=list, max_length=10)
@@ -132,15 +145,12 @@ class PerformanceScores(VibeJudgeBase):
 
 class PerformanceResponse(BaseAgentResponse):
     """Validated output from PerformanceAnalyzer agent."""
+
     agent: str = "performance"
     scores: PerformanceScores
     evidence: list[PerformanceEvidence] = Field(default_factory=list, max_length=10)
-    ci_observations: PerformanceCIObservations = Field(
-        default_factory=PerformanceCIObservations
-    )
-    tech_stack_assessment: TechStackAssessment = Field(
-        default_factory=TechStackAssessment
-    )
+    ci_observations: PerformanceCIObservations = Field(default_factory=PerformanceCIObservations)
+    tech_stack_assessment: TechStackAssessment = Field(default_factory=TechStackAssessment)
 
 
 class InnovationScores(VibeJudgeBase):
@@ -153,6 +163,7 @@ class InnovationScores(VibeJudgeBase):
 
 class InnovationResponse(BaseAgentResponse):
     """Validated output from InnovationScorer agent."""
+
     agent: str = "innovation"
     scores: InnovationScores
     evidence: list[InnovationEvidence] = Field(default_factory=list, max_length=8)
@@ -171,6 +182,7 @@ class AIDetectionScores(VibeJudgeBase):
 
 class AIDetectionResponse(BaseAgentResponse):
     """Validated output from AIDetectionAnalyst agent."""
+
     agent: str = "ai_detection"
     scores: AIDetectionScores
     evidence: list[AIDetectionEvidence] = Field(default_factory=list, max_length=8)

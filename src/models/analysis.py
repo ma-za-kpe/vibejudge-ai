@@ -9,16 +9,20 @@ from src.models.submission import RepoMeta
 
 # --- Request Models ---
 
+
 class AnalysisTrigger(VibeJudgeBase):
     """POST /api/v1/hackathons/{hack_id}/analyze"""
+
     submission_ids: list[str] | None = None  # None = analyze all pending
     force_reanalyze: bool = False
 
 
 # --- Response Models ---
 
+
 class AnalysisJobResponse(VibeJudgeBase):
     """Analysis job status."""
+
     job_id: str
     hack_id: str
     status: JobStatus
@@ -34,6 +38,7 @@ class AnalysisJobResponse(VibeJudgeBase):
 
 class AnalysisProgress(VibeJudgeBase):
     """Detailed progress information."""
+
     total_submissions: int
     completed: int
     failed: int
@@ -43,6 +48,7 @@ class AnalysisProgress(VibeJudgeBase):
 
 class AnalysisCurrentSubmission(VibeJudgeBase):
     """Currently processing submission info."""
+
     sub_id: str
     team_name: str
     status: str
@@ -51,6 +57,7 @@ class AnalysisCurrentSubmission(VibeJudgeBase):
 
 class AnalysisError(VibeJudgeBase):
     """Error detail for a failed submission."""
+
     sub_id: str
     team_name: str
     error: str
@@ -58,6 +65,7 @@ class AnalysisError(VibeJudgeBase):
 
 class AnalysisStatusResponse(VibeJudgeBase):
     """GET /api/v1/hackathons/{hack_id}/analyze/status"""
+
     job_id: str
     hack_id: str
     status: JobStatus
@@ -71,8 +79,10 @@ class AnalysisStatusResponse(VibeJudgeBase):
 
 # --- Internal Models ---
 
+
 class SourceFile(VibeJudgeBase):
     """A source file included in agent context."""
+
     path: str
     content: str
     lines: int
@@ -82,6 +92,7 @@ class SourceFile(VibeJudgeBase):
 
 class CommitInfo(VibeJudgeBase):
     """Simplified commit from git history."""
+
     hash: str
     short_hash: str
     message: str
@@ -94,6 +105,7 @@ class CommitInfo(VibeJudgeBase):
 
 class DiffEntry(VibeJudgeBase):
     """Summary of a significant diff between commits."""
+
     commit_hash: str
     file_path: str
     change_type: str  # added | modified | deleted | renamed
@@ -104,6 +116,7 @@ class DiffEntry(VibeJudgeBase):
 
 class WorkflowRun(VibeJudgeBase):
     """GitHub Actions workflow run summary."""
+
     run_id: int
     name: str
     status: str  # completed | in_progress | queued
@@ -119,6 +132,7 @@ class RepoData(VibeJudgeBase):
     This is the INTERNAL representation — not exposed via API.
     Built by git_analyzer.py after cloning a repo.
     """
+
     repo_url: str
     repo_owner: str
     repo_name: str

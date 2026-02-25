@@ -372,7 +372,9 @@ class DashboardAggregator:
 
         # Analyze red flags from team analyses
         for sub_id, team_analysis in team_analyses.items():
-            sub: SubmissionResponse | None = next((s for s in submissions if s.sub_id == sub_id), None)
+            sub: SubmissionResponse | None = next(
+                (s for s in submissions if s.sub_id == sub_id), None
+            )
             if sub is None:
                 continue
 
@@ -549,12 +551,16 @@ class DashboardAggregator:
         best_journey = None
 
         for sub_id, strategy_analysis in strategy_analyses.items():
-            if strategy_analysis.learning_journey and strategy_analysis.learning_journey.impressive:
-                if not best_journey or len(strategy_analysis.learning_journey.evidence) > len(
-                    best_journey.evidence
-                ):
-                    best_team = sub_id
-                    best_journey = strategy_analysis.learning_journey
+            if (
+                strategy_analysis.learning_journey
+                and strategy_analysis.learning_journey.impressive
+                and (
+                    not best_journey
+                    or len(strategy_analysis.learning_journey.evidence) > len(best_journey.evidence)
+                )
+            ):
+                best_team = sub_id
+                best_journey = strategy_analysis.learning_journey
 
         if not best_team or not best_journey:
             return None

@@ -1,9 +1,8 @@
 """Submission service — Submission management."""
 
-from typing import Any
-
 from datetime import UTC, datetime
 from decimal import Decimal
+from typing import Any
 
 from src.models.common import SubmissionStatus
 from src.models.submission import (

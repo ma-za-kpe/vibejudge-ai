@@ -101,7 +101,6 @@ class DynamoDBHelper:
             Dictionary with datetime objects converted to ISO strings and floats to Decimal
         """
         from datetime import datetime
-        from datetime import datetime
         from decimal import Decimal
         from typing import Any
 

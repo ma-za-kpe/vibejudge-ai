@@ -19,6 +19,7 @@ repos:
         args: [--markdown-linebreak-ext=md]
       - id: end-of-file-fixer
       - id: check-yaml
+        exclude: ^template\.yaml$  # Exclude CloudFormation templates (use !Sub, !Ref, etc.)
       - id: check-added-large-files
         args: [--maxkb=500]
       - id: check-json

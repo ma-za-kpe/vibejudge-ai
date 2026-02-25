@@ -1,6 +1,5 @@
 """Unit tests for cost tracker."""
 
-
 from src.analysis.cost_tracker import CostTracker
 from src.models.common import AgentName
 
@@ -161,7 +160,10 @@ class TestCostTracker:
         assert "anthropic.claude-sonnet-4-20250514" in by_model
 
         # Nova Lite should have combined cost from 2 agents
-        assert by_model["amazon.nova-lite-v1:0"] > by_model["anthropic.claude-sonnet-4-20250514"] * 0.01
+        assert (
+            by_model["amazon.nova-lite-v1:0"]
+            > by_model["anthropic.claude-sonnet-4-20250514"] * 0.01
+        )
 
     def test_cost_calculation_accuracy(self):
         """Test that cost calculation matches expected values."""

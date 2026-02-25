@@ -18,7 +18,9 @@ class TestTimingAttackExploration:
     EXPECTED OUTCOME: Test FAILS - timing differences leak information about key correctness.
     """
 
-    @pytest.mark.xfail(reason="Expected to fail - timing attack vulnerability still exists (0.015ms variance detected)")
+    @pytest.mark.xfail(
+        reason="Expected to fail - timing attack vulnerability still exists (0.015ms variance detected)"
+    )
     def test_timing_attack_reveals_key_structure(self, dynamodb_helper):
         """Measure response times for API key verification with varying prefixes.
 

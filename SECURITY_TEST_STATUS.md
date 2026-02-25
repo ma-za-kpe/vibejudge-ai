@@ -127,12 +127,12 @@ def validate_team_name(name: str) -> bool:
     # Max length check
     if len(name) > 100:
         return False
-    
+
     # Disallow special characters that could be used for injection
     forbidden_chars = ['\n', '\r', '<', '>', '{', '}', '[', ']']
     if any(char in name for char in forbidden_chars):
         return False
-    
+
     return True
 ```
 

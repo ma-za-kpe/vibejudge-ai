@@ -5,6 +5,7 @@ from src.models.common import Recommendation, VibeJudgeBase
 
 class LeaderboardEntry(VibeJudgeBase):
     """Single entry in the leaderboard."""
+
     rank: int
     sub_id: str
     team_name: str
@@ -15,6 +16,7 @@ class LeaderboardEntry(VibeJudgeBase):
 
 class LeaderboardStats(VibeJudgeBase):
     """Statistical summary of scores."""
+
     mean_score: float
     median_score: float
     std_dev: float
@@ -25,6 +27,7 @@ class LeaderboardStats(VibeJudgeBase):
 
 class LeaderboardHackathonInfo(VibeJudgeBase):
     """Hackathon metadata for leaderboard context."""
+
     hack_id: str
     name: str
     submission_count: int
@@ -34,6 +37,7 @@ class LeaderboardHackathonInfo(VibeJudgeBase):
 
 class LeaderboardResponse(VibeJudgeBase):
     """GET /api/v1/hackathons/{hack_id}/leaderboard"""
+
     hackathon: LeaderboardHackathonInfo
     leaderboard: list[LeaderboardEntry]
     statistics: LeaderboardStats

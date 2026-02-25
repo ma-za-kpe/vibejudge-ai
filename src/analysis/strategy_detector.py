@@ -1397,16 +1397,16 @@ class StrategyDetector:
             path_lower = source_file.path.lower()
 
             # Check for diagram files with architecture-related names
-            if any(ext in path_lower for ext in diagram_extensions):
-                if any(keyword in path_lower for keyword in diagram_keywords):
-                    result["has_architecture_diagram"] = True
-                    break
+            if any(ext in path_lower for ext in diagram_extensions) and any(
+                keyword in path_lower for keyword in diagram_keywords
+            ):
+                result["has_architecture_diagram"] = True
+                break
 
             # Check for mermaid diagrams in markdown files
-            if path_lower.endswith(".md"):
-                if "```mermaid" in source_file.content.lower():
-                    result["has_architecture_diagram"] = True
-                    break
+            if path_lower.endswith(".md") and "```mermaid" in source_file.content.lower():
+                result["has_architecture_diagram"] = True
+                break
 
         # Check for API documentation
         api_doc_patterns = [

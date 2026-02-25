@@ -45,11 +45,7 @@ class BaseAgent(ABC):
 
     @abstractmethod
     def build_user_message(
-        self,
-        repo_data: RepoData,
-        hackathon_name: str,
-        team_name: str,
-        **kwargs
+        self, repo_data: RepoData, hackathon_name: str, team_name: str, **kwargs
     ) -> str:
         """Build the user message for this agent.
 
@@ -77,11 +73,7 @@ class BaseAgent(ABC):
         pass
 
     def analyze(
-        self,
-        repo_data: RepoData,
-        hackathon_name: str,
-        team_name: str,
-        **kwargs
+        self, repo_data: RepoData, hackathon_name: str, team_name: str, **kwargs
     ) -> tuple[BaseAgentResponse, dict]:
         """Run agent analysis on repository data.
 
@@ -106,9 +98,7 @@ class BaseAgent(ABC):
 
         # Build messages
         system_prompt = self.get_system_prompt()
-        user_message = self.build_user_message(
-            repo_data, hackathon_name, team_name, **kwargs
-        )
+        user_message = self.build_user_message(repo_data, hackathon_name, team_name, **kwargs)
 
         # Call Bedrock
         try:
@@ -140,7 +130,9 @@ class BaseAgent(ABC):
                 parsed = self.bedrock.parse_json_response(response["content"])
 
                 if not parsed:
-                    raise ValueError(f"Failed to parse JSON after retry: {response['content'][:200]}")
+                    raise ValueError(
+                        f"Failed to parse JSON after retry: {response['content'][:200]}"
+                    )
 
             # Validate and parse into Pydantic model
             agent_response = self.parse_response(parsed)
@@ -200,7 +192,7 @@ class BaseAgent(ABC):
             Response with verified evidence flags
         """
         # Check if response has evidence field (not all agent responses do)
-        if not hasattr(response, 'evidence'):
+        if not hasattr(response, "evidence"):
             return response
 
         # Build sets of valid files and commits
@@ -214,26 +206,31 @@ class BaseAgent(ABC):
             verification_notes: list[str] = []
 
             # Check file exists
-            if hasattr(evidence, 'file') and evidence.file and evidence.file not in valid_files:
+            if hasattr(evidence, "file") and evidence.file and evidence.file not in valid_files:
                 verified = False
                 verification_notes.append(f"File '{evidence.file}' not found in repo")
 
             # Check commit exists
-            if hasattr(evidence, 'commit') and evidence.commit and evidence.commit not in valid_commits:
+            if (
+                hasattr(evidence, "commit")
+                and evidence.commit
+                and evidence.commit not in valid_commits
+            ):
                 verified = False
                 verification_notes.append(f"Commit '{evidence.commit}' not in history")
 
             # Add verification metadata
-            if hasattr(evidence, '__dict__'):
-                evidence.__dict__['verified'] = verified
+            if hasattr(evidence, "__dict__"):
+                evidence.__dict__["verified"] = verified
                 if verification_notes:
-                    evidence.__dict__['verification_notes'] = verification_notes
+                    evidence.__dict__["verification_notes"] = verification_notes
 
         # Lower confidence if many unverified evidence items
-        if hasattr(response, 'evidence') and response.evidence:
+        if hasattr(response, "evidence") and response.evidence:
             unverified_count = sum(
-                1 for e in response.evidence
-                if hasattr(e, '__dict__') and not e.__dict__.get('verified', True)
+                1
+                for e in response.evidence
+                if hasattr(e, "__dict__") and not e.__dict__.get("verified", True)
             )
             unverified_ratio = unverified_count / len(response.evidence)
 

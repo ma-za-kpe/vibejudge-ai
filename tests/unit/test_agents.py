@@ -1,6 +1,5 @@
 """Unit tests for AI agents."""
 
-
 import pytest
 
 from src.agents.ai_detection import AIDetectionAgent
@@ -24,6 +23,7 @@ from tests.conftest import (
 # ============================================================
 # BUG HUNTER AGENT TESTS
 # ============================================================
+
 
 class TestBugHunterAgent:
     """Tests for BugHunter agent."""
@@ -171,7 +171,7 @@ class TestBugHunterAgent:
                 },
                 "evidence": [],
                 "ci_observations": {},
-            }
+            },
         ]
 
         mock_bedrock_client.converse.return_value = build_bedrock_response(
@@ -197,6 +197,7 @@ class TestBugHunterAgent:
 # ============================================================
 # PERFORMANCE ANALYZER AGENT TESTS
 # ============================================================
+
 
 class TestPerformanceAnalyzerAgent:
     """Tests for PerformanceAnalyzer agent."""
@@ -254,6 +255,7 @@ class TestPerformanceAnalyzerAgent:
 # ============================================================
 # INNOVATION SCORER AGENT TESTS
 # ============================================================
+
 
 class TestInnovationScorerAgent:
     """Tests for InnovationScorer agent."""
@@ -314,6 +316,7 @@ class TestInnovationScorerAgent:
 # AI DETECTION AGENT TESTS
 # ============================================================
 
+
 class TestAIDetectionAgent:
     """Tests for AIDetection agent."""
 
@@ -371,6 +374,7 @@ class TestAIDetectionAgent:
 # ============================================================
 # EVIDENCE VALIDATION TESTS
 # ============================================================
+
 
 class TestEvidenceValidation:
     """Tests for evidence validation (anti-hallucination)."""
@@ -510,6 +514,7 @@ class TestEvidenceValidation:
 # ERROR HANDLING TESTS
 # ============================================================
 
+
 class TestAgentErrorHandling:
     """Tests for agent error handling."""
 
@@ -555,15 +560,19 @@ class TestAgentErrorHandling:
 # COST CALCULATION TESTS
 # ============================================================
 
+
 class TestCostCalculation:
     """Tests for cost calculation."""
 
-    @pytest.mark.parametrize("agent_class,expected_model", [
-        (BugHunterAgent, "amazon.nova-lite-v1:0"),
-        (PerformanceAnalyzerAgent, "amazon.nova-lite-v1:0"),
-        (InnovationScorerAgent, "us.anthropic.claude-sonnet-4-6"),
-        (AIDetectionAgent, "amazon.nova-micro-v1:0"),
-    ])
+    @pytest.mark.parametrize(
+        "agent_class,expected_model",
+        [
+            (BugHunterAgent, "amazon.nova-lite-v1:0"),
+            (PerformanceAnalyzerAgent, "amazon.nova-lite-v1:0"),
+            (InnovationScorerAgent, "us.anthropic.claude-sonnet-4-6"),
+            (AIDetectionAgent, "amazon.nova-micro-v1:0"),
+        ],
+    )
     def test_agent_uses_correct_model(self, mock_bedrock_client, agent_class, expected_model):
         """Test that each agent uses the correct Bedrock model."""
         agent = agent_class(mock_bedrock_client)

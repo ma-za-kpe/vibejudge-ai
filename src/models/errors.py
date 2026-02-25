@@ -5,6 +5,7 @@ from src.models.common import VibeJudgeBase
 
 class ErrorDetail(VibeJudgeBase):
     """Standard error response body."""
+
     code: str
     message: str
     status: int
@@ -14,4 +15,5 @@ class ErrorDetail(VibeJudgeBase):
 
 class ErrorResponse(VibeJudgeBase):
     """Wrapped error response."""
+
     error: ErrorDetail

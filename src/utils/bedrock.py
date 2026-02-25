@@ -119,7 +119,7 @@ class BedrockClient:
             # Extract usage for logging
             usage_for_log = result["usage"]
             assert isinstance(usage_for_log, dict)
-            
+
             logger.info(
                 "bedrock_converse_success",
                 model_id=model_id,

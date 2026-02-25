@@ -788,7 +788,7 @@ class AnalysisStatusResponse(VibeJudgeBase):
 
 class RepoData(VibeJudgeBase):
     """Extracted repository data passed to agents.
-    
+
     This is the INTERNAL representation — not exposed via API.
     Built by git_analyzer.py after cloning a repo.
     """

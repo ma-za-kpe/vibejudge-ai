@@ -18,8 +18,10 @@ router = APIRouter(tags=["health"])
 # RESPONSE MODELS
 # ============================================================
 
+
 class ServiceStatus(BaseModel):
     """Status of a single service."""
+
     available: bool
     latency_ms: int | None = None
     error: str | None = None
@@ -27,6 +29,7 @@ class ServiceStatus(BaseModel):
 
 class HealthResponse(BaseModel):
     """Health check response."""
+
     status: str  # healthy | degraded | unhealthy
     version: str
     timestamp: datetime
@@ -36,6 +39,7 @@ class HealthResponse(BaseModel):
 # ============================================================
 # HEALTH CHECK ENDPOINT
 # ============================================================
+
 
 @router.get("/health", response_model=HealthResponse)
 async def health_check(

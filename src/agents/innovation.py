@@ -17,11 +17,7 @@ class InnovationScorerAgent(BaseAgent):
         return innovation_v1.SYSTEM_PROMPT
 
     def build_user_message(
-        self,
-        repo_data: RepoData,
-        hackathon_name: str,
-        team_name: str,
-        **kwargs
+        self, repo_data: RepoData, hackathon_name: str, team_name: str, **kwargs
     ) -> str:
         """Build user message for InnovationScorer."""
 
@@ -44,7 +40,7 @@ class InnovationScorerAgent(BaseAgent):
 **Hackathon:** {hackathon_name}
 **Team:** {team_name}
 **Repository:** {repo_data.repo_url}
-**Primary Language:** {repo_data.meta.primary_language or 'Unknown'}
+**Primary Language:** {repo_data.meta.primary_language or "Unknown"}
 **Total Files:** {repo_data.meta.total_files} | **Total Lines:** {repo_data.meta.total_lines}
 **Development Duration:** {repo_data.meta.development_duration_hours:.1f} hours
 **Commit Count:** {repo_data.meta.commit_count}
@@ -74,7 +70,8 @@ Evaluate this submission. Return ONLY valid JSON.
         # Filter out evidence items with None file values (invalid)
         if "evidence" in response_dict and isinstance(response_dict["evidence"], list):
             response_dict["evidence"] = [
-                e for e in response_dict["evidence"]
+                e
+                for e in response_dict["evidence"]
                 if isinstance(e, dict) and e.get("file") is not None
             ]
         return InnovationResponse(**response_dict)

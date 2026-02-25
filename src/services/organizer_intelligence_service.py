@@ -170,13 +170,13 @@ class OrganizerIntelligenceService:
             scorecard = self.submission_service.get_submission_scorecard(submission.sub_id)
             if not scorecard:
                 continue
-            
+
             team_dynamics = scorecard.get("team_dynamics")
             if not team_dynamics or not isinstance(team_dynamics, dict):
                 continue
-                
+
             individual_scorecards = team_dynamics.get("individual_scorecards", [])
-            
+
             for scorecard_item in individual_scorecards:
                 # Categorize by role
                 if scorecard_item.role == ContributorRole.BACKEND:
@@ -214,8 +214,6 @@ class OrganizerIntelligenceService:
             TechnologyTrends with usage statistics
         """
         language_counter: Counter[str] = Counter()
-        framework_counter: Counter[str] = Counter()
-        stack_counter: Counter[str] = Counter()
 
         for submission in submissions:
             # Get scorecard for static analysis
@@ -273,10 +271,14 @@ class OrganizerIntelligenceService:
             static_analysis = scorecard.get("static_analysis")
             if not static_analysis:
                 continue
-                
+
             findings = static_analysis.get("findings", [])
             for finding in findings:
-                category = finding.get("category", "unknown") if isinstance(finding, dict) else getattr(finding, "category", "unknown")
+                category = (
+                    finding.get("category", "unknown")
+                    if isinstance(finding, dict)
+                    else getattr(finding, "category", "unknown")
+                )
                 issue_counter[category].append(submission.team_name)
 
         # Convert to CommonIssue objects

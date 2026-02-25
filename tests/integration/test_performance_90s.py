@@ -100,37 +100,39 @@ async def test_orchestrator_completes_within_90_seconds(
 
     This test verifies Requirement 10.6: Complete full analysis within 90 seconds.
     """
-    with patch("src.analysis.orchestrator.BedrockClient") as mock_bedrock_cls:
-        with patch("src.analysis.orchestrator.ActionsAnalyzer") as mock_actions_cls:
-            # Setup mock Bedrock client with realistic latency
-            mock_bedrock = MagicMock()
-            mock_bedrock_cls.return_value = mock_bedrock
+    with (
+        patch("src.analysis.orchestrator.BedrockClient") as mock_bedrock_cls,
+        patch("src.analysis.orchestrator.ActionsAnalyzer") as mock_actions_cls,
+    ):
+        # Setup mock Bedrock client with realistic latency
+        mock_bedrock = MagicMock()
+        mock_bedrock_cls.return_value = mock_bedrock
 
-            def mock_converse(*args, **kwargs):
-                # Simulate realistic Bedrock API latency (1-2 seconds per call)
-                time.sleep(1.5)
-                return {
-                    "content": '{"overall_score": 8.5, "confidence": 0.9, "evidence": [{"file": "src/main.py", "line": 10, "severity": "medium", "category": "security", "description": "Test finding"}]}',
-                    "usage": {"input_tokens": 2000, "output_tokens": 800},
-                    "latency_ms": 1500,
-                }
+        def mock_converse(*args, **kwargs):
+            # Simulate realistic Bedrock API latency (1-2 seconds per call)
+            time.sleep(1.5)
+            return {
+                "content": '{"overall_score": 8.5, "confidence": 0.9, "evidence": [{"file": "src/main.py", "line": 10, "severity": "medium", "category": "security", "description": "Test finding"}]}',
+                "usage": {"input_tokens": 2000, "output_tokens": 800},
+                "latency_ms": 1500,
+            }
 
-            mock_bedrock.converse = mock_converse
+        mock_bedrock.converse = mock_converse
 
-            # Setup mock Actions analyzer with realistic latency
-            mock_actions = MagicMock()
-            mock_actions_cls.return_value = mock_actions
+        # Setup mock Actions analyzer with realistic latency
+        mock_actions = MagicMock()
+        mock_actions_cls.return_value = mock_actions
 
-            def mock_analyze(*args, **kwargs):
-                # Simulate CI/CD log parsing (5-10 seconds)
-                time.sleep(7)
-                return {
-                    "linter_findings": [
-                        {"file": "src/main.py", "line": 10, "message": "Line too long"},
-                        {"file": "src/api.py", "line": 25, "message": "Unused import"},
-                    ],
-                    "test_results": {"total": 10, "passed": 9, "failed": 1},
-                }
+        def mock_analyze(*args, **kwargs):
+            # Simulate CI/CD log parsing (5-10 seconds)
+            time.sleep(7)
+            return {
+                "linter_findings": [
+                    {"file": "src/main.py", "line": 10, "message": "Line too long"},
+                    {"file": "src/api.py", "line": 25, "message": "Unused import"},
+                ],
+                "test_results": {"total": 10, "passed": 9, "failed": 1},
+            }
 
             mock_actions.analyze = mock_analyze
 
@@ -225,67 +227,69 @@ async def test_orchestrator_performance_with_failures(
 
     This verifies graceful degradation doesn't cause timeout issues.
     """
-    with patch("src.analysis.orchestrator.BedrockClient") as mock_bedrock_cls:
-        with patch("src.analysis.orchestrator.ActionsAnalyzer") as mock_actions_cls:
-            mock_bedrock = MagicMock()
-            mock_bedrock_cls.return_value = mock_bedrock
+    with (
+        patch("src.analysis.orchestrator.BedrockClient") as mock_bedrock_cls,
+        patch("src.analysis.orchestrator.ActionsAnalyzer") as mock_actions_cls,
+    ):
+        mock_bedrock = MagicMock()
+        mock_bedrock_cls.return_value = mock_bedrock
 
-            def mock_converse(*args, **kwargs):
-                time.sleep(1.5)
-                return {
-                    "content": '{"overall_score": 8.5, "confidence": 0.9, "evidence": []}',
-                    "usage": {"input_tokens": 2000, "output_tokens": 800},
-                    "latency_ms": 1500,
-                }
+        def mock_converse(*args, **kwargs):
+            time.sleep(1.5)
+            return {
+                "content": '{"overall_score": 8.5, "confidence": 0.9, "evidence": []}',
+                "usage": {"input_tokens": 2000, "output_tokens": 800},
+                "latency_ms": 1500,
+            }
 
-            mock_bedrock.converse = mock_converse
+        mock_bedrock.converse = mock_converse
 
-            # Make Actions analyzer fail
-            mock_actions = MagicMock()
-            mock_actions_cls.return_value = mock_actions
-            mock_actions.analyze.side_effect = Exception("API rate limit")
+        # Make Actions analyzer fail
+        mock_actions = MagicMock()
+        mock_actions_cls.return_value = mock_actions
+        mock_actions.analyze.side_effect = Exception("API rate limit")
 
-            orchestrator = AnalysisOrchestrator(bedrock_client=mock_bedrock)
+        orchestrator = AnalysisOrchestrator(bedrock_client=mock_bedrock)
 
-            # Make team analyzer fail
-            with patch.object(orchestrator.team_analyzer, "analyze") as mock_team:
-                mock_team.side_effect = Exception("Team analysis error")
+        # Make team analyzer fail
+        with patch.object(orchestrator.team_analyzer, "analyze") as mock_team:
+            mock_team.side_effect = Exception("Team analysis error")
 
-                start_time = time.time()
+            start_time = time.time()
 
-                result = await orchestrator.analyze_submission(
-                    repo_data=realistic_repo_data,
-                    hackathon_name="Test Hackathon 2024",
-                    team_name="Awesome Team",
-                    hack_id="HACK#test123",
-                    sub_id="SUB#test456",
-                    rubric=standard_rubric,
-                    agents_enabled=[AgentName.BUG_HUNTER],
-                    github_token="ghp_test_token",
-                )
+            result = await orchestrator.analyze_submission(
+                repo_data=realistic_repo_data,
+                hackathon_name="Test Hackathon 2024",
+                team_name="Awesome Team",
+                hack_id="HACK#test123",
+                sub_id="SUB#test456",
+                rubric=standard_rubric,
+                agents_enabled=[AgentName.BUG_HUNTER],
+                github_token="ghp_test_token",
+            )
 
-                duration_seconds = time.time() - start_time
+            duration_seconds = time.time() - start_time
 
-                print(f"\nPerformance with failures: {duration_seconds:.2f}s")
+            print(f"\nPerformance with failures: {duration_seconds:.2f}s")
 
-                # Should still complete within 90s
-                assert duration_seconds < 90
+            # Should still complete within 90s
+            assert duration_seconds < 90
 
-                # Should have gracefully handled failures
-                assert result["overall_score"] > 0
-                assert result["team_analysis"] is None  # Failed
+            # Should have gracefully handled failures
+            assert result["overall_score"] > 0
+            assert result["team_analysis"] is None  # Failed
 
-                # Check component performance records show failures
-                component_perf = result["component_performance"]
-                actions_records = [
-                    r for r in component_perf if r["component_name"] == "actions_analyzer"
-                ]
-                team_records = [r for r in component_perf if r["component_name"] == "team_analyzer"]
+            # Check component performance records show failures
+            component_perf = result["component_performance"]
+            actions_records = [
+                r for r in component_perf if r["component_name"] == "actions_analyzer"
+            ]
+            team_records = [r for r in component_perf if r["component_name"] == "team_analyzer"]
 
-                assert len(actions_records) == 1
-                assert actions_records[0]["success"] is False
-                assert len(team_records) == 1
-                assert team_records[0]["success"] is False
+            assert len(actions_records) == 1
+            assert actions_records[0]["success"] is False
+            assert len(team_records) == 1
+            assert team_records[0]["success"] is False
 
 
 @pytest.mark.performance

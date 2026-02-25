@@ -268,7 +268,7 @@ def extract_commits(repo: git.Repo, max_commits: int = 100) -> list[CommitInfo]:
             if isinstance(message, bytes):
                 message = message.decode("utf-8", errors="replace")
             message_str: str = message.strip().split("\n")[0][:200]
-            
+
             commits.append(
                 CommitInfo(
                     hash=commit.hexsha,

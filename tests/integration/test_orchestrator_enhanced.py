@@ -111,48 +111,50 @@ async def test_analyze_submission_with_intelligence_layer(
         orchestrator = AnalysisOrchestrator(bedrock_client=mock_bedrock)
 
         # Mock intelligence components
-        with patch.object(orchestrator.team_analyzer, "analyze") as mock_team:
-            with patch.object(orchestrator.strategy_detector, "analyze") as mock_strategy:
-                with patch.object(
-                    orchestrator.brand_voice_transformer, "transform_findings"
-                ) as mock_feedback:
-                    # Setup mock returns
-                    mock_team.return_value = MagicMock(
-                        team_dynamics_grade="A",
-                        red_flags=[],
-                        individual_scorecards=[],
-                        duration_ms=100,
-                    )
-                    mock_strategy.return_value = MagicMock(
-                        test_strategy="unit_focused",
-                        maturity_level="senior",
-                        tradeoffs=[],
-                        duration_ms=100,
-                    )
-                    mock_feedback.return_value = []
+        with (
+            patch.object(orchestrator.team_analyzer, "analyze") as mock_team,
+            patch.object(orchestrator.strategy_detector, "analyze") as mock_strategy,
+            patch.object(
+                orchestrator.brand_voice_transformer, "transform_findings"
+            ) as mock_feedback,
+        ):
+            # Setup mock returns
+            mock_team.return_value = MagicMock(
+                team_dynamics_grade="A",
+                red_flags=[],
+                individual_scorecards=[],
+                duration_ms=100,
+            )
+            mock_strategy.return_value = MagicMock(
+                test_strategy="unit_focused",
+                maturity_level="senior",
+                tradeoffs=[],
+                duration_ms=100,
+            )
+            mock_feedback.return_value = []
 
-                    # Run analysis
-                    result = await orchestrator.analyze_submission(
-                        repo_data=sample_repo_data,
-                        hackathon_name="Test Hackathon",
-                        team_name="Test Team",
-                        hack_id="HACK#123",
-                        sub_id="SUB#456",
-                        rubric=sample_rubric,
-                        agents_enabled=[AgentName.BUG_HUNTER],
-                    )
+            # Run analysis
+            result = await orchestrator.analyze_submission(
+                repo_data=sample_repo_data,
+                hackathon_name="Test Hackathon",
+                team_name="Test Team",
+                hack_id="HACK#123",
+                sub_id="SUB#456",
+                rubric=sample_rubric,
+                agents_enabled=[AgentName.BUG_HUNTER],
+            )
 
-                    # Verify intelligence layer was invoked
-                    mock_team.assert_called_once()
-                    mock_strategy.assert_called_once()
-                    mock_feedback.assert_called_once()
+            # Verify intelligence layer was invoked
+            mock_team.assert_called_once()
+            mock_strategy.assert_called_once()
+            mock_feedback.assert_called_once()
 
-                    # Verify result structure
-                    assert "team_analysis" in result
-                    assert "strategy_analysis" in result
-                    assert "actionable_feedback" in result
-                    assert result["team_analysis"].team_dynamics_grade == "A"
-                    assert result["strategy_analysis"].test_strategy == "unit_focused"
+            # Verify result structure
+            assert "team_analysis" in result
+            assert "strategy_analysis" in result
+            assert "actionable_feedback" in result
+            assert result["team_analysis"].team_dynamics_grade == "A"
+            assert result["strategy_analysis"].test_strategy == "unit_focused"
 
 
 @pytest.mark.asyncio
@@ -161,46 +163,46 @@ async def test_analyze_submission_with_cicd_parsing(
     sample_rubric: RubricConfig,
 ) -> None:
     """Test analysis with CI/CD log parsing."""
-    with patch("src.analysis.orchestrator.BedrockClient") as mock_bedrock_cls:
-        with patch("src.analysis.orchestrator.ActionsAnalyzer") as mock_actions_cls:
-            # Setup mocks
-            mock_bedrock = MagicMock()
-            mock_bedrock_cls.return_value = mock_bedrock
-            mock_bedrock.converse.return_value = {
-                "content": '{"overall_score": 8.5, "confidence": 0.9, "evidence": []}',
-                "usage": {"input_tokens": 1000, "output_tokens": 500},
-                "latency_ms": 1200,
-            }
+    with (
+        patch("src.analysis.orchestrator.BedrockClient") as mock_bedrock_cls,
+        patch("src.analysis.orchestrator.ActionsAnalyzer") as mock_actions_cls,
+    ):
+        # Setup mocks
+        mock_bedrock = MagicMock()
+        mock_bedrock_cls.return_value = mock_bedrock
+        mock_bedrock.converse.return_value = {
+            "content": '{"overall_score": 8.5, "confidence": 0.9, "evidence": []}',
+            "usage": {"input_tokens": 1000, "output_tokens": 500},
+            "latency_ms": 1200,
+        }
 
-            mock_actions = MagicMock()
-            mock_actions_cls.return_value = mock_actions
-            mock_actions.analyze.return_value = {
-                "linter_findings": [
-                    {"file": "src/main.py", "line": 10, "message": "Line too long"}
-                ],
-                "test_results": {"total": 10, "passed": 9, "failed": 1},
-            }
+        mock_actions = MagicMock()
+        mock_actions_cls.return_value = mock_actions
+        mock_actions.analyze.return_value = {
+            "linter_findings": [{"file": "src/main.py", "line": 10, "message": "Line too long"}],
+            "test_results": {"total": 10, "passed": 9, "failed": 1},
+        }
 
-            orchestrator = AnalysisOrchestrator(bedrock_client=mock_bedrock)
+        orchestrator = AnalysisOrchestrator(bedrock_client=mock_bedrock)
 
-            # Run analysis with GitHub token
-            result = await orchestrator.analyze_submission(
-                repo_data=sample_repo_data,
-                hackathon_name="Test Hackathon",
-                team_name="Test Team",
-                hack_id="HACK#123",
-                sub_id="SUB#456",
-                rubric=sample_rubric,
-                agents_enabled=[AgentName.BUG_HUNTER],
-                github_token="ghp_test_token",
-            )
+        # Run analysis with GitHub token
+        result = await orchestrator.analyze_submission(
+            repo_data=sample_repo_data,
+            hackathon_name="Test Hackathon",
+            team_name="Test Team",
+            hack_id="HACK#123",
+            sub_id="SUB#456",
+            rubric=sample_rubric,
+            agents_enabled=[AgentName.BUG_HUNTER],
+            github_token="ghp_test_token",
+        )
 
-            # Verify CI/CD analyzer was called
-            mock_actions.analyze.assert_called_once_with("test-org", "test-repo")
-            mock_actions.close.assert_called_once()
+        # Verify CI/CD analyzer was called
+        mock_actions.analyze.assert_called_once_with("test-org", "test-repo")
+        mock_actions.close.assert_called_once()
 
-            # Verify findings were captured
-            assert result["cicd_findings_count"] == 1
+        # Verify findings were captured
+        assert result["cicd_findings_count"] == 1
 
 
 @pytest.mark.asyncio
@@ -209,42 +211,42 @@ async def test_analyze_submission_cicd_parsing_failure(
     sample_rubric: RubricConfig,
 ) -> None:
     """Test analysis continues gracefully when CI/CD parsing fails."""
-    with patch("src.analysis.orchestrator.BedrockClient") as mock_bedrock_cls:
-        with patch("src.analysis.orchestrator.ActionsAnalyzer") as mock_actions_cls:
-            mock_bedrock = MagicMock()
-            mock_bedrock_cls.return_value = mock_bedrock
-            mock_bedrock.converse.return_value = {
-                "content": '{"overall_score": 8.5, "confidence": 0.9, "evidence": []}',
-                "usage": {"input_tokens": 1000, "output_tokens": 500},
-                "latency_ms": 1200,
-            }
+    with (
+        patch("src.analysis.orchestrator.BedrockClient") as mock_bedrock_cls,
+        patch("src.analysis.orchestrator.ActionsAnalyzer") as mock_actions_cls,
+    ):
+        mock_bedrock = MagicMock()
+        mock_bedrock_cls.return_value = mock_bedrock
+        mock_bedrock.converse.return_value = {
+            "content": '{"overall_score": 8.5, "confidence": 0.9, "evidence": []}',
+            "usage": {"input_tokens": 1000, "output_tokens": 500},
+            "latency_ms": 1200,
+        }
 
-            mock_actions = MagicMock()
-            mock_actions_cls.return_value = mock_actions
-            mock_actions.analyze.side_effect = Exception("API rate limit exceeded")
+        mock_actions = MagicMock()
+        mock_actions_cls.return_value = mock_actions
+        mock_actions.analyze.side_effect = Exception("API rate limit exceeded")
 
-            orchestrator = AnalysisOrchestrator(bedrock_client=mock_bedrock)
+        orchestrator = AnalysisOrchestrator(bedrock_client=mock_bedrock)
 
-            result = await orchestrator.analyze_submission(
-                repo_data=sample_repo_data,
-                hackathon_name="Test Hackathon",
-                team_name="Test Team",
-                hack_id="HACK#123",
-                sub_id="SUB#456",
-                rubric=sample_rubric,
-                agents_enabled=[AgentName.BUG_HUNTER],
-                github_token="ghp_test_token",
-            )
+        result = await orchestrator.analyze_submission(
+            repo_data=sample_repo_data,
+            hackathon_name="Test Hackathon",
+            team_name="Test Team",
+            hack_id="HACK#123",
+            sub_id="SUB#456",
+            rubric=sample_rubric,
+            agents_enabled=[AgentName.BUG_HUNTER],
+            github_token="ghp_test_token",
+        )
 
-            assert result["overall_score"] > 0
-            assert result["cicd_findings_count"] == 0
+        assert result["overall_score"] > 0
+        assert result["cicd_findings_count"] == 0
 
-            component_perf = result["component_performance"]
-            actions_records = [
-                r for r in component_perf if r["component_name"] == "actions_analyzer"
-            ]
-            assert len(actions_records) == 1
-            assert actions_records[0]["success"] is False
+        component_perf = result["component_performance"]
+        actions_records = [r for r in component_perf if r["component_name"] == "actions_analyzer"]
+        assert len(actions_records) == 1
+        assert actions_records[0]["success"] is False
 
 
 @pytest.mark.asyncio
@@ -334,19 +336,21 @@ async def test_static_context_passed_to_agents(
     sample_rubric: RubricConfig,
 ) -> None:
     """Test that static findings from CI/CD are passed to agents as context."""
-    with patch("src.analysis.orchestrator.BedrockClient") as mock_bedrock_cls:
-        with patch("src.analysis.orchestrator.ActionsAnalyzer") as mock_actions_cls:
-            mock_bedrock = MagicMock()
-            mock_bedrock_cls.return_value = mock_bedrock
+    with (
+        patch("src.analysis.orchestrator.BedrockClient") as mock_bedrock_cls,
+        patch("src.analysis.orchestrator.ActionsAnalyzer") as mock_actions_cls,
+    ):
+        mock_bedrock = MagicMock()
+        mock_bedrock_cls.return_value = mock_bedrock
 
-            analyze_calls = []
+        analyze_calls = []
 
-            def track_analyze(*args, **kwargs):
-                analyze_calls.append(kwargs)
-                return (
-                    MagicMock(overall_score=8.5, confidence=0.9, evidence=[]),
-                    {"input_tokens": 1000, "output_tokens": 500, "latency_ms": 1200},
-                )
+        def track_analyze(*args, **kwargs):
+            analyze_calls.append(kwargs)
+            return (
+                MagicMock(overall_score=8.5, confidence=0.9, evidence=[]),
+                {"input_tokens": 1000, "output_tokens": 500, "latency_ms": 1200},
+            )
 
             mock_bedrock.converse.return_value = {
                 "content": '{"overall_score": 8.5, "confidence": 0.9, "evidence": []}',

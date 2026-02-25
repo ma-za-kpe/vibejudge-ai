@@ -59,13 +59,21 @@ def build_context(
         )
 
     # Format workflow definitions
-    wf_defs = "\n".join(repo_data.workflow_definitions) if repo_data.workflow_definitions else "[No workflow files found]"
+    wf_defs = (
+        "\n".join(repo_data.workflow_definitions)
+        if repo_data.workflow_definitions
+        else "[No workflow files found]"
+    )
 
     # Calculate workflow stats
     total_runs = len(repo_data.workflow_runs)
     successful_runs = sum(1 for r in repo_data.workflow_runs if r.conclusion == "success")
     failed_runs = sum(1 for r in repo_data.workflow_runs if r.conclusion == "failure")
-    success_rate = round(repo_data.meta.workflow_success_rate * 100, 1) if repo_data.meta.workflow_success_rate else 0.0
+    success_rate = (
+        round(repo_data.meta.workflow_success_rate * 100, 1)
+        if repo_data.meta.workflow_success_rate
+        else 0.0
+    )
 
     # Build complete context
     context = f"""## HACKATHON SUBMISSION FOR EVALUATION
@@ -91,15 +99,15 @@ def build_context(
 - **Commits:** {repo_data.meta.commit_count}
 - **Contributors:** {repo_data.meta.contributor_count}
 - **Development Duration:** {repo_data.meta.development_duration_hours:.1f} hours
-- **First Commit:** {repo_data.meta.first_commit_at.strftime('%Y-%m-%d %H:%M') if repo_data.meta.first_commit_at else 'N/A'}
-- **Last Commit:** {repo_data.meta.last_commit_at.strftime('%Y-%m-%d %H:%M') if repo_data.meta.last_commit_at else 'N/A'}
+- **First Commit:** {repo_data.meta.first_commit_at.strftime("%Y-%m-%d %H:%M") if repo_data.meta.first_commit_at else "N/A"}
+- **Last Commit:** {repo_data.meta.last_commit_at.strftime("%Y-%m-%d %H:%M") if repo_data.meta.last_commit_at else "N/A"}
 - **Default Branch:** {repo_data.default_branch}
 
 ### Project Features
-- **Has README:** {'✓' if repo_data.meta.has_readme else '✗'}
-- **Has Tests:** {'✓' if repo_data.meta.has_tests else '✗'}
-- **Has CI/CD:** {'✓' if repo_data.meta.has_ci else '✗'}
-- **Has Dockerfile:** {'✓' if repo_data.meta.has_dockerfile else '✗'}
+- **Has README:** {"✓" if repo_data.meta.has_readme else "✗"}
+- **Has Tests:** {"✓" if repo_data.meta.has_tests else "✗"}
+- **Has CI/CD:** {"✓" if repo_data.meta.has_ci else "✗"}
+- **Has Dockerfile:** {"✓" if repo_data.meta.has_dockerfile else "✗"}
 
 ---
 

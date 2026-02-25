@@ -785,53 +785,53 @@ from typing import Any
 class DynamoHelper:
     def __init__(self, table):
         self.table = table
-    
+
     # --- Hackathon Operations ---
-    
+
     def get_hackathon(self, hack_id: str) -> dict | None:
         """AP4: Get hackathon config by ID."""
         resp = self.table.get_item(Key={"PK": f"HACK#{hack_id}", "SK": "META"})
         return resp.get("Item")
-    
+
     def list_organizer_hackathons(self, org_id: str) -> list[dict]:
         """AP3: List all hackathons for an organizer."""
         resp = self.table.query(
             KeyConditionExpression=Key("PK").eq(f"ORG#{org_id}") & Key("SK").begins_with("HACK#")
         )
         return resp["Items"]
-    
+
     # --- Submission Operations ---
-    
+
     def list_submissions(self, hack_id: str) -> list[dict]:
         """AP6: List all submissions for a hackathon."""
         resp = self.table.query(
             KeyConditionExpression=Key("PK").eq(f"HACK#{hack_id}") & Key("SK").begins_with("SUB#")
         )
         return resp["Items"]
-    
+
     def get_submission_scores(self, sub_id: str) -> list[dict]:
         """AP9: Get all agent scores for a submission."""
         resp = self.table.query(
             KeyConditionExpression=Key("PK").eq(f"SUB#{sub_id}") & Key("SK").begins_with("SCORE#")
         )
         return resp["Items"]
-    
+
     def get_submission_costs(self, sub_id: str) -> list[dict]:
         """AP12: Get all cost records for a submission."""
         resp = self.table.query(
             KeyConditionExpression=Key("PK").eq(f"SUB#{sub_id}") & Key("SK").begins_with("COST#")
         )
         return resp["Items"]
-    
+
     # --- Leaderboard ---
-    
+
     def get_leaderboard(self, hack_id: str) -> list[dict]:
         """AP16: Get submissions sorted by score (application-side sort)."""
         submissions = self.list_submissions(hack_id)
         return sorted(submissions, key=lambda x: x.get("overall_score", 0), reverse=True)
-    
+
     # --- Transactional Write (after analysis completes) ---
-    
+
     def write_analysis_results(self, items: list[dict]) -> None:
         """Atomic write of scores + costs + summary for a submission."""
         with self.table.batch_writer() as batch:

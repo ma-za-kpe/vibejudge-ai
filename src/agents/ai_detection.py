@@ -22,7 +22,7 @@ class AIDetectionAgent(BaseAgent):
         hackathon_name: str,
         team_name: str,
         ai_policy_mode: str = "ai_assisted",
-        **kwargs
+        **kwargs,
     ) -> str:
         """Build user message for AIDetection."""
 
@@ -54,7 +54,7 @@ class AIDetectionAgent(BaseAgent):
 **Team:** {team_name}
 **Repository:** {repo_data.repo_url}
 **AI Policy Mode:** {ai_policy_mode}
-**Primary Language:** {repo_data.meta.primary_language or 'Unknown'}
+**Primary Language:** {repo_data.meta.primary_language or "Unknown"}
 **Total Files:** {repo_data.meta.total_files} | **Total Lines:** {repo_data.meta.total_lines}
 **Development Duration:** {repo_data.meta.development_duration_hours:.1f} hours
 **Lines per Hour:** {lines_per_hour:.1f}
@@ -88,7 +88,8 @@ Evaluate per your dimensions and the AI policy mode. Return ONLY valid JSON.
         # Filter out evidence items with None file values (invalid)
         if "evidence" in response_dict and isinstance(response_dict["evidence"], list):
             response_dict["evidence"] = [
-                e for e in response_dict["evidence"]
+                e
+                for e in response_dict["evidence"]
                 if isinstance(e, dict) and e.get("file") is not None
             ]
         return AIDetectionResponse(**response_dict)

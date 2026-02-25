@@ -35,9 +35,7 @@ class GitHubClient:
             timeout=30.0,
         )
 
-    def fetch_workflow_runs(
-        self, owner: str, repo: str, max_runs: int = 50
-    ) -> list[WorkflowRun]:
+    def fetch_workflow_runs(self, owner: str, repo: str, max_runs: int = 50) -> list[WorkflowRun]:
         """Fetch workflow run history.
 
         Args:
@@ -64,15 +62,17 @@ class GitHubClient:
             resp.raise_for_status()
 
             for run in resp.json().get("workflow_runs", []):
-                runs.append(WorkflowRun(
-                    run_id=run["id"],
-                    name=run.get("name", "unknown"),
-                    status=run.get("status", "unknown"),
-                    conclusion=run.get("conclusion"),
-                    created_at=datetime.fromisoformat(run["created_at"].replace("Z", "+00:00")),
-                    updated_at=datetime.fromisoformat(run["updated_at"].replace("Z", "+00:00")),
-                    run_attempt=run.get("run_attempt", 1),
-                ))
+                runs.append(
+                    WorkflowRun(
+                        run_id=run["id"],
+                        name=run.get("name", "unknown"),
+                        status=run.get("status", "unknown"),
+                        conclusion=run.get("conclusion"),
+                        created_at=datetime.fromisoformat(run["created_at"].replace("Z", "+00:00")),
+                        updated_at=datetime.fromisoformat(run["updated_at"].replace("Z", "+00:00")),
+                        run_attempt=run.get("run_attempt", 1),
+                    )
+                )
 
             logger.info(
                 "github_workflow_runs_fetched",
@@ -104,9 +104,7 @@ class GitHubClient:
         """
         definitions = []
         try:
-            resp = self.client.get(
-                f"/repos/{owner}/{repo}/contents/.github/workflows"
-            )
+            resp = self.client.get(f"/repos/{owner}/{repo}/contents/.github/workflows")
 
             if resp.status_code != 200:
                 logger.info("github_workflows_not_found", owner=owner, repo=repo)
@@ -117,9 +115,7 @@ class GitHubClient:
                     file_resp = self.client.get(item["download_url"])
                     if file_resp.status_code == 200:
                         content = file_resp.text[:3000]  # Truncate to 3000 chars
-                        definitions.append(
-                            f"### {item['name']}\n```yaml\n{content}\n```"
-                        )
+                        definitions.append(f"### {item['name']}\n```yaml\n{content}\n```")
 
             logger.info(
                 "github_workflow_files_fetched",

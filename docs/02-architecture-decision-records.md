@@ -169,7 +169,7 @@ All API routes live in one Lambda function. API Gateway proxies `/{proxy+}` to i
 
 ### Consequences
 - **Positive:** OpenAPI docs, validation, DI, proven pattern, developer-friendly.
-- **Negative:** Single Lambda means cold starts affect all endpoints. Package size is larger than raw handlers (~5-10MB with dependencies). 
+- **Negative:** Single Lambda means cold starts affect all endpoints. Package size is larger than raw handlers (~5-10MB with dependencies).
 - **Cold Start Mitigation:** Configure Lambda with 1GB memory (which proportionally increases CPU), keep dependencies lean, use `--exclude boto3` in packaging since Lambda runtime already includes it.
 
 ### References
@@ -283,7 +283,7 @@ class GitHubClient:
             headers=headers,
             timeout=30.0
         )
-    
+
     def get_workflow_runs(self, owner: str, repo: str) -> list[dict]:
         """Fetch all GitHub Actions workflow runs for a repo."""
         runs = []
@@ -432,7 +432,7 @@ class AnalysisOrchestrator:
             AIDetectionAgent(bedrock_client, model="amazon.nova-micro-v1:0"),
         ]
         self.cost_tracker = CostTracker()
-    
+
     async def analyze(self, repo_data: RepoData) -> Scorecard:
         results = []
         for agent in self.agents:

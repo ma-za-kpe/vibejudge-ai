@@ -31,9 +31,11 @@ def setup_logging() -> None:
         processors.append(structlog.processors.JSONRenderer())
     else:
         # Pretty console output for development
-        processors.extend([
-            structlog.dev.ConsoleRenderer(),
-        ])
+        processors.extend(
+            [
+                structlog.dev.ConsoleRenderer(),
+            ]
+        )
 
     structlog.configure(
         processors=processors,  # type: ignore[arg-type]
