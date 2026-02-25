@@ -29,20 +29,59 @@ VibeJudge AI is a production-ready automated hackathon judging platform that use
 
 ## Table of Contents
 
-1. [Streamlit Organizer Dashboard Spec](#streamlit-organizer-dashboard-spec)
-2. [E2E Production Test Suite Implementation](#e2e-production-test-suite-implementation)
-3. [Air-Tight Pre-Commit Hooks Implementation](#air-tight-pre-commit-hooks-implementation)
-4. [Phase 8: Service Layer Implementation](#phase-8-service-layer-implementation)
-5. [Phase 9: API Integration](#phase-9-api-integration)
-6. [Phase 10: TODO Implementation](#phase-10-todo-implementation)
-7. [Phase 11: Analysis Pipeline](#phase-11-analysis-pipeline)
-8. [Phase 12: Bedrock Model Access](#phase-12-bedrock-model-access)
-9. [Phase 13: AWS Deployment](#phase-13-aws-deployment)
-10. [Phase 14: Agent Tuning & Production](#phase-14-agent-tuning--production)
-11. [Comprehensive Platform Audit](#comprehensive-platform-audit)
-12. [Current Status & Metrics](#current-status--metrics)
-13. [Key Learnings](#key-learnings)
-14. [Next Steps](#next-steps)
+1. [Integration Test Bedrock Mocks Bugfix](#integration-test-bedrock-mocks-bugfix)
+2. [Streamlit Organizer Dashboard Spec](#streamlit-organizer-dashboard-spec)
+3. [E2E Production Test Suite Implementation](#e2e-production-test-suite-implementation)
+4. [Air-Tight Pre-Commit Hooks Implementation](#air-tight-pre-commit-hooks-implementation)
+5. [Phase 8: Service Layer Implementation](#phase-8-service-layer-implementation)
+6. [Phase 9: API Integration](#phase-9-api-integration)
+7. [Phase 10: TODO Implementation](#phase-10-todo-implementation)
+8. [Phase 11: Analysis Pipeline](#phase-11-analysis-pipeline)
+9. [Phase 12: Bedrock Model Access](#phase-12-bedrock-model-access)
+10. [Phase 13: AWS Deployment](#phase-13-aws-deployment)
+11. [Phase 14: Agent Tuning & Production](#phase-14-agent-tuning--production)
+12. [Comprehensive Platform Audit](#comprehensive-platform-audit)
+13. [Current Status & Metrics](#current-status--metrics)
+14. [Key Learnings](#key-learnings)
+15. [Next Steps](#next-steps)
+
+---
+
+## Integration Test Bedrock Mocks Bugfix
+
+**Date:** February 25, 2026  
+**Status:** ✅ COMPLETE  
+**Type:** Bugfix
+
+### Overview
+
+Fixed integration test failures caused by incomplete Bedrock mock responses missing required Pydantic fields. All 11 integration tests for the enhanced orchestrator now pass.
+
+### Root Cause
+
+Mock Bedrock responses were missing required Pydantic fields (`prompt_version`, `summary`, scores sub-fields). Tests also had incorrect access patterns for `ComponentPerformanceRecord` (dict subscript instead of Pydantic attribute access).
+
+### Fixes Applied
+
+1. Created complete mock templates for all 4 agent types with all required fields
+2. Fixed ComponentPerformanceRecord access patterns (dict → attribute)
+3. Fixed mock function return types (proper Pydantic models)
+4. Fixed ActionsAnalyzer patch path
+
+### Files Modified
+
+- `tests/fixtures/complete_mock_responses.py` (new, 121 lines)
+- `tests/integration/test_orchestrator_enhanced.py` (6 tests fixed)
+- `tests/integration/test_performance_90s.py` (2 tests fixed)
+
+### Test Results
+
+**Before:** 4/11 tests passing  
+**After:** 11/11 tests passing ✅
+
+### Impact
+
+Improved test reliability and maintainability. No production code changes required (test-only fix).
 
 ---
 
