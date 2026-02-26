@@ -38,7 +38,22 @@ VibeJudge AI automates hackathon judging using 4 specialized AI agents on Amazon
 
 ## 🚀 Quick Start
 
-### 🎉 NEW: Streamlit Organizer Dashboard
+### 🔐 NEW: Rate Limiting and API Security (In Progress)
+
+**Comprehensive security and cost control** - Multi-tier rate limiting, quota management, budget enforcement, and security monitoring to prevent abuse and prepare for monetization.
+
+**Status:** 📋 DESIGN COMPLETE (Requirements + Design ready, implementation pending)
+- ✅ 12 comprehensive requirements with 72 acceptance criteria
+- ✅ Complete technical design with 6 core components
+- ✅ 5 Pydantic data models with DynamoDB schemas
+- ✅ Sliding window rate limiting algorithm
+- ✅ Multi-level budget enforcement
+- ✅ 6 correctness properties for property-based testing
+- ⏳ Implementation tasks pending
+
+See `.kiro/specs/rate-limiting-security/` for complete specification.
+
+### 🎉 Streamlit Organizer Dashboard
 
 **Visual interface for hackathon management** - A Streamlit-based dashboard provides organizers with a user-friendly alternative to the API.
 

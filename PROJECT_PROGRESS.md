@@ -29,22 +29,127 @@ VibeJudge AI is a production-ready automated hackathon judging platform that use
 
 ## Table of Contents
 
-1. [Streamlit AWS ECS Deployment Infrastructure](#streamlit-aws-ecs-deployment-infrastructure)
-2. [Integration Test Bedrock Mocks Bugfix](#integration-test-bedrock-mocks-bugfix)
-3. [Streamlit Organizer Dashboard Spec](#streamlit-organizer-dashboard-spec)
-4. [E2E Production Test Suite Implementation](#e2e-production-test-suite-implementation)
-5. [Air-Tight Pre-Commit Hooks Implementation](#air-tight-pre-commit-hooks-implementation)
-6. [Phase 8: Service Layer Implementation](#phase-8-service-layer-implementation)
-7. [Phase 9: API Integration](#phase-9-api-integration)
-8. [Phase 10: TODO Implementation](#phase-10-todo-implementation)
-9. [Phase 11: Analysis Pipeline](#phase-11-analysis-pipeline)
-10. [Phase 12: Bedrock Model Access](#phase-12-bedrock-model-access)
-11. [Phase 13: AWS Deployment](#phase-13-aws-deployment)
-12. [Phase 14: Agent Tuning & Production](#phase-14-agent-tuning--production)
-13. [Comprehensive Platform Audit](#comprehensive-platform-audit)
-14. [Current Status & Metrics](#current-status--metrics)
-15. [Key Learnings](#key-learnings)
-16. [Next Steps](#next-steps)
+1. [Rate Limiting and API Security Spec](#rate-limiting-and-api-security-spec)
+2. [Streamlit AWS ECS Deployment Infrastructure](#streamlit-aws-ecs-deployment-infrastructure)
+3. [Integration Test Bedrock Mocks Bugfix](#integration-test-bedrock-mocks-bugfix)
+4. [Streamlit Organizer Dashboard Spec](#streamlit-organizer-dashboard-spec)
+5. [E2E Production Test Suite Implementation](#e2e-production-test-suite-implementation)
+6. [Air-Tight Pre-Commit Hooks Implementation](#air-tight-pre-commit-hooks-implementation)
+7. [Phase 8: Service Layer Implementation](#phase-8-service-layer-implementation)
+8. [Phase 9: API Integration](#phase-9-api-integration)
+9. [Phase 10: TODO Implementation](#phase-10-todo-implementation)
+10. [Phase 11: Analysis Pipeline](#phase-11-analysis-pipeline)
+11. [Phase 12: Bedrock Model Access](#phase-12-bedrock-model-access)
+12. [Phase 13: AWS Deployment](#phase-13-aws-deployment)
+13. [Phase 14: Agent Tuning & Production](#phase-14-agent-tuning--production)
+14. [Comprehensive Platform Audit](#comprehensive-platform-audit)
+15. [Current Status & Metrics](#current-status--metrics)
+16. [Key Learnings](#key-learnings)
+17. [Next Steps](#next-steps)
+
+---
+
+## Rate Limiting and API Security Spec
+
+**Date:** February 26, 2026  
+**Status:** 📋 DESIGN COMPLETE (Requirements + Design ready)  
+**Type:** Feature Specification
+
+### Overview
+
+Created comprehensive specification for rate limiting and API security feature to prevent abuse, control costs, and prepare the platform for monetization. This is a critical security and cost control feature that implements multi-tier rate limiting, quota management, budget enforcement, and security monitoring.
+
+### Specification Documents
+
+**Location:** `.kiro/specs/rate-limiting-security/`
+
+1. **Requirements Document** (`requirements.md`)
+   - 12 comprehensive requirements with 72 acceptance criteria
+   - Covers API Gateway throttling, per-API-key rate limiting, API key scoping, daily quotas, multi-level budget limits, CloudWatch billing alerts, cost estimation, API key management UI, security logging, IP-based rate limiting, API key rotation, and usage analytics
+
+2. **Design Document** (`design.md`)
+   - Complete technical architecture with system diagrams
+   - 6 core components: RateLimitMiddleware, BudgetMiddleware, SecurityLoggerMiddleware, APIKeyService, UsageTrackingService, CostEstimationService
+   - 5 Pydantic data models with DynamoDB schemas
+   - Sliding window rate limiting algorithm with formal specifications
+   - Multi-level budget enforcement algorithm
+   - Secure API key generation (256-bit entropy)
+   - 6 correctness properties for property-based testing
+   - Complete error handling and recovery strategies
+   - Performance targets: <5ms rate limit check latency
+
+### Key Features
+
+**Rate Limiting:**
+- Global API Gateway throttling (10 req/sec, 20 burst)
+- Per-API-key rate limiting with tiers (Free=2/sec, Pro=10/sec, Enterprise=50/sec)
+- IP-based rate limiting (50 req/min with 5-minute blocks)
+- Sliding window counter algorithm with DynamoDB TTL
+
+**Budget Controls:**
+- Per-submission cap: $0.50 (configurable)
+- Per-hackathon budget limits
+- Per-API-key cumulative budget tracking
+- Real-time budget enforcement (no eventual consistency)
+- Alerts at 50%, 80%, 90%, 100% thresholds
+
+**API Key Management:**
+- Scoped keys (hackathon-specific, expiring)
+- Format: `vj_{env}_{32-char-base64}`
+- Rotation with 7-day grace period
+- Streamlit UI for key creation and management
+- Tier-based limits (Free, Starter, Pro, Enterprise)
+
+**Security & Monitoring:**
+- CloudWatch billing alerts ($50/day threshold)
+- Security event logging (auth failures, rate limits, budget exceeded)
+- Anomaly detection (>100 req/min, >200% volume increase)
+- 30-day log retention
+- Usage analytics and CSV export
+
+### Technical Architecture
+
+**Components:**
+- FastAPI middleware stack (rate limit → budget → security logging)
+- DynamoDB tables: APIKeys, RateLimitCounters (TTL), UsageTracking, BudgetTracking, SecurityEvents (TTL 30d)
+- CloudWatch Logs and Alarms
+- SNS topic for billing alerts
+
+**Algorithms:**
+- Sliding window counter for rate limiting
+- Multi-level budget enforcement
+- Atomic counter increments (DynamoDB conditional expressions)
+- Secure API key generation (secrets.token_bytes)
+
+**Performance:**
+- Rate limit check: <5ms latency target
+- DynamoDB operations: GetItem (1-2ms), atomic increment (2-3ms)
+- API key metadata caching (10min TTL)
+- Free tier capacity sufficient for MVP (5 WCU/RCU)
+
+### Success Criteria
+
+- ✅ 0 unauthorized cost overruns in first 90 days
+- ✅ Rate limit check adds <5ms latency
+- ✅ Actual costs within 10% of estimates
+- ✅ <1% false positive rate on rate limiting
+- ✅ Clear error messages with actionable guidance
+
+### Next Steps
+
+1. Create tasks document breaking down implementation
+2. Implement DynamoDB table schemas
+3. Build FastAPI middleware components
+4. Add API key management routes
+5. Create Streamlit UI for key management
+6. Implement CloudWatch alarms and monitoring
+7. Write comprehensive test suite (unit, property-based, integration)
+
+### Files Created
+
+- `.kiro/specs/rate-limiting-security/requirements.md` - 12 requirements (existing)
+- `.kiro/specs/rate-limiting-security/design.md` - Complete technical design (31KB)
+- `.kiro/specs/rate-limiting-security/.config.kiro` - Spec configuration
 
 ---
 
