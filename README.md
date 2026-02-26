@@ -54,11 +54,29 @@ VibeJudge AI automates hackathon judging using 4 specialized AI agents on Amazon
 - ✅ 90%+ code coverage for components
 - ✅ Complete documentation and deployment guide
 
+**🚀 NEW: AWS ECS Deployment Infrastructure**
+- ✅ Production-ready Docker containerization (Alpine-based, 677MB, includes curl)
+- ✅ Complete SAM infrastructure template (VPC, ECS Fargate, ALB, auto-scaling)
+- ✅ Automated deployment script with prerequisite validation
+- ✅ Cost-optimized architecture (<$60/month with FARGATE_SPOT)
+- ✅ Multi-AZ high availability with auto-healing
+- ✅ CloudWatch monitoring and alarms
+- ✅ **DEPLOYED TO PRODUCTION** (streamlit-dashboard-prod stack)
+- ✅ **2 healthy ECS tasks running** in different availability zones
+- ✅ **ALB health checks passing** (HTTP 200 in 0.58s)
+- 🌐 **Live Dashboard:** http://vibejudge-alb-prod-1135403146.us-east-1.elb.amazonaws.com
+
 **Try it locally:**
 ```bash
 cd streamlit_ui
 pip install -r requirements.txt
 streamlit run app.py
+```
+
+**Deploy to AWS ECS:**
+```bash
+# See DEPLOYMENT.md in streamlit_ui/ for complete guide
+./deploy.sh dev
 ```
 
 See `streamlit_ui/README.md` for complete documentation.

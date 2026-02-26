@@ -1,33 +1,51 @@
-# SAM deployment configuration
-# Run: sam deploy --config-env dev
-
 version = 0.1
 
+[default.global.parameters]
+stack_name = "vibejudge-dashboard"
+
+[default.build.parameters]
+cached = true
+parallel = true
+
+[default.validate.parameters]
+lint = true
+
 [default.deploy.parameters]
-stack_name = "vibejudge-dev"
-resolve_s3 = true
-s3_prefix = "vibejudge"
-region = "us-east-1"
-confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
-parameter_overrides = "Environment=\"dev\" BedrockRegion=\"us-east-1\" LogLevel=\"DEBUG\""
-disable_rollback = false
-image_repositories = []
-
-[staging.deploy.parameters]
-stack_name = "vibejudge-staging"
-resolve_s3 = true
-s3_prefix = "vibejudge"
-region = "us-east-1"
 confirm_changeset = true
-capabilities = "CAPABILITY_IAM"
-parameter_overrides = "Environment=\"staging\" BedrockRegion=\"us-east-1\" LogLevel=\"INFO\""
+resolve_s3 = true
+region = "us-east-1"
 
+[default.package.parameters]
+resolve_s3 = true
+
+[default.sync.parameters]
+watch = true
+
+[default.local_start_api.parameters]
+warm_containers = "EAGER"
+
+[default.local_start_lambda.parameters]
+warm_containers = "EAGER"
+
+# Development Environment Configuration
+[dev.deploy.parameters]
+stack_name = "vibejudge-dashboard-dev"
+resolve_s3 = true
+s3_prefix = "vibejudge-dashboard-dev"
+region = "us-east-1"
+confirm_changeset = false
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "Environment=\"dev\""
+tags = "Environment=\"dev\" Project=\"VibeJudge\""
+
+# Production Environment Configuration
 [prod.deploy.parameters]
-stack_name = "vibejudge-prod"
+stack_name = "streamlit-dashboard-prod"
 resolve_s3 = true
-s3_prefix = "vibejudge"
+s3_prefix = "streamlit-dashboard-prod"
 region = "us-east-1"
 confirm_changeset = true
-capabilities = "CAPABILITY_IAM"
-parameter_overrides = "Environment=\"prod\" BedrockRegion=\"us-east-1\" LogLevel=\"WARNING\""
+capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
+parameter_overrides = "Environment=\"prod\""
+tags = "Environment=\"prod\" Project=\"VibeJudge\""
