@@ -1,0 +1,62 @@
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Python cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info
+dist
+build
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Testing
+tests/
+.pytest_cache
+.coverage
+htmlcov
+.tox
+
+# IDE and editor files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Node modules (if any)
+node_modules
+
+# Kiro project files
+.kiro/
+
+# Documentation (not needed in container)
+*.md
+!README.md
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+
+# AWS and deployment files
+template.yaml
+samconfig.toml
+deploy.sh
+DEPLOYMENT.md
+RUNBOOK.md
+
+# Logs
+*.log
+logs/
