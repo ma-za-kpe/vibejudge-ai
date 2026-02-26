@@ -52,7 +52,7 @@ VibeJudge AI is a production-ready automated hackathon judging platform that use
 ## Rate Limiting and API Security Spec
 
 **Date:** February 26, 2026  
-**Status:** 📋 DESIGN COMPLETE (Requirements + Design ready)  
+**Status:** 📋 TASKS COMPLETE (Ready for Implementation)  
 **Type:** Feature Specification
 
 ### Overview
@@ -77,6 +77,13 @@ Created comprehensive specification for rate limiting and API security feature t
    - 6 correctness properties for property-based testing
    - Complete error handling and recovery strategies
    - Performance targets: <5ms rate limit check latency
+
+3. **Tasks Document** (`tasks.md`)
+   - 8 phases covering 3-4 day implementation timeline
+   - 32 detailed tasks with acceptance criteria
+   - Phase breakdown: Data models (3), Services (3), Middleware (4), API routes (3), CloudWatch (3), Streamlit UI (2), Testing (4), Deployment (4)
+   - Risk mitigation strategies included
+   - All tasks follow project structure conventions
 
 ### Key Features
 
@@ -135,20 +142,25 @@ Created comprehensive specification for rate limiting and API security feature t
 - ✅ <1% false positive rate on rate limiting
 - ✅ Clear error messages with actionable guidance
 
-### Next Steps
+### Implementation Plan
 
-1. Create tasks document breaking down implementation
-2. Implement DynamoDB table schemas
-3. Build FastAPI middleware components
-4. Add API key management routes
-5. Create Streamlit UI for key management
-6. Implement CloudWatch alarms and monitoring
-7. Write comprehensive test suite (unit, property-based, integration)
+**Estimated Time:** 3-4 days  
+**Priority:** HIGH (Critical for cost control and monetization)
+
+**Phase 1:** Data Models & DynamoDB (Day 1 AM)  
+**Phase 2:** Core Services (Day 1 PM)  
+**Phase 3:** Middleware Components (Day 2 AM)  
+**Phase 4:** API Routes (Day 2 PM)  
+**Phase 5:** CloudWatch Monitoring (Day 3 AM)  
+**Phase 6:** Streamlit UI Integration (Day 3 PM)  
+**Phase 7:** Testing & Validation (Day 4)  
+**Phase 8:** Documentation & Deployment
 
 ### Files Created
 
-- `.kiro/specs/rate-limiting-security/requirements.md` - 12 requirements (existing)
-- `.kiro/specs/rate-limiting-security/design.md` - Complete technical design (31KB)
+- `.kiro/specs/rate-limiting-security/requirements.md` - 12 requirements with 72 acceptance criteria
+- `.kiro/specs/rate-limiting-security/design.md` - Complete technical design (1078 lines)
+- `.kiro/specs/rate-limiting-security/tasks.md` - 32 implementation tasks across 8 phases (700 lines)
 - `.kiro/specs/rate-limiting-security/.config.kiro` - Spec configuration
 
 ---
