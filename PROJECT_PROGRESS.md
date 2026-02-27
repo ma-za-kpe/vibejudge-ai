@@ -13651,3 +13651,140 @@ Standardized URL construction across all Streamlit files:
 
 **Result:** ✅ All registration, login, and API calls now work correctly with consistent URL construction.
 
+
+
+---
+
+## Session 3: Public Submission Endpoint Implementation (February 27, 2026)
+
+### Problem
+User tried to submit a hackathon project through the Submit page but got "Unknown error". Investigation revealed the submission endpoint required authentication (X-API-Key header), but the Submit page is designed as a public portal for hackathon participants who don't have API keys.
+
+### Root Causes Identified
+
+1. **Missing Public Endpoint**: The `/api/v1/hackathons/{hack_id}/submissions` endpoint required authentication
+2. **Middleware Not Bypassing Public Paths**: Rate limit and budget middleware were checking for API keys even on exempt paths
+3. **Wildcard Path Matching Not Supported**: Exempt paths like `/api/v1/public/hackathons/*/submissions` weren't matching actual paths
+4. **Status Enum vs String Issue**: Public endpoint was calling `.value` on status when it was already a string
+
+### Solutions Implemented
+
+**1. Created Public Submission Endpoint** (`src/api/routes/public.py`)
+- New route: `POST /api/v1/public/hackathons/{hack_id}/submissions`
+- No authentication required
+- Only allows submissions to CONFIGURED hackathons
+- Validates hackathon exists and status
+
+**2. Added Wildcard Path Matching to RateLimitMiddleware** (`src/api/middleware/rate_limit.py`)
+- Added `_is_path_exempt()` helper method with regex-based wildcard matching
+- Supports patterns like `/api/v1/public/hackathons/*/submissions`
+- Uses `re.escape()` for security against regex injection
+- Updated `dispatch()` to use new helper instead of exact match
+
+**3. Added Exempt Paths Support to BudgetMiddleware** (`src/api/middleware/budget.py`)
+- Added `exempt_paths` parameter to `__init__()`
+- Added `_is_path_exempt()` helper method (same pattern as RateLimitMiddleware)
+- Updated `dispatch()` to check exempt paths before requiring API key data
+
+**4. Updated Main App Configuration** (`src/api/main.py`)
+- Added exempt paths to both RateLimitMiddleware and BudgetMiddleware
+- Included public endpoints: `/api/v1/public/hackathons`, `/api/v1/public/hackathons/*/submissions`
+- Also exempted registration and login endpoints
+
+**5. Fixed Status Enum Handling** (`src/api/routes/public.py`)
+- Added safe status extraction: `status = hackathon.status.value if hasattr(hackathon.status, 'value') else hackathon.status`
+- Handles both enum objects and string values
+- Fixes `AttributeError: 'str' object has no attribute 'value'`
+
+**6. Updated Submit Page** (`streamlit_ui/pages/7_Submit.py`)
+- Changed endpoint from `/hackathons/{hack_id}/submissions` to `/public/hackathons/{hack_id}/submissions`
+- Removed `team_members` field from request (not in SubmissionInput model)
+- Kept only `team_name` and `repo_url` fields
+
+### Technical Details
+
+**Commits:**
+- `4bacc4d`: Add wildcard path matching for exempt paths in rate limit middleware
+- `e88255d`: Add exempt paths support to BudgetMiddleware for public endpoints
+- `9fbae64`: Handle status as both enum and string in public submission endpoint
+
+**Backend Deployments:**
+- Stack: vibejudge-dev
+- Region: us-east-1
+- Lambda functions updated: ApiFunction, AnalyzerFunction
+
+**Testing:**
+```bash
+curl -X POST "https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev/api/v1/public/hackathons/01KJFQW23JKE473T0ZPSGSQ2J6/submissions" \
+  -H "Content-Type: application/json" \
+  -d '{"submissions": [{"team_name": "Test Team", "repo_url": "https://github.com/test/repo"}]}'
+```
+
+**Response:**
+```json
+{
+    "created": 1,
+    "submissions": [{
+        "sub_id": "01KJFV8YQ0QN2Z3T1H6BQN7D9P",
+        "team_name": "Test Team",
+        "repo_url": "https://github.com/test/repo",
+        "status": "pending",
+        "overall_score": null,
+        "rank": null,
+        "total_cost_usd": null,
+        "created_at": "2026-02-27T15:25:31.226413+00:00"
+    }],
+    "hackathon_submission_count": 1
+}
+```
+
+### Architecture Improvements
+
+**Middleware Stack (Execution Order):**
+1. SecurityLoggerMiddleware (runs last, logs all events)
+2. BudgetMiddleware (runs second, checks budget limits)
+3. RateLimitMiddleware (runs first, fastest check)
+
+**Exempt Path Matching:**
+- Exact match: `/health`, `/docs`, `/api/v1/organizers`
+- Wildcard match: `/api/v1/public/hackathons/*/submissions`
+- Regex pattern: `^/api/v1/public/hackathons/.*/submissions$`
+
+**Security Considerations:**
+- Wildcard matching uses `re.escape()` to prevent regex injection
+- Public endpoints still validate hackathon status (only CONFIGURED allowed)
+- No authentication bypass for protected endpoints
+- Middleware checks happen in correct order (rate limit → budget → security)
+
+### Results
+
+✅ Public submission endpoint working without authentication
+✅ Wildcard path matching implemented in both middleware layers
+✅ Status enum/string handling fixed
+✅ Submit page successfully creates submissions
+✅ Hackathon submission count incremented correctly
+✅ All middleware properly exempting public paths
+
+**Test Hackathon:**
+- ID: `01KJFQW23JKE473T0ZPSGSQ2J6`
+- Name: "testttttt"
+- Status: "configured"
+- Submission Count: 1
+
+### Files Modified
+
+**Backend:**
+- `src/api/routes/public.py` - Fixed status enum handling
+- `src/api/middleware/rate_limit.py` - Added wildcard path matching
+- `src/api/middleware/budget.py` - Added exempt paths support
+- `src/api/main.py` - Configured exempt paths for both middleware
+
+**Frontend:**
+- `streamlit_ui/pages/7_Submit.py` - Updated to use public endpoint
+
+### Next Steps
+
+- Test end-to-end submission flow from UI
+- Verify submission appears in Submissions Management page
+- Test analysis trigger for public submissions
+- Update documentation with public API endpoints
