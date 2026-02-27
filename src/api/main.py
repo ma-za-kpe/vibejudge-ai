@@ -6,11 +6,24 @@ Main FastAPI application with Mangum handler for AWS Lambda.
 import os
 
 import structlog
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from mangum import Mangum
 
-from src.api.routes import analysis, costs, hackathons, health, organizers, submissions
+from src.api.middleware import BudgetMiddleware, RateLimitMiddleware, SecurityLoggerMiddleware
+from src.api.routes import (
+    analysis,
+    api_keys,
+    costs,
+    hackathons,
+    health,
+    organizers,
+    submissions,
+    usage,
+)
+from src.utils.config import settings
+from src.utils.dynamo import DynamoDBHelper
 
 # Configure structured logging
 structlog.configure(
@@ -50,6 +63,85 @@ app.add_middleware(
 )
 
 # ============================================================
+# RATE LIMITING & SECURITY MIDDLEWARE
+# ============================================================
+
+# Initialize DynamoDB helper for middleware
+db_helper = DynamoDBHelper(table_name=settings.dynamodb_table_name)
+
+# Add middleware stack (order matters - last added runs first)
+# Execution order: SecurityLogger → Budget → RateLimit → Routes
+
+# 1. Security Logger Middleware (runs last, logs all events)
+app.add_middleware(
+    SecurityLoggerMiddleware,
+    db_helper=db_helper,
+    anomaly_threshold=100,  # requests per minute
+)
+
+# 2. Budget Enforcement Middleware (runs second)
+app.add_middleware(
+    BudgetMiddleware,
+    db_helper=db_helper,
+    max_cost_per_submission=settings.max_cost_per_submission_usd,
+)
+
+# 3. Rate Limit Middleware (runs first, fastest check)
+app.add_middleware(
+    RateLimitMiddleware,
+    db_helper=db_helper,
+    exempt_paths=["/health", "/docs", "/openapi.json", "/redoc"],
+)
+
+# ============================================================
+# ERROR HANDLERS
+# ============================================================
+
+
+@app.exception_handler(429)
+async def rate_limit_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Handle rate limit exceeded errors."""
+    return JSONResponse(
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        content={
+            "error": "Rate limit exceeded",
+            "message": "Too many requests. Please slow down and try again later.",
+            "retry_after": getattr(exc, "retry_after", 60),
+        },
+        headers={
+            "Retry-After": str(getattr(exc, "retry_after", 60)),
+        },
+    )
+
+
+@app.exception_handler(402)
+async def budget_exceeded_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Handle budget exceeded errors."""
+    return JSONResponse(
+        status_code=status.HTTP_402_PAYMENT_REQUIRED,
+        content={
+            "error": "Budget limit exceeded",
+            "message": "Your budget limit has been reached. Please upgrade your plan or contact support.",
+            "details": getattr(exc, "details", {}),
+        },
+    )
+
+
+@app.exception_handler(401)
+async def unauthorized_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Handle authentication errors."""
+    return JSONResponse(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        content={
+            "error": "Unauthorized",
+            "message": "Invalid or missing API key. Please provide a valid X-API-Key header.",
+        },
+        headers={
+            "WWW-Authenticate": "ApiKey",
+        },
+    )
+
+# ============================================================
 # ROUTE REGISTRATION
 # ============================================================
 
@@ -62,6 +154,8 @@ app.include_router(hackathons.router, prefix="/api/v1")
 app.include_router(submissions.router, prefix="/api/v1")
 app.include_router(analysis.router, prefix="/api/v1")
 app.include_router(costs.router, prefix="/api/v1")
+app.include_router(api_keys.router, prefix="/api/v1")
+app.include_router(usage.router, prefix="/api/v1")
 
 # ============================================================
 # STARTUP/SHUTDOWN EVENTS

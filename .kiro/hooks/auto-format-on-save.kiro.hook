@@ -12,7 +12,7 @@
   },
   "then": {
     "type": "runCommand",
-    "command": ".venv/bin/ruff check --fix src/ tests/ || python -m ruff check --fix src/ tests/",
+    "command": ".venv/bin/ruff check --fix src/ tests/ || python3 -m ruff check --fix src/ tests/",
     "timeout": 30
   }
 }

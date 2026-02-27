@@ -734,3 +734,142 @@ class DynamoDBHelper:
         except ClientError as e:
             logger.error("put_actionable_feedback_failed", error=str(e))
             return False
+
+    # ============================================================
+    # API KEY ACCESS PATTERNS
+    # ============================================================
+
+    def get_api_key_by_secret(self, api_key: str) -> dict | None:
+        """Get API key by secret key value.
+
+        Args:
+            api_key: Secret API key string
+
+        Returns:
+            API key record or None
+        """
+        try:
+            # Query GSI3 which should index on api_key field
+            # Note: This requires GSI3 to be configured in SAM template
+            # For now, we'll scan (inefficient but works for MVP)
+            # TODO: Add GSI3 with api_key as partition key
+
+            # Temporary implementation using scan
+            # In production, use GSI query
+            response = self.table.scan(
+                FilterExpression="api_key = :api_key",
+                ExpressionAttributeValues={":api_key": api_key},
+                Limit=1,
+            )
+            items = response.get("Items", [])
+            return items[0] if items else None
+        except ClientError as e:
+            logger.error("get_api_key_by_secret_failed", error=str(e))
+            return None
+
+    def get_api_key(self, api_key_id: str) -> dict | None:
+        """Get API key by ID.
+
+        Args:
+            api_key_id: API key ID (ULID)
+
+        Returns:
+            API key record or None
+        """
+        try:
+            response = self.table.get_item(
+                Key={"PK": f"APIKEY#{api_key_id}", "SK": "METADATA"}
+            )
+            return response.get("Item")
+        except ClientError as e:
+            logger.error("get_api_key_failed", api_key_id=api_key_id, error=str(e))
+            return None
+
+    def put_api_key(self, api_key: dict) -> bool:
+        """Create or update API key record.
+
+        Args:
+            api_key: API key record dict
+
+        Returns:
+            True if successful
+        """
+        try:
+            item = self._serialize_item(api_key)
+            self.table.put_item(Item=item)
+            logger.info("api_key_created", api_key_id=api_key.get("api_key_id"))
+            return True
+        except ClientError as e:
+            logger.error("put_api_key_failed", error=str(e))
+            return False
+
+    def list_api_keys_by_organizer(self, organizer_id: str) -> list[dict]:
+        """List all API keys for an organizer.
+
+        Args:
+            organizer_id: Organizer ID
+
+        Returns:
+            List of API key records
+        """
+        try:
+            response = self.table.query(
+                IndexName="GSI1",
+                KeyConditionExpression=Key("GSI1PK").eq(f"ORG#{organizer_id}") & Key("GSI1SK").begins_with("APIKEY#"),
+            )
+            return response.get("Items", [])
+        except ClientError as e:
+            logger.error("list_api_keys_by_organizer_failed", organizer_id=organizer_id, error=str(e))
+            return []
+
+    def update_api_key_usage(
+        self,
+        api_key_id: str,
+        total_requests: int | None = None,
+        total_cost_usd: float | None = None,
+        last_used_at: str | None = None,
+    ) -> bool:
+        """Update API key usage statistics.
+
+        Args:
+            api_key_id: API key ID
+            total_requests: New total request count
+            total_cost_usd: New total cost
+            last_used_at: Last used timestamp (ISO format)
+
+        Returns:
+            True if successful
+        """
+        try:
+            from datetime import datetime
+
+            update_parts = []
+            expr_attr_values = {":updated_at": datetime.utcnow().isoformat()}
+
+            if total_requests is not None:
+                update_parts.append("total_requests = :total_requests")
+                expr_attr_values[":total_requests"] = total_requests
+
+            if total_cost_usd is not None:
+                update_parts.append("total_cost_usd = :total_cost_usd")
+                expr_attr_values[":total_cost_usd"] = total_cost_usd
+
+            if last_used_at is not None:
+                update_parts.append("last_used_at = :last_used_at")
+                expr_attr_values[":last_used_at"] = last_used_at
+
+            if not update_parts:
+                return True  # Nothing to update
+
+            update_expr = f"SET {', '.join(update_parts)}, updated_at = :updated_at"
+
+            self.table.update_item(
+                Key={"PK": f"APIKEY#{api_key_id}", "SK": "METADATA"},
+                UpdateExpression=update_expr,
+                ExpressionAttributeValues=expr_attr_values,
+            )
+            logger.info("api_key_usage_updated", api_key_id=api_key_id)
+            return True
+        except ClientError as e:
+            logger.error("update_api_key_usage_failed", api_key_id=api_key_id, error=str(e))
+            return False

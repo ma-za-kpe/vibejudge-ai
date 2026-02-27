@@ -610,6 +610,162 @@ Resources:
         - Key: Severity
           Value: Warning
 
+  # ============================================================================
+  # DynamoDB Tables for Rate Limiting and API Security
+  # ============================================================================
+  
+  # Main VibeJudge Table (Single-table design for API keys, usage, budget)
+  # Note: This table stores APIKeys, UsageTracking, and BudgetTracking entities
+  # using the existing GSI1 and GSI2 for cross-entity lookups
+  VibeJudgeTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: !Sub "vibejudge-${Environment}"
+      BillingMode: PROVISIONED
+      TableClass: STANDARD
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+        - AttributeName: GSI1PK
+          AttributeType: S
+        - AttributeName: GSI1SK
+          AttributeType: S
+        - AttributeName: GSI2PK
+          AttributeType: S
+        - AttributeName: GSI2SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: GSI1
+          KeySchema:
+            - AttributeName: GSI1PK
+              KeyType: HASH
+            - AttributeName: GSI1SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+        - IndexName: GSI2
+          KeySchema:
+            - AttributeName: GSI2PK
+              KeyType: HASH
+            - AttributeName: GSI2SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: KEYS_ONLY
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+      TimeToLiveSpecification:
+        AttributeName: expires_at
+        Enabled: true
+      Tags:
+        - Key: Name
+          Value: !Sub vibejudge-table-${Environment}
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: VibeJudge-AI
+        - Key: Purpose
+          Value: Main single-table for organizers, hackathons, submissions, API keys, usage, budget
+  
+  # Rate Limit Counters Table (Separate table for high-volume, short-lived counters)
+  # Stores sliding window counters with 60-second TTL for automatic cleanup
+  RateLimitCountersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "vibejudge-rate-limits-${Environment}"
+      BillingMode: PROVISIONED
+      TableClass: STANDARD
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      Tags:
+        - Key: Name
+          Value: !Sub vibejudge-rate-limits-${Environment}
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: VibeJudge-AI
+        - Key: Purpose
+          Value: Rate limit counters with 60s TTL for sliding window algorithm
+  
+  # Security Events Table (Separate table for audit logs with 30-day retention)
+  # Stores authentication failures, rate limit violations, budget exceeded events
+  SecurityEventsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "vibejudge-security-events-${Environment}"
+      BillingMode: PROVISIONED
+      TableClass: STANDARD
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+        - AttributeName: GSI1PK
+          AttributeType: S
+        - AttributeName: GSI1SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: GSI1
+          KeySchema:
+            - AttributeName: GSI1PK
+              KeyType: HASH
+            - AttributeName: GSI1SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      Tags:
+        - Key: Name
+          Value: !Sub vibejudge-security-events-${Environment}
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: VibeJudge-AI
+        - Key: Purpose
+          Value: Security audit logs with 30-day TTL and GSI for API key lookups
+
 Outputs:
   TemplateVersion:
     Description: "SAM template version"
@@ -632,3 +788,21 @@ Outputs:
     Value: !Ref ECSService
     Export:
       Name: !Sub ${AWS::StackName}-Service-ARN
+  
+  VibeJudgeTableName:
+    Description: "Main DynamoDB table name for API keys, usage tracking, and budget tracking"
+    Value: !Ref VibeJudgeTable
+    Export:
+      Name: !Sub ${AWS::StackName}-Main-Table
+  
+  RateLimitCountersTableName:
+    Description: "DynamoDB table name for rate limit counters (60s TTL)"
+    Value: !Ref RateLimitCountersTable
+    Export:
+      Name: !Sub ${AWS::StackName}-RateLimit-Table
+  
+  SecurityEventsTableName:
+    Description: "DynamoDB table name for security events (30-day TTL)"
+    Value: !Ref SecurityEventsTable
+    Export:
+      Name: !Sub ${AWS::StackName}-Security-Table
