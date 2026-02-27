@@ -69,10 +69,11 @@ async def create_public_submission(
         raise HTTPException(status_code=404, detail="Hackathon not found")
 
     # Only allow submissions to CONFIGURED hackathons
-    if hackathon.status.value != "configured":
+    status = hackathon.status.value if hasattr(hackathon.status, 'value') else hackathon.status
+    if status != "configured":
         raise HTTPException(
             status_code=400,
-            detail=f"Hackathon is not accepting submissions (status: {hackathon.status.value})",
+            detail=f"Hackathon is not accepting submissions (status: {status})",
         )
 
     try:
