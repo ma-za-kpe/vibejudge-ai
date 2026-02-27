@@ -100,8 +100,10 @@ app.add_middleware(
         "/openapi.json",
         "/redoc",
         "/api/v1/public/hackathons",
-        "/api/v1/organizers",  # Registration endpoint
-        "/api/v1/organizers/login",  # Login endpoint
+        "/api/v1/organizers",  # Registration endpoint (with prefix)
+        "/api/v1/organizers/login",  # Login endpoint (with prefix)
+        "/organizers",  # Registration endpoint (without prefix)
+        "/organizers/login",  # Login endpoint (without prefix)
     ],
 )
 

@@ -44,7 +44,16 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         """
         super().__init__(app)
         self.db_helper = db_helper
-        self.exempt_paths = exempt_paths or ["/health", "/docs", "/openapi.json", "/redoc"]
+        self.exempt_paths = exempt_paths or [
+            "/health",
+            "/docs",
+            "/openapi.json",
+            "/redoc",
+            "/api/v1/organizers",  # Registration endpoint (public)
+            "/organizers",  # Registration endpoint (without prefix)
+            "/api/v1/organizers/login",  # Login endpoint (public)
+            "/organizers/login",  # Login endpoint (without prefix)
+        ]
 
     async def dispatch(
         self, request: Request, call_next: Callable
@@ -210,8 +219,6 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             - reset_time: Unix timestamp when window resets
         """
         try:
-            counter_key = f"{api_key}#{window_start}"
-
             # Get current counter value
             counter_data = self.db_helper.table.get_item(
                 Key={
