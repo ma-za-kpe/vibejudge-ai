@@ -38,6 +38,34 @@ VibeJudge AI automates hackathon judging using 4 specialized AI agents on Amazon
 
 ## 🚀 Quick Start
 
+### 🔐 Authentication System
+
+**Advanced API Key System** - Secure, tier-based authentication with rate limiting and budget controls.
+
+**Status:** ✅ FULLY OPERATIONAL
+- ✅ Single authentication system (vj_live_xxx format)
+- ✅ Secure key generation (256-bit entropy)
+- ✅ Tier-based rate limiting (Free: 2 req/sec, Pro: 10 req/sec, Enterprise: 50 req/sec)
+- ✅ Daily quota management with midnight UTC reset
+- ✅ Multi-level budget enforcement
+- ✅ API key rotation with 7-day grace period
+- ✅ Usage analytics and CSV export
+
+**API Endpoints:**
+```
+POST   /api/v1/organizers                    # Register (creates API key)
+POST   /api/v1/organizers/login              # Login (regenerates API key)
+GET    /api/v1/organizers/me                 # Get profile (requires API key)
+POST   /api/v1/api-keys                      # Create additional API key
+GET    /api/v1/api-keys                      # List API keys
+POST   /api/v1/api-keys/{key_id}/rotate      # Rotate API key
+DELETE /api/v1/api-keys/{key_id}             # Revoke API key
+```
+
+**Authentication:** All protected endpoints require `X-API-Key` header with valid API key.
+
+---
+
 ### 🔐 Rate Limiting and API Security
 
 **Comprehensive security and cost control** - Multi-tier rate limiting, quota management, budget enforcement, and security monitoring to prevent abuse and prepare for monetization.
@@ -92,7 +120,9 @@ See `.kiro/specs/rate-limiting-security/` for complete specification.
 **Visual interface for hackathon management** - A Streamlit-based dashboard provides organizers with a user-friendly alternative to the API.
 
 **Status:** ✅ COMPLETE (18/18 tasks, 300 tests, 88.3% pass rate)
-- ✅ Authentication with API key
+- ✅ **Self-service registration and login** (API key + email/password)
+- ✅ **API key management** (create, rotate, revoke with grace period)
+- ✅ **Profile and settings** page with usage analytics
 - ✅ Hackathon creation form with validation
 - ✅ Live monitoring dashboard with 5-second auto-refresh
 - ✅ Results and leaderboard with search/sort/pagination
@@ -103,7 +133,20 @@ See `.kiro/specs/rate-limiting-security/` for complete specification.
 - ✅ 90%+ code coverage for components
 - ✅ Complete documentation and deployment guide
 
-**🚀 NEW: AWS ECS Deployment Infrastructure**
+**🎯 Complete User Flow:**
+- **New Users:** Register → Get API key → Login → Create hackathons
+- **Existing Users:** Login with API key or email/password → Manage hackathons
+- **Lost API Key:** Login with email/password → Get new key → Continue
+
+**🆕 Self-Service Features (February 27, 2026):**
+- **Registration Page** (`0_📝_Register.py`): Complete user onboarding with email, password, name, and organization. API key displayed once after registration with automatic session login.
+- **Email/Password Login**: Dual authentication methods (API key or email/password) with lost API key recovery. Login with email/password generates a new API key.
+- **Settings Page** (`8_⚙️_Settings.py`): Comprehensive profile management with three sections:
+  - **Profile**: View organizer information, tier, account statistics, and member since date
+  - **API Keys**: Create new keys with tier selection, list all keys with status, rotate keys (7-day grace period), revoke keys (soft delete)
+  - **Usage Analytics**: Date range filtering, summary metrics (requests, costs), daily breakdown, CSV export
+
+**🚀 AWS ECS Deployment Infrastructure**
 - ✅ Production-ready Docker containerization (Alpine-based, 677MB, includes curl)
 - ✅ Complete SAM infrastructure template (VPC, ECS Fargate, ALB, auto-scaling)
 - ✅ Automated deployment script with prerequisite validation

@@ -37,7 +37,7 @@ def register_organizer(
         # Create temporary client without API key for registration
         import requests
 
-        url = f"{api_base_url.rstrip('/')}/api/v1/organizers"
+        url = f"{api_base_url.rstrip('/')}/organizers"
         payload = {
             "email": email,
             "password": password,
@@ -59,19 +59,30 @@ def register_organizer(
                 return False, "Registration failed: No API key returned", None
         elif response.status_code in (400, 409):
             # Handle both 400 (ValueError from service) and 409 (Conflict)
-            error_detail = response.json().get("detail", "Registration failed")
+            try:
+                error_detail = response.json().get("detail", "Registration failed")
+            except Exception:
+                error_detail = f"Registration failed (HTTP {response.status_code})"
             logger.warning(f"Registration failed: {error_detail}")
             # Check if it's a duplicate email error
             if "already registered" in error_detail.lower():
                 return False, "Email already registered. Please use login instead.", None
             return False, error_detail, None
         elif response.status_code == 422:
-            error_detail = response.json().get("detail", "Invalid input")
+            try:
+                error_detail = response.json().get("detail", "Invalid input")
+            except Exception:
+                error_detail = f"Validation error (HTTP {response.status_code})"
             logger.warning(f"Registration validation error: {error_detail}")
             return False, f"Validation error: {error_detail}", None
         else:
-            error_detail = response.json().get("detail", "Unknown error")
+            # Log full response for debugging
+            try:
+                error_detail = response.json().get("detail", f"HTTP {response.status_code}")
+            except Exception:
+                error_detail = f"HTTP {response.status_code}: {response.text[:200]}"
             logger.error(f"Registration failed with status {response.status_code}: {error_detail}")
+            logger.error(f"Response body: {response.text[:500]}")
             return False, f"Registration failed: {error_detail}", None
 
     except requests.Timeout:
