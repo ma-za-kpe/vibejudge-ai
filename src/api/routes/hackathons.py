@@ -198,15 +198,16 @@ async def get_hackathon_stats(
         raise HTTPException(status_code=404, detail="Hackathon not found")
 
     # Get all submissions for this hackathon
-    submissions = submission_service.list_submissions(hack_id)
+    submission_response = submission_service.list_submissions(hack_id)
+    submissions = submission_response.submissions
 
     # Calculate statistics
     submission_count = len(submissions)
     verified_count = sum(1 for sub in submissions if sub.status == "verified")
     pending_count = sum(1 for sub in submissions if sub.status == "pending")
 
-    # Count unique participants across all teams
-    participant_count = sum(len(sub.team_members) for sub in submissions)
+    # Participant count not available in list view (would need full submission details)
+    participant_count = 0
 
     return {
         "submission_count": submission_count,
