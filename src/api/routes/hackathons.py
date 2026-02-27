@@ -180,6 +180,42 @@ async def delete_hackathon(
     success = service.delete_hackathon(hack_id, org_id)
     if not success:
         raise HTTPException(status_code=404, detail="Hackathon not found")
+@router.get("/{hack_id}/stats")
+async def get_hackathon_stats(
+    hack_id: str,
+    hackathon_service: HackathonServiceDep,
+    submission_service: SubmissionServiceDep,
+) -> dict:
+    """Get hackathon statistics.
+
+    GET /api/v1/hackathons/{hack_id}/stats
+
+    Returns submission counts and participant statistics.
+    """
+    # Verify hackathon exists
+    hackathon = hackathon_service.get_hackathon(hack_id)
+    if not hackathon:
+        raise HTTPException(status_code=404, detail="Hackathon not found")
+
+    # Get all submissions for this hackathon
+    submissions = submission_service.list_submissions(hack_id)
+
+    # Calculate statistics
+    submission_count = len(submissions)
+    verified_count = sum(1 for sub in submissions if sub.status == "verified")
+    pending_count = sum(1 for sub in submissions if sub.status == "pending")
+
+    # Count unique participants across all teams
+    participant_count = sum(len(sub.team_members) for sub in submissions)
+
+    return {
+        "submission_count": submission_count,
+        "verified_count": verified_count,
+        "pending_count": pending_count,
+        "participant_count": participant_count,
+        "hackathon_status": hackathon.status,
+    }
+
 
 
 @router.get("/{hack_id}/leaderboard", response_model=LeaderboardResponse)
