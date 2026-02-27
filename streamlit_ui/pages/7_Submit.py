@@ -169,17 +169,16 @@ with st.form("submission_form"):
             else:
                 try:
                     with st.spinner("Submitting your project..."):
-                        # Make direct POST request without authentication
+                        # Make direct POST request to PUBLIC endpoint (no authentication)
                         import requests
 
                         response = requests.post(
-                            f"{api_base_url}/hackathons/{selected_hack_id}/submissions",
+                            f"{api_base_url}/public/hackathons/{selected_hack_id}/submissions",
                             json={
                                 "submissions": [
                                     {
                                         "team_name": team_name,
                                         "repo_url": repo_url,
-                                        "team_members": members,
                                     }
                                 ]
                             },
