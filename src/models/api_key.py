@@ -156,8 +156,8 @@ class APIKey(VibeJudgeBase, TimestampMixin):
     SK: str = Field(default="METADATA", description="Sort key")
     GSI1PK: str = Field(default="", description="ORG#{organizer_id}")
     GSI1SK: str = Field(default="", description="APIKEY#{created_at}")
-    GSI2PK: str = Field(default="", description="HACKATHON#{hackathon_id}")
-    GSI2SK: str = Field(default="", description="APIKEY#{api_key_id}")
+    GSI2PK: str | None = Field(default=None, description="HACKATHON#{hackathon_id}")
+    GSI2SK: str | None = Field(default=None, description="APIKEY#{api_key_id}")
     entity_type: str = Field(default="API_KEY")
 
     @field_validator("api_key")

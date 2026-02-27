@@ -248,6 +248,7 @@ POST   /api/v1/hackathons                    # Create hackathon
 GET    /api/v1/hackathons                    # List hackathons
 GET    /api/v1/hackathons/{id}               # Get hackathon details
 PUT    /api/v1/hackathons/{id}               # Update hackathon
+GET    /api/v1/public/hackathons             # List public hackathons (no auth)
 
 POST   /api/v1/hackathons/{id}/submissions   # Create submission
 GET    /api/v1/hackathons/{id}/submissions   # List submissions

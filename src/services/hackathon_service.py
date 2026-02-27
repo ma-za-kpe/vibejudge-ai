@@ -262,6 +262,62 @@ class HackathonService:
 
         return success
 
+    def activate_hackathon(self, hack_id: str, org_id: str) -> HackathonResponse:
+        """Activate hackathon (transition from DRAFT to CONFIGURED).
+
+        Args:
+            hack_id: Hackathon ID
+            org_id: Organizer ID
+
+        Returns:
+            Updated hackathon response
+
+        Raises:
+            ValueError: If hackathon not found or invalid state transition
+        """
+        record = self.db.get_hackathon(hack_id)
+        if not record:
+            raise ValueError(f"Hackathon {hack_id} not found")
+
+        # Verify ownership
+        if record.get("org_id") != org_id:
+            raise ValueError("You do not have permission to activate this hackathon")
+
+        # Check current status
+        current_status = record.get("status", "draft")
+        if current_status != HackathonStatus.DRAFT.value:
+            raise ValueError(
+                f"Cannot activate hackathon in {current_status} status. Only DRAFT hackathons can be activated."
+            )
+
+        # Update status to CONFIGURED
+        record["status"] = HackathonStatus.CONFIGURED.value
+        record["updated_at"] = datetime.now(UTC).isoformat()
+
+        # Update both records (detail and organizer list)
+        success1 = self.db.put_hackathon_detail(record)
+
+        # Update organizer's hackathon list item
+        org_hack_record = self.db.table.get_item(
+            Key={"PK": f"ORG#{org_id}", "SK": f"HACK#{hack_id}"}
+        ).get("Item")
+
+        if org_hack_record:
+            org_hack_record["status"] = HackathonStatus.CONFIGURED.value
+            org_hack_record["updated_at"] = datetime.now(UTC).isoformat()
+            self.db.put_hackathon(org_hack_record)
+
+        if not success1:
+            logger.error("hackathon_activation_failed", hack_id=hack_id)
+            raise RuntimeError("Failed to activate hackathon")
+
+        logger.info("hackathon_activated", hack_id=hack_id, org_id=org_id)
+
+        updated_hackathon = self.get_hackathon(hack_id)
+        if updated_hackathon is None:
+            raise RuntimeError(f"Failed to retrieve activated hackathon {hack_id}")
+        return updated_hackathon
+
     def increment_submission_count(self, hack_id: str) -> bool:
         """Increment submission count for hackathon.
 
@@ -279,3 +335,39 @@ class HackathonService:
         record["updated_at"] = datetime.now(UTC).isoformat()
 
         return self.db.put_hackathon_detail(record)
+    def list_all_configured_hackathons(self) -> list[HackathonResponse]:
+        """List all CONFIGURED hackathons across all organizers (for public endpoint).
+
+        Returns:
+            List of configured hackathons
+        """
+        # Query GSI1 to get all hackathon META records
+        try:
+            response = self.db.table.query(
+                IndexName="GSI1",
+                KeyConditionExpression="GSI1SK = :meta",
+                ExpressionAttributeValues={":meta": "META"},
+            )
+
+            records = response.get("Items", [])
+
+            # Filter for CONFIGURED status only
+            configured_hackathons = []
+            for record in records:
+                if record.get("status") == HackathonStatus.CONFIGURED.value:
+                    hackathon = self.get_hackathon(record["hack_id"])
+                    if hackathon:
+                        configured_hackathons.append(hackathon)
+
+            logger.info(
+                "public_hackathons_listed",
+                total_count=len(records),
+                configured_count=len(configured_hackathons),
+            )
+
+            return configured_hackathons
+
+        except Exception as e:
+            logger.error("list_all_configured_hackathons_failed", error=str(e))
+            return []
+

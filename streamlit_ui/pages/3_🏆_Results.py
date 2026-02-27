@@ -491,15 +491,21 @@ if st.session_state["view_mode"] == "team_detail":
 with st.spinner("🔄 Loading hackathons..."):
     hackathons = fetch_hackathons(st.session_state["api_key"])
 
+# Filter out DRAFT and ARCHIVED hackathons (only show CONFIGURED, ANALYZING, COMPLETED)
+active_hackathons = [
+    h for h in hackathons 
+    if h.get("status") not in ["draft", "archived"]
+]
 
 # Display hackathon selection dropdown
-if not hackathons:
-    st.warning("⚠️ No hackathons found. Create a hackathon first!")
+if not active_hackathons:
+    st.warning("⚠️ No active hackathons found.")
+    st.info("💡 Create a hackathon and activate it to start accepting submissions.")
     st.stop()
 
 
 # Create dropdown with hackathon names
-hackathon_options = {h["name"]: h["hack_id"] for h in hackathons}
+hackathon_options = {h["name"]: h["hack_id"] for h in active_hackathons}
 selected_name = st.selectbox(
     "Select Hackathon",
     options=list(hackathon_options.keys()),

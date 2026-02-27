@@ -66,6 +66,5 @@ class OrganizerRecord(OrganizerResponse):
     PK: str  # ORG#<org_id>
     SK: str = "PROFILE"
     entity_type: str = "ORGANIZER"
-    api_key_hash: str
     GSI1PK: str  # EMAIL#<email>
     GSI1SK: str  # ORG#<org_id>

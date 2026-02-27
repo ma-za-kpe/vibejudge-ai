@@ -3,7 +3,7 @@
 from typing import Any
 
 import boto3
-from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Attr, Key
 from botocore.exceptions import ClientError
 
 from src.utils.logging import get_logger
@@ -757,8 +757,7 @@ class DynamoDBHelper:
             # Temporary implementation using scan
             # In production, use GSI query
             response = self.table.scan(
-                FilterExpression="api_key = :api_key",
-                ExpressionAttributeValues={":api_key": api_key},
+                FilterExpression=Attr("api_key").eq(api_key),
                 Limit=1,
             )
             items = response.get("Items", [])

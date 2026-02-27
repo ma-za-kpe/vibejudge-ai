@@ -45,11 +45,24 @@ class SubmissionService:
 
         Returns:
             Batch creation response
+            
+        Raises:
+            ValueError: If duplicate repo_url found for this hackathon
         """
         now = datetime.now(UTC)
         created_items = []
 
+        # Check for duplicates - get existing submissions for this hackathon
+        existing_submissions = self.list_submissions(hack_id)
+        existing_repo_urls = {sub.repo_url.lower() for sub in existing_submissions.submissions}
+
         for sub_input in data.submissions:
+            # Check if repo_url already exists for this hackathon
+            if sub_input.repo_url.lower() in existing_repo_urls:
+                raise ValueError(
+                    f"Duplicate submission: Repository '{sub_input.repo_url}' "
+                    f"has already been submitted to this hackathon"
+                )
             sub_id = generate_sub_id()
 
             # Create submission record

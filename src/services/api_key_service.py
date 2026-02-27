@@ -97,8 +97,8 @@ class APIKeyService:
         # Set DynamoDB keys
         api_key.set_dynamodb_keys()
 
-        # Store in DynamoDB
-        api_key_dict = api_key.model_dump()
+        # Store in DynamoDB - exclude None values to avoid GSI validation errors
+        api_key_dict = api_key.model_dump(exclude_none=True)
         serialized = self.db._serialize_item(api_key_dict)
 
         try:
@@ -143,6 +143,14 @@ class APIKeyService:
 
             # Convert to APIKey model
             api_key_data = items[0]
+
+            # Convert ISO strings to datetime objects
+            from datetime import datetime
+            for field in ["created_at", "updated_at", "expires_at", "deprecated_at", "last_used_at"]:
+                if field in api_key_data and api_key_data[field]:
+                    if isinstance(api_key_data[field], str):
+                        api_key_data[field] = datetime.fromisoformat(api_key_data[field])
+
             api_key_obj = APIKey(**api_key_data)
 
             # Check if valid

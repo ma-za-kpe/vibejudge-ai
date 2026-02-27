@@ -129,3 +129,21 @@ class HackathonListResponse(VibeJudgeBase):
     hackathons: list[HackathonListItem]
     next_cursor: str | None = None
     has_more: bool = False
+
+
+class PublicHackathonInfo(VibeJudgeBase):
+    """Public hackathon information (no authentication required)."""
+
+    hack_id: str
+    name: str
+    description: str = ""
+    start_date: datetime | None = None
+    end_date: datetime | None = None
+    submission_count: int = 0
+
+
+class PublicHackathonListResponse(VibeJudgeBase):
+    """GET /api/v1/public/hackathons"""
+
+    hackathons: list[PublicHackathonInfo]
+

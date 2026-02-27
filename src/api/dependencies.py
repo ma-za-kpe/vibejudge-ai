@@ -136,14 +136,14 @@ OrganizerIntelligenceServiceDep = Annotated[
 
 
 async def verify_api_key(
-    organizer_service: OrganizerServiceDep,
+    db: DynamoDBHelperDep,
     api_key: str | None = Depends(api_key_header),
 ) -> str:
-    """Verify API key and return organizer ID.
+    """Verify API key and return organizer ID using Advanced API key system.
 
     Args:
         api_key: API key from X-API-Key header
-        organizer_service: Organizer service instance
+        db: DynamoDB helper instance
 
     Returns:
         org_id: Organizer ID
@@ -157,14 +157,19 @@ async def verify_api_key(
             detail="Missing API key. Provide X-API-Key header.",
         )
 
-    org_id = organizer_service.verify_api_key(api_key)
-    if not org_id:
+    # Use Advanced API key system
+    from src.services.api_key_service import APIKeyService
+
+    api_key_service = APIKeyService(db, environment="live")
+    api_key_obj = api_key_service.validate_api_key(api_key)
+
+    if not api_key_obj:
         raise HTTPException(
             status_code=401,
             detail="Invalid API key",
         )
 
-    return org_id
+    return api_key_obj.organizer_id
 
 
 async def get_current_organizer(

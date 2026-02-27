@@ -264,3 +264,37 @@ class APIClient:
             message = "Service unavailable. Cannot connect to server."
             logger.error(f"Connection error for POST {url}: {message}")
             raise ServiceUnavailableError(message) from err
+
+    def delete(self, endpoint: str) -> bool:
+        """Send a DELETE request to the backend API.
+
+        Args:
+            endpoint: The API endpoint (e.g., "/hackathons/123")
+
+        Returns:
+            True if deletion was successful (HTTP 204)
+
+        Raises:
+            ConnectionTimeoutError: When connection times out
+            ServiceUnavailableError: When connection fails
+            APIError: For HTTP errors (mapped to specific exception types)
+        """
+        url = f"{self.base_url}{endpoint}"
+        logger.debug(f"DELETE {url}")
+
+        try:
+            response = self.session.delete(url, timeout=self.timeout)
+
+            # Check for HTTP errors and handle them
+            if not response.ok:
+                self.handle_error(response)
+
+            return response.status_code == 204
+        except requests.Timeout as err:
+            message = "Connection timeout. Please check your network."
+            logger.error(f"Timeout error for DELETE {url}: {message}")
+            raise ConnectionTimeoutError(message) from err
+        except requests.ConnectionError as err:
+            message = "Service unavailable. Cannot connect to server."
+            logger.error(f"Connection error for DELETE {url}: {message}")
+            raise ServiceUnavailableError(message) from err

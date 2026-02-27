@@ -9,6 +9,7 @@ from starlette.types import ASGIApp
 
 from src.models.api_key import APIKey
 from src.utils.dynamo import DynamoDBHelper
+from src.utils.id_gen import generate_id
 from src.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -58,7 +59,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             HTTP response with rate limit headers
         """
         # Check if path is exempt
+        logger.info("rate_limit_check_path", path=request.url.path, exempt_paths=self.exempt_paths)
         if request.url.path in self.exempt_paths:
+            logger.info("path_exempt_from_rate_limit", path=request.url.path)
             return await call_next(request)
 
         # Extract API key from header
@@ -152,7 +155,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return response
 
     async def _get_api_key(self, api_key: str) -> APIKey | None:
-        """Get API key metadata from DynamoDB.
+        """Get API key metadata from DynamoDB using Advanced API key system.
         
         Args:
             api_key: API key string
@@ -163,27 +166,25 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         try:
             logger.info("api_key_lookup", api_key_prefix=api_key[:8])
 
-            # Get API key from DynamoDB
+            # Use Advanced API key system only
             api_key_data = self.db_helper.get_api_key_by_secret(api_key)
 
-            if not api_key_data:
-                logger.warning("api_key_not_found", api_key_prefix=api_key[:8])
-                return None
+            if api_key_data:
+                # Convert DynamoDB item to APIKey model
+                from datetime import datetime
 
-            # Convert DynamoDB item to APIKey model
-            # Handle datetime deserialization
-            from datetime import datetime
+                # Convert ISO strings back to datetime objects
+                for field in ["created_at", "updated_at", "expires_at", "deprecated_at", "last_used_at"]:
+                    if field in api_key_data and api_key_data[field]:
+                        if isinstance(api_key_data[field], str):
+                            api_key_data[field] = datetime.fromisoformat(api_key_data[field])
 
-            # Convert ISO strings back to datetime objects
-            for field in ["created_at", "updated_at", "expires_at", "deprecated_at", "last_used_at"]:
-                if field in api_key_data and api_key_data[field]:
-                    if isinstance(api_key_data[field], str):
-                        api_key_data[field] = datetime.fromisoformat(api_key_data[field])
+                # Create APIKey model instance
+                api_key_obj = APIKey(**api_key_data)
+                return api_key_obj
 
-            # Create APIKey model instance
-            api_key_obj = APIKey(**api_key_data)
-
-            return api_key_obj
+            logger.warning("api_key_not_found", api_key_prefix=api_key[:8])
+            return None
 
         except Exception as e:
             logger.error("api_key_lookup_failed", error=str(e), api_key_prefix=api_key[:8])

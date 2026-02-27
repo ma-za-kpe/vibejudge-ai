@@ -126,6 +126,33 @@ async def update_hackathon(
         raise HTTPException(status_code=500, detail=f"Failed to update hackathon: {str(e)}") from e
 
 
+@router.post("/{hack_id}/activate", response_model=HackathonResponse)
+async def activate_hackathon(
+    hack_id: str,
+    service: HackathonServiceDep,
+    current_organizer: CurrentOrganizer,
+) -> HackathonResponse:
+    """Activate hackathon (transition from DRAFT to CONFIGURED).
+
+    POST /api/v1/hackathons/{hack_id}/activate
+
+    Requires X-API-Key header for authentication.
+    """
+    try:
+        org_id = current_organizer["org_id"]
+        return service.activate_hackathon(hack_id, org_id)
+    except ValueError as e:
+        error_msg = str(e)
+        if "not found" in error_msg:
+            raise HTTPException(status_code=404, detail=error_msg) from e
+        elif "permission" in error_msg:
+            raise HTTPException(status_code=403, detail=error_msg) from e
+        else:
+            raise HTTPException(status_code=400, detail=error_msg) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to activate hackathon: {str(e)}") from e
+
+
 @router.delete("/{hack_id}", status_code=204)
 async def delete_hackathon(
     hack_id: str,

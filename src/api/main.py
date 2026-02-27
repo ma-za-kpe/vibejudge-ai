@@ -19,6 +19,7 @@ from src.api.routes import (
     hackathons,
     health,
     organizers,
+    public,
     submissions,
     usage,
 )
@@ -67,7 +68,9 @@ app.add_middleware(
 # ============================================================
 
 # Initialize DynamoDB helper for middleware
-db_helper = DynamoDBHelper(table_name=settings.dynamodb_table_name)
+# Use environment variable directly to avoid Settings default value issue
+table_name = os.environ.get("TABLE_NAME", "vibejudge-dev")
+db_helper = DynamoDBHelper(table_name=table_name)
 
 # Add middleware stack (order matters - last added runs first)
 # Execution order: SecurityLogger → Budget → RateLimit → Routes
@@ -87,10 +90,19 @@ app.add_middleware(
 )
 
 # 3. Rate Limit Middleware (runs first, fastest check)
+# Note: Mangum strips stage prefix, so paths are WITHOUT /dev prefix
 app.add_middleware(
     RateLimitMiddleware,
     db_helper=db_helper,
-    exempt_paths=["/health", "/docs", "/openapi.json", "/redoc"],
+    exempt_paths=[
+        "/health",
+        "/docs",
+        "/openapi.json",
+        "/redoc",
+        "/api/v1/public/hackathons",
+        "/api/v1/organizers",  # Registration endpoint
+        "/api/v1/organizers/login",  # Login endpoint
+    ],
 )
 
 # ============================================================
@@ -148,7 +160,10 @@ async def unauthorized_handler(request: Request, exc: Exception) -> JSONResponse
 # Health check (no prefix)
 app.include_router(health.router)
 
-# API v1 routes
+# Public endpoints (no authentication required)
+app.include_router(public.router, prefix="/api/v1")
+
+# API v1 routes (authentication required)
 app.include_router(organizers.router, prefix="/api/v1")
 app.include_router(hackathons.router, prefix="/api/v1")
 app.include_router(submissions.router, prefix="/api/v1")
