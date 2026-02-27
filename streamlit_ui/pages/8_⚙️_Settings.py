@@ -53,7 +53,7 @@ def render_profile_section(api_client: APIClient) -> None:
 
     try:
         # Fetch profile data
-        profile = api_client.get("/api/v1/organizers/me")
+        profile = api_client.get("/organizers/me")
 
         # Display profile in columns
         col1, col2 = st.columns(2)
@@ -151,7 +151,7 @@ def render_api_keys_section(api_client: APIClient) -> None:
                     if expires_at:
                         payload["expires_at"] = expires_at
 
-                    result = api_client.post("/api/v1/api-keys", json=payload)
+                    result = api_client.post("/api-keys", json=payload)
 
                     # Display new API key
                     st.success("✅ API key created successfully!")
@@ -171,7 +171,7 @@ def render_api_keys_section(api_client: APIClient) -> None:
 
     try:
         # Fetch API keys
-        response = api_client.get("/api/v1/api-keys")
+        response = api_client.get("/api-keys")
         api_keys = response.get("api_keys", [])
 
         if not api_keys:
@@ -225,7 +225,7 @@ def render_api_keys_section(api_client: APIClient) -> None:
                             with col_a:
                                 if st.button("🔄 Rotate", key=f"rotate_{key_id}", use_container_width=True):
                                     try:
-                                        result = api_client.post(f"/api/v1/api-keys/{key_id}/rotate", json={})
+                                        result = api_client.post(f"/api-keys/{key_id}/rotate", json={})
                                         st.success("✅ Key rotated! New key:")
                                         st.code(result.get("api_key"), language="text")
                                         st.rerun()
@@ -235,7 +235,7 @@ def render_api_keys_section(api_client: APIClient) -> None:
                             with col_b:
                                 if st.button("🗑️ Revoke", key=f"revoke_{key_id}", use_container_width=True):
                                     try:
-                                        api_client.delete(f"/api/v1/api-keys/{key_id}")
+                                        api_client.delete(f"/api-keys/{key_id}")
                                         st.success("✅ Key revoked")
                                         st.rerun()
                                     except APIError as e:
@@ -301,7 +301,7 @@ def render_usage_section(api_client: APIClient) -> None:
 
             # Fetch usage summary
             response = api_client.get(
-                f"/api/v1/usage/summary?start_date={start_str}&end_date={end_str}"
+                f"/usage/summary?start_date={start_str}&end_date={end_str}"
             )
 
             # Display summary metrics
@@ -349,7 +349,7 @@ def render_usage_section(api_client: APIClient) -> None:
                 try:
                     # Note: This would need to handle the streaming response properly
                     st.info("CSV export functionality requires download handling")
-                    export_url = f"{st.session_state['api_base_url']}/api/v1/usage/export?start_date={start_str}&end_date={end_str}"
+                    export_url = f"{st.session_state['api_base_url']}/usage/export?start_date={start_str}&end_date={end_str}"
                     st.markdown(f"[Download CSV]({export_url})")
                 except Exception as e:
                     st.error(f"Export failed: {str(e)}")

@@ -31,7 +31,7 @@ def validate_api_key(api_key: str, base_url: str) -> bool:
         base_url = base_url.rstrip("/")
 
         # Use /hackathons endpoint instead of /health (requires authentication)
-        response = requests.get(f"{base_url}/hackathons", headers={"X-API-Key": api_key}, timeout=5)
+        response = requests.get(f"{base_url}/api/v1/hackathons", headers={"X-API-Key": api_key}, timeout=5)
 
         # Return True if status code is 200 (OK)
         is_valid = response.status_code == 200
