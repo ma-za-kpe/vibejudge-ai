@@ -13788,3 +13788,31 @@ curl -X POST "https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev/api/v1/
 - Verify submission appears in Submissions Management page
 - Test analysis trigger for public submissions
 - Update documentation with public API endpoints
+
+
+### Post-Session Fixes
+
+**Submissions Page Timeout Issue (February 27, 2026)**
+
+**Problem:** Submissions Management page showing "Connection timeout" error when fetching submissions.
+
+**Root Cause:** Default 10-second timeout in APIClient was too short for the submissions endpoint, which can be slow with pagination and multiple submissions.
+
+**Solution:**
+- Increased timeout from 10s to 30s specifically for `fetch_submissions()` function
+- Added comment explaining the longer timeout requirement
+
+**Files Modified:**
+- `streamlit_ui/pages/6_Submissions.py` - Increased timeout to 30 seconds
+
+**Commits:**
+- `839ff0a`: Fix hackathons response parsing in Submissions page
+- `7319eb8`: Increase timeout for submissions endpoint to 30 seconds
+
+**Deployment:**
+- Frontend: ECS Task Definition 25 (rolling deployment)
+- Status: ✅ Deployed and operational
+
+**Verification:**
+- API endpoint working correctly (returns 2 submissions in ~1.3 seconds)
+- Streamlit page will load submissions without timeout after deployment completes
