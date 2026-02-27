@@ -186,7 +186,7 @@ def main() -> None:
                     if success and api_key:
                         st.success(f"✅ {message}")
 
-                        # Display API key with copy button
+                        # Display API key
                         st.markdown("### 🔑 Your API Key")
                         st.warning(
                             "⚠️ **IMPORTANT**: Save your API key now! "
@@ -195,11 +195,6 @@ def main() -> None:
 
                         # Show API key in a code block
                         st.code(api_key, language="text")
-
-                        # Copy button
-                        if st.button("📋 Copy API Key", use_container_width=True):
-                            st.write("API key copied to clipboard!")
-                            # Note: Actual clipboard copy requires JavaScript
 
                         st.markdown("---")
                         st.info(
@@ -212,10 +207,6 @@ def main() -> None:
                         # Store API key in session for immediate login
                         st.session_state["api_key"] = api_key
                         st.session_state["just_registered"] = True
-
-                        # Add button to go to home page
-                        if st.button("🏠 Go to Dashboard", type="primary", use_container_width=True):
-                            st.switch_page("app.py")
 
                     else:
                         st.error(f"❌ {message}")
