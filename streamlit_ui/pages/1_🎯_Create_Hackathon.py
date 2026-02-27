@@ -309,42 +309,13 @@ def render_hackathon_form() -> None:
 
                     logger.info(f"Hackathon created successfully: {response.get('hack_id')}")
 
-                    # Show activation section
+                    # Show next steps
                     st.markdown("---")
-                    st.markdown("### ⚡ Activate Hackathon")
-                    st.warning(
-                        "⚠️ Your hackathon is in **DRAFT** status. "
-                        "You must activate it before participants can submit and before it appears on the dashboard."
+                    st.markdown("### Next Steps")
+                    st.info(
+                        "Your hackathon is in **DRAFT** status. "
+                        "Go to the **Manage Hackathons** page to activate it before participants can submit."
                     )
-
-                    if st.button("🚀 Activate Hackathon Now", type="primary", use_container_width=True):
-                        try:
-                            with st.spinner("⚡ Activating hackathon..."):
-                                activation_response = api_client.post(
-                                    f"/hackathons/{response.get('hack_id')}/activate", json={}
-                                )
-
-                            st.success("✅ Hackathon activated successfully!")
-                            st.info(f"**New Status**: {activation_response.get('status', 'N/A').upper()}")
-
-                            # Clear cache and session state
-                            st.cache_data.clear()
-                            if "created_hack_id" in st.session_state:
-                                del st.session_state["created_hack_id"]
-
-                            # Show next steps
-                            st.markdown("---")
-                            st.markdown("### Next Steps")
-                            st.markdown("""
-                            1. Share the submission form with participants
-                            2. Monitor submissions on the **📊 Live Dashboard** page
-                            3. Trigger analysis when submissions are ready
-                            4. View results on the **🏆 Results** page
-                            """)
-
-                        except APIError as e:
-                            st.error(f"❌ Failed to activate hackathon: {str(e)}")
-                            logger.error(f"Failed to activate hackathon {response.get('hack_id')}: {e}")
 
             except ValidationError as e:
                 # Display validation errors inline
