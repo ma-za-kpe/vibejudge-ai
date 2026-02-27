@@ -37,7 +37,8 @@ def register_organizer(
         # Create temporary client without API key for registration
         import requests
 
-        url = f"{api_base_url.rstrip('/')}/api/v1/organizers"
+        # Note: api_base_url already includes /api/v1 prefix
+        url = f"{api_base_url.rstrip('/')}/organizers"
         payload = {
             "email": email,
             "password": password,

@@ -29,41 +29,166 @@ VibeJudge AI is a production-ready automated hackathon judging platform that use
 - **Dashboard UI:** http://vibejudge-alb-prod-1135403146.us-east-1.elb.amazonaws.com
 
 **Latest Deployment (February 27, 2026):**
-- ✅ Backend API deployed with rate limit middleware fixes
-- ✅ Frontend dashboard deployed with corrected endpoint URLs
+- ✅ Backend API deployed with rate limit middleware fixes (commit 15c676d)
+- ✅ Frontend dashboard URL construction bug fixed (double /api/v1 prefix)
 - ✅ Registration endpoint routing fixed (404 → 200)
 - ✅ Login endpoint routing fixed (404 → 200)
+- ✅ API key validation endpoint fixed (404 → 200)
 - ✅ Registration authentication bug fixed (401 → working)
 - ✅ All public endpoints accessible without API keys
-- ✅ ECS task definition: vibejudge-dashboard-prod:15
-- ✅ Docker image: route-fix
+- ✅ ECS task definition: vibejudge-dashboard-prod:19 (API_BASE_URL includes /api/v1)
+- ✅ Pending deployment: URL construction fixes in 3 frontend files
 - ✅ Documentation updated in PROJECT_PROGRESS.md
 
 ---
 
 ## Table of Contents
 
-1. [URL Construction Bug Fix & Documentation Updates](#url-construction-bug-fix--documentation-updates)
-2. [Self-Service UI Deployment](#self-service-ui-deployment)
-3. [API Key System Migration Complete](#api-key-system-migration-complete)
-4. [Rate Limiting and API Security Implementation](#rate-limiting-and-api-security-implementation)
-2. [Rate Limiting and API Security Spec](#rate-limiting-and-api-security-spec)
-3. [Streamlit AWS ECS Deployment Infrastructure](#streamlit-aws-ecs-deployment-infrastructure)
-3. [Integration Test Bedrock Mocks Bugfix](#integration-test-bedrock-mocks-bugfix)
-4. [Streamlit Organizer Dashboard Spec](#streamlit-organizer-dashboard-spec)
-5. [E2E Production Test Suite Implementation](#e2e-production-test-suite-implementation)
-6. [Air-Tight Pre-Commit Hooks Implementation](#air-tight-pre-commit-hooks-implementation)
-7. [Phase 8: Service Layer Implementation](#phase-8-service-layer-implementation)
-8. [Phase 9: API Integration](#phase-9-api-integration)
-9. [Phase 10: TODO Implementation](#phase-10-todo-implementation)
-10. [Phase 11: Analysis Pipeline](#phase-11-analysis-pipeline)
-11. [Phase 12: Bedrock Model Access](#phase-12-bedrock-model-access)
-12. [Phase 13: AWS Deployment](#phase-13-aws-deployment)
-13. [Phase 14: Agent Tuning & Production](#phase-14-agent-tuning--production)
-14. [Comprehensive Platform Audit](#comprehensive-platform-audit)
-15. [Current Status & Metrics](#current-status--metrics)
-16. [Key Learnings](#key-learnings)
-17. [Next Steps](#next-steps)
+1. [Double API Prefix Bug Fix (February 27, 2026)](#double-api-prefix-bug-fix-february-27-2026)
+2. [URL Construction Bug Fix & Documentation Updates](#url-construction-bug-fix--documentation-updates)
+3. [Self-Service UI Deployment](#self-service-ui-deployment)
+4. [API Key System Migration Complete](#api-key-system-migration-complete)
+5. [Rate Limiting and API Security Implementation](#rate-limiting-and-api-security-implementation)
+6. [Rate Limiting and API Security Spec](#rate-limiting-and-api-security-spec)
+7. [Streamlit AWS ECS Deployment Infrastructure](#streamlit-aws-ecs-deployment-infrastructure)
+8. [Integration Test Bedrock Mocks Bugfix](#integration-test-bedrock-mocks-bugfix)
+9. [Streamlit Organizer Dashboard Spec](#streamlit-organizer-dashboard-spec)
+10. [E2E Production Test Suite Implementation](#e2e-production-test-suite-implementation)
+11. [Air-Tight Pre-Commit Hooks Implementation](#air-tight-pre-commit-hooks-implementation)
+12. [Phase 8: Service Layer Implementation](#phase-8-service-layer-implementation)
+13. [Phase 9: API Integration](#phase-9-api-integration)
+14. [Phase 10: TODO Implementation](#phase-10-todo-implementation)
+15. [Phase 11: Analysis Pipeline](#phase-11-analysis-pipeline)
+16. [Phase 12: Bedrock Model Access](#phase-12-bedrock-model-access)
+17. [Phase 13: AWS Deployment](#phase-13-aws-deployment)
+18. [Phase 14: Agent Tuning & Production](#phase-14-agent-tuning--production)
+19. [Comprehensive Platform Audit](#comprehensive-platform-audit)
+20. [Current Status & Metrics](#current-status--metrics)
+21. [Key Learnings](#key-learnings)
+22. [Next Steps](#next-steps)
+
+---
+
+## Double API Prefix Bug Fix (February 27, 2026)
+
+**Date:** February 27, 2026  
+**Status:** ✅ FIXED (Pending Deployment)  
+**Type:** Critical Bug Fix
+
+### Overview
+
+Fixed critical URL construction bug causing HTTP 404 errors on authentication, registration, and login. Three frontend files were manually constructing URLs with hardcoded `/api/v1` prefix when the `API_BASE_URL` environment variable already included it, resulting in double `/api/v1/api/v1/` paths.
+
+### Problem
+
+User reported API key validation failing with HTTP 404:
+```
+API key: vj_live_SCoecIaoqCSnMkFUJ/6FJIdq+9zZ2jms
+Error: Invalid API key (HTTP 404)
+Backend logs: path: /api/v1/api/v1/hackathons
+```
+
+**Root Cause:**
+- `API_BASE_URL` = `https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev/api/v1` (includes `/api/v1`)
+- Code was adding another `/api/v1` prefix
+- Result: `/api/v1/api/v1/hackathons` → HTTP 404 Not Found
+
+### Analysis
+
+**Why This Happened:**
+1. ECS task definition 19 updated `API_BASE_URL` to include `/api/v1` suffix
+2. Three files were manually constructing URLs (not using APIClient)
+3. These files still had hardcoded `/api/v1` prefix from earlier URL standard
+4. APIClient correctly handles this (uses `f"{base_url}{endpoint}"`)
+
+**Affected Endpoints:**
+- `/api/v1/api/v1/hackathons` (auth validation) → 404
+- `/api/v1/api/v1/organizers/login` (email/password login) → 404
+- `/api/v1/api/v1/organizers` (registration) → 404
+
+### Solution
+
+**Files Fixed:**
+
+1. **`streamlit_ui/components/auth.py`** (line 34)
+   ```python
+   # Before
+   response = requests.get(f"{base_url}/api/v1/hackathons", ...)
+   
+   # After (with comment)
+   # Note: base_url already includes /api/v1 prefix
+   response = requests.get(f"{base_url}/hackathons", ...)
+   ```
+
+2. **`streamlit_ui/app.py`** (line 52)
+   ```python
+   # Before
+   url = f"{api_base_url.rstrip('/')}/api/v1/organizers/login"
+   
+   # After (with comment)
+   # Note: api_base_url already includes /api/v1 prefix
+   url = f"{api_base_url.rstrip('/')}/organizers/login"
+   ```
+
+3. **`streamlit_ui/pages/0_📝_Register.py`** (line 40)
+   ```python
+   # Before
+   url = f"{api_base_url.rstrip('/')}/api/v1/organizers"
+   
+   # After (with comment)
+   # Note: api_base_url already includes /api/v1 prefix
+   url = f"{api_base_url.rstrip('/')}/organizers"
+   ```
+
+### Why Other Pages Don't Have This Issue
+
+All other Streamlit pages use the `APIClient` class which correctly constructs URLs:
+```python
+# APIClient.get() implementation
+url = f"{self.base_url}{endpoint}"  # No hardcoded /api/v1
+```
+
+Only these 3 files were manually constructing URLs with `requests` library directly.
+
+### Impact
+
+**Before Fix:**
+- ❌ API key validation failing (404)
+- ❌ Email/password login broken (404)
+- ❌ New user registration broken (404)
+- ❌ Users unable to authenticate
+
+**After Fix:**
+- ✅ API key validation working
+- ✅ Email/password login working
+- ✅ Registration working
+- ✅ All authentication flows functional
+
+### Deployment
+
+**Pending:**
+- Commit changes to git
+- Build new Docker image
+- Push to ECR
+- Register new ECS task definition
+- Update ECS service with force new deployment
+
+**Expected Result:**
+- API key `vj_live_SCoecIaoqCSnMkFUJ/6FJIdq+9zZ2jms` will validate successfully
+- All authentication endpoints will return HTTP 200
+
+### Files Modified
+
+- `streamlit_ui/components/auth.py` - Fixed validation endpoint URL
+- `streamlit_ui/app.py` - Fixed login endpoint URL
+- `streamlit_ui/pages/0_📝_Register.py` - Fixed registration endpoint URL
+
+### Lessons Learned
+
+1. **URL Standard Consistency:** When environment variables include path prefixes, document it clearly
+2. **Centralized URL Construction:** Use APIClient for all HTTP calls to avoid inconsistencies
+3. **Code Comments:** Added comments explaining why `/api/v1` is not included
+4. **Testing:** Test all authentication flows after URL standard changes
 
 ---
 
