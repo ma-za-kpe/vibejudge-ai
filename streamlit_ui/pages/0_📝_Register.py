@@ -57,9 +57,14 @@ def register_organizer(
             else:
                 logger.error("Registration response missing API key")
                 return False, "Registration failed: No API key returned", None
-        elif response.status_code == 409:
-            logger.warning(f"Registration failed: Email {email} already exists")
-            return False, "Email already registered. Please use login instead.", None
+        elif response.status_code in (400, 409):
+            # Handle both 400 (ValueError from service) and 409 (Conflict)
+            error_detail = response.json().get("detail", "Registration failed")
+            logger.warning(f"Registration failed: {error_detail}")
+            # Check if it's a duplicate email error
+            if "already registered" in error_detail.lower():
+                return False, "Email already registered. Please use login instead.", None
+            return False, error_detail, None
         elif response.status_code == 422:
             error_detail = response.json().get("detail", "Invalid input")
             logger.warning(f"Registration validation error: {error_detail}")
