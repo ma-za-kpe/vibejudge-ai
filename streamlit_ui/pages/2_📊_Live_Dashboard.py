@@ -69,6 +69,9 @@ def fetch_hackathons(api_key: str) -> list[dict]:
     client = APIClient(st.session_state["api_base_url"], api_key)
     try:
         response = client.get("/hackathons")
+        # API returns {"hackathons": [...], "next_cursor": null, "has_more": false}
+        if isinstance(response, dict):
+            return response.get("hackathons", [])
         return response if isinstance(response, list) else []
     except APIError as e:
         logger.error(f"Failed to fetch hackathons: {e}")
