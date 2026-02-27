@@ -40,7 +40,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         Args:
             app: ASGI application
             db_helper: DynamoDB helper instance
-            exempt_paths: List of paths to exempt from rate limiting
+            exempt_paths: List of paths to exempt from rate limiting (supports * wildcard)
         """
         super().__init__(app)
         self.db_helper = db_helper
@@ -55,6 +55,30 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             "/organizers/login",  # Login endpoint (without prefix)
         ]
 
+    def _is_path_exempt(self, path: str) -> bool:
+        """Check if path is exempt from rate limiting (supports * wildcard).
+        
+        Args:
+            path: Request path to check
+            
+        Returns:
+            True if path is exempt, False otherwise
+        """
+        for exempt_path in self.exempt_paths:
+            # Exact match
+            if path == exempt_path:
+                return True
+
+            # Wildcard match (e.g., "/api/v1/public/hackathons/*/submissions")
+            if "*" in exempt_path:
+                import re
+                # Convert wildcard pattern to regex (escape special chars, replace * with .*)
+                pattern = "^" + re.escape(exempt_path).replace(r"\*", ".*") + "$"
+                if re.match(pattern, path):
+                    return True
+
+        return False
+
     async def dispatch(
         self, request: Request, call_next: Callable
     ) -> Response:
@@ -67,9 +91,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         Returns:
             HTTP response with rate limit headers
         """
-        # Check if path is exempt
+        # Check if path is exempt (supports wildcard matching with *)
         logger.info("rate_limit_check_path", path=request.url.path, exempt_paths=self.exempt_paths)
-        if request.url.path in self.exempt_paths:
+        if self._is_path_exempt(request.url.path):
             logger.info("path_exempt_from_rate_limit", path=request.url.path)
             return await call_next(request)
 
