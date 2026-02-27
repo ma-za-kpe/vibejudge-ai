@@ -355,7 +355,7 @@ Resources:
               Protocol: tcp
           Environment:
             - Name: API_BASE_URL
-              Value: https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev/api/v1
+              Value: https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev
             - Name: STREAMLIT_SERVER_PORT
               Value: '8501'
             - Name: STREAMLIT_SERVER_ADDRESS
