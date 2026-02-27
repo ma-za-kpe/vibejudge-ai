@@ -216,10 +216,13 @@ if st.session_state["cost_estimate"] is None:
             # Fetch cost estimate
             with st.spinner("💰 Fetching cost estimate..."):
                 estimate_response = api_client.post(
-                    f"/hackathons/{selected_hack_id}/estimate", json={}
+                    f"/hackathons/{selected_hack_id}/analyze/estimate", json={}
                 )
 
-            estimated_cost = estimate_response.get("estimated_cost_usd", 0.0)
+            # Parse nested cost estimate structure
+            estimate_detail = estimate_response.get("estimate", {})
+            total_cost_range = estimate_detail.get("total_cost_usd", {})
+            estimated_cost = total_cost_range.get("expected", 0.0)
 
             # Store estimate in session state
             st.session_state["cost_estimate"] = estimated_cost
