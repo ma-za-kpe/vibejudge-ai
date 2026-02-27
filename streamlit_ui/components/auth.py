@@ -90,3 +90,30 @@ def logout() -> None:
     """
     logger.info("User logged out, clearing session state")
     st.session_state.clear()
+
+
+def require_authentication(func):
+    """Decorator to require authentication for a page.
+
+    This decorator checks if the user is authenticated before allowing access
+    to a page. If not authenticated, it displays an error message and stops
+    execution.
+
+    Args:
+        func: The function to wrap (typically a page's main function)
+
+    Returns:
+        The wrapped function that checks authentication first
+
+    Example:
+        >>> @require_authentication
+        ... def main():
+        ...     st.title("Protected Page")
+    """
+    def wrapper(*args, **kwargs):
+        if not is_authenticated():
+            st.error("⚠️ Authentication required. Please login first.")
+            st.info("👉 Go to the [home page](/) to authenticate.")
+            st.stop()
+        return func(*args, **kwargs)
+    return wrapper
