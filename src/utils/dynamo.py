@@ -3,7 +3,7 @@
 from typing import Any
 
 import boto3
-from boto3.dynamodb.conditions import Attr, Key
+from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
 
 from src.utils.logging import get_logger
@@ -749,18 +749,30 @@ class DynamoDBHelper:
             API key record or None
         """
         try:
-            # Query GSI3 which should index on api_key field
-            # Note: This requires GSI3 to be configured in SAM template
-            # For now, we'll scan (inefficient but works for MVP)
-            # TODO: Add GSI3 with api_key as partition key
-
-            # Temporary implementation using scan
-            # In production, use GSI query
+            # Scan with pagination to search entire table
+            # DynamoDB scan has 1MB limit per page, must paginate to find key
+            # Filter by entity_type to only match API_KEY records (not RATE_LIMIT_COUNTER)
             response = self.table.scan(
-                FilterExpression=Attr("api_key").eq(api_key),
-                Limit=1,
+                FilterExpression="api_key = :key AND entity_type = :type",
+                ExpressionAttributeValues={":key": api_key, ":type": "API_KEY"}
             )
             items = response.get("Items", [])
+
+            # Continue paginating until we find the key or exhaust all pages
+            while not items and "LastEvaluatedKey" in response:
+                response = self.table.scan(
+                    FilterExpression="api_key = :key AND entity_type = :type",
+                    ExpressionAttributeValues={":key": api_key, ":type": "API_KEY"},
+                    ExclusiveStartKey=response["LastEvaluatedKey"]
+                )
+                items.extend(response.get("Items", []))
+
+            logger.info(
+                "get_api_key_by_secret_scan",
+                item_count=len(items),
+                api_key_prefix=api_key[:15] if api_key else None,
+            )
+
             return items[0] if items else None
         except ClientError as e:
             logger.error("get_api_key_by_secret_failed", error=str(e))

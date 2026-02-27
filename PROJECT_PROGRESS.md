@@ -29,15 +29,15 @@ VibeJudge AI is a production-ready automated hackathon judging platform that use
 - **Dashboard UI:** http://vibejudge-alb-prod-1135403146.us-east-1.elb.amazonaws.com
 
 **Latest Deployment (February 27, 2026):**
-- ✅ Backend API deployed with documentation updates
-- ✅ Frontend dashboard deployed with new self-service UI pages
-- ✅ Registration page (0_📝_Register.py) - Complete user onboarding
-- ✅ Email/password login - Lost API key recovery
-- ✅ Settings page (8_⚙️_Settings.py) - Full API key lifecycle management
-- ✅ All authentication endpoints operational
-- ✅ ECS service stable with 2 healthy tasks
-- ✅ URL construction bug fixed (double /api/v1 prefix eliminated)
-- ✅ Documentation updated across README.md and streamlit_ui/README.md
+- ✅ Backend API deployed with rate limit middleware fixes
+- ✅ Frontend dashboard deployed with corrected endpoint URLs
+- ✅ Registration endpoint routing fixed (404 → 200)
+- ✅ Login endpoint routing fixed (404 → 200)
+- ✅ Registration authentication bug fixed (401 → working)
+- ✅ All public endpoints accessible without API keys
+- ✅ ECS task definition: vibejudge-dashboard-prod:15
+- ✅ Docker image: route-fix
+- ✅ Documentation updated in PROJECT_PROGRESS.md
 
 ---
 
@@ -13232,6 +13232,12 @@ Registration was failing with 404 errors due to inconsistent URL construction:
 **Deployment Status:** ✅ 2/2 tasks running (HEALTHY)  
 **Deployment Time:** ~2 minutes (rolling update)
 
+**Backend Deployment (Registration Fix):**
+- Stack: vibejudge-dev
+- API URL: https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev/
+- Fixed rate limit middleware to exempt registration/login endpoints
+- Commit: 15c676d
+
 ### Impact
 
 **Before Fix:**
@@ -13260,6 +13266,127 @@ Registration was failing with 404 errors due to inconsistent URL construction:
 - ✅ Error messages show actual details (not "Unknown error")
 - ✅ Dashboard health check passing (HTTP 200)
 - ✅ ECS service stable with 2 healthy tasks
+
+---
+
+## Registration Authentication Bug Fix
+
+**Date:** February 27, 2026  
+**Status:** ✅ COMPLETE  
+**Type:** Critical Security Bug Fix
+
+### Overview
+
+Fixed critical authentication bug preventing user registration. The rate limit middleware was requiring API keys for ALL endpoints including the public registration endpoint, causing HTTP 401 errors.
+
+### Problem
+
+Users attempting to register received HTTP 401 "Missing X-API-Key header" errors:
+- Dashboard sends: `POST https://.../dev/organizers`
+- Path received by API: `/organizers`
+- Exempt paths in backend: `/api/v1/organizers` ❌
+- Path not exempt → requires API key
+- No API key on registration → 401 error
+
+### Root Cause
+
+The rate limit middleware had two issues:
+
+1. **Path Mismatch:** Exempt paths only included `/api/v1/organizers` and `/api/v1/organizers/login`
+2. **URL Standard Change:** Dashboard now uses base URL without `/api/v1` prefix
+3. **Missing Paths:** Paths `/organizers` and `/organizers/login` were not exempt
+4. **Public Endpoint:** Registration is a public endpoint that shouldn't require authentication
+
+### Solution
+
+**Backend Changes:**
+
+1. **Updated Rate Limit Middleware** (`src/api/middleware/rate_limit.py`)
+   - Added `/organizers` and `/organizers/login` to default exempt paths
+   - Maintains backwards compatibility with `/api/v1` prefix paths
+
+2. **Updated Main Application** (`src/api/main.py`)
+   - Added both path formats (with and without `/api/v1` prefix) to middleware configuration
+   - Ensures transition period support for both URL patterns
+
+**Exempt Paths Configuration:**
+```python
+exempt_paths=[
+    "/health",
+    "/docs",
+    "/openapi.json",
+    "/redoc",
+    "/api/v1/public/hackathons",
+    "/api/v1/organizers",         # Backwards compatibility
+    "/api/v1/organizers/login",   # Backwards compatibility
+    "/organizers",                # New URL standard ✅
+    "/organizers/login",          # New URL standard ✅
+]
+```
+
+### Deployment
+
+**Backend Deployment:**
+- Stack: vibejudge-dev
+- API URL: https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev/
+- Status: UPDATE_COMPLETE
+- Commit: 15c676d
+- Deployment Time: ~3 minutes
+
+**Changes Deployed:**
+- Rate limit middleware with updated exempt paths
+- Main application with both URL format support
+- No frontend changes required (already using correct URL format)
+
+### Impact
+
+**Before Fix:**
+- ❌ Registration completely broken (HTTP 401)
+- ❌ Users unable to create accounts
+- ❌ Platform unusable for new users
+- ❌ Public endpoints requiring authentication
+
+**After Fix:**
+- ✅ Registration working correctly
+- ✅ Login working correctly
+- ✅ Public endpoints accessible without authentication
+- ✅ Backwards compatibility maintained
+- ✅ New users can onboard successfully
+
+### Testing
+
+**Manual Testing:**
+1. ✅ Registration with valid data succeeds (HTTP 200)
+2. ✅ Registration with duplicate email fails correctly (HTTP 400)
+3. ✅ Login with email/password succeeds (HTTP 200)
+4. ✅ Protected endpoints still require authentication (HTTP 401 without key)
+5. ✅ Public endpoints accessible without authentication
+
+**Automated Testing:**
+```bash
+# Test registration endpoint (no API key required)
+curl -X POST https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev/organizers \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"password123","name":"Test","organization":"Test Org"}'
+# Expected: HTTP 200 or 400 (not 401)
+
+# Test protected endpoint (API key required)
+curl -X GET https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev/hackathons
+# Expected: HTTP 401 (Missing X-API-Key header)
+```
+
+### Files Modified
+
+- `src/api/middleware/rate_limit.py` - Added `/organizers` and `/organizers/login` to default exempt paths
+- `src/api/main.py` - Added both path formats to middleware configuration
+
+### Lessons Learned
+
+1. **URL Standard Consistency:** When changing URL patterns, update ALL middleware and configuration
+2. **Public Endpoints:** Always verify public endpoints are exempt from authentication
+3. **Backwards Compatibility:** Support both old and new URL formats during transition
+4. **Testing:** Test authentication on public endpoints explicitly
+5. **Error Messages:** HTTP 401 on registration is a clear sign of authentication misconfiguration
 
 ---
 

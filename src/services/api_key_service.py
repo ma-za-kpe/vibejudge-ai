@@ -127,22 +127,16 @@ class APIKeyService:
             APIKey object if valid, None if invalid/expired/inactive
 
         Note:
-            Currently uses table scan which is not optimal for production.
-            TODO: Add GSI on api_key field for efficient lookup.
+            Uses DynamoDB helper's get_api_key_by_secret which handles pagination
+            and filters by entity_type to avoid RATE_LIMIT_COUNTER records.
         """
         try:
-            response = self.db.table.scan(
-                FilterExpression="api_key = :key",
-                ExpressionAttributeValues={":key": api_key},
-            )
-            items = response.get("Items", [])
+            # Use DynamoDB helper which has proper entity_type filtering
+            api_key_data = self.db.get_api_key_by_secret(api_key)
 
-            if not items:
+            if not api_key_data:
                 logger.warning("api_key_not_found", api_key_prefix=api_key[:8])
                 return None
-
-            # Convert to APIKey model
-            api_key_data = items[0]
 
             # Convert ISO strings to datetime objects
             from datetime import datetime

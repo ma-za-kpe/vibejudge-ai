@@ -341,27 +341,29 @@ class HackathonService:
         Returns:
             List of configured hackathons
         """
-        # Query GSI1 to get all hackathon META records
+        # Use scan instead of GSI query since we need all hackathons across all organizers
+        # GSI1 is organized by organizer (GSI1PK = ORG#xxx), not suitable for cross-org queries
         try:
-            response = self.db.table.query(
-                IndexName="GSI1",
-                KeyConditionExpression="GSI1SK = :meta",
-                ExpressionAttributeValues={":meta": "META"},
+            response = self.db.table.scan(
+                FilterExpression="SK = :meta AND #status = :configured",
+                ExpressionAttributeNames={"#status": "status"},
+                ExpressionAttributeValues={
+                    ":meta": "META",
+                    ":configured": HackathonStatus.CONFIGURED.value,
+                },
             )
 
             records = response.get("Items", [])
 
-            # Filter for CONFIGURED status only
+            # Convert to HackathonResponse objects
             configured_hackathons = []
             for record in records:
-                if record.get("status") == HackathonStatus.CONFIGURED.value:
-                    hackathon = self.get_hackathon(record["hack_id"])
-                    if hackathon:
-                        configured_hackathons.append(hackathon)
+                hackathon = self.get_hackathon(record["hack_id"])
+                if hackathon:
+                    configured_hackathons.append(hackathon)
 
             logger.info(
                 "public_hackathons_listed",
-                total_count=len(records),
                 configured_count=len(configured_hackathons),
             )
 

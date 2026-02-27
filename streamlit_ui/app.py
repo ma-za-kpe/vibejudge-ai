@@ -49,7 +49,7 @@ def login_with_email_password(email: str, password: str, api_base_url: str) -> t
     try:
         import requests
 
-        url = f"{api_base_url.rstrip('/')}/organizers/login"
+        url = f"{api_base_url.rstrip('/')}/api/v1/organizers/login"
         payload = {"email": email, "password": password}
 
         logger.info(f"Attempting login for: {email}")

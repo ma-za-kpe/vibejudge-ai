@@ -10,6 +10,7 @@ from starlette.types import ASGIApp
 
 from src.models.rate_limit import SecurityEvent, Severity
 from src.utils.dynamo import DynamoDBHelper
+from src.utils.id_gen import generate_id
 from src.utils.logging import get_logger
 
 logger = get_logger(__name__)
