@@ -3,7 +3,7 @@
 This page allows organizers to:
 - Select a hackathon from a dropdown
 - View submission statistics (submission_count, verified_count, pending_count, participant_count)
-- Monitor statistics with automatic refresh every 5 seconds
+- Monitor statistics with automatic refresh every 5 minutes (manual refresh available)
 """
 
 import logging
@@ -22,9 +22,10 @@ logger = logging.getLogger(__name__)
 st.set_page_config(page_title="Live Dashboard", page_icon="📊", layout="wide")
 
 
-# Auto-refresh every 5 seconds (5000 milliseconds)
+# Auto-refresh every 5 minutes (300000 milliseconds)
+# Reduced from 5s to prevent DynamoDB throttling - users can manually refresh
 # Returns the number of times the page has refreshed
-refresh_count = st_autorefresh(interval=5000, key="live_dashboard_refresh")
+refresh_count = st_autorefresh(interval=300000, key="live_dashboard_refresh")
 
 
 # Initialize last refresh timestamp in session state
@@ -52,7 +53,7 @@ st.markdown("Monitor your hackathon submissions in real-time.")
 
 # Display last refresh timestamp
 last_refresh_time = st.session_state["last_refresh"].strftime("%Y-%m-%d %H:%M:%S")
-st.caption(f"🕐 Last refreshed: {last_refresh_time} (auto-refresh every 5 seconds)")
+st.caption(f"🕐 Last refreshed: {last_refresh_time} (auto-refresh every 5 minutes)")
 
 
 # Cached function to fetch hackathons list
