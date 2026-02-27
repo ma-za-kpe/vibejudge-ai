@@ -21,15 +21,32 @@ VibeJudge AI is a production-ready automated hackathon judging platform that use
 - 🔧 All critical bugs fixed and deployed
 - 🔒 100% type safety (zero mypy errors)
 - ✨ 20+ pre-commit quality gates enforced
+- 🎨 Complete self-service UI with registration, login, and API key management
 
-**Live API:** https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev/  
-**Documentation:** https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev/docs
+**Live Deployments:**
+- **Backend API:** https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev/
+- **API Documentation:** https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev/docs
+- **Dashboard UI:** http://vibejudge-alb-prod-1135403146.us-east-1.elb.amazonaws.com
+
+**Latest Deployment (February 27, 2026):**
+- ✅ Backend API deployed with documentation updates
+- ✅ Frontend dashboard deployed with new self-service UI pages
+- ✅ Registration page (0_📝_Register.py) - Complete user onboarding
+- ✅ Email/password login - Lost API key recovery
+- ✅ Settings page (8_⚙️_Settings.py) - Full API key lifecycle management
+- ✅ All authentication endpoints operational
+- ✅ ECS service stable with 2 healthy tasks
+- ✅ URL construction bug fixed (double /api/v1 prefix eliminated)
+- ✅ Documentation updated across README.md and streamlit_ui/README.md
 
 ---
 
 ## Table of Contents
 
-1. [Rate Limiting and API Security Implementation](#rate-limiting-and-api-security-implementation)
+1. [URL Construction Bug Fix & Documentation Updates](#url-construction-bug-fix--documentation-updates)
+2. [Self-Service UI Deployment](#self-service-ui-deployment)
+3. [API Key System Migration Complete](#api-key-system-migration-complete)
+4. [Rate Limiting and API Security Implementation](#rate-limiting-and-api-security-implementation)
 2. [Rate Limiting and API Security Spec](#rate-limiting-and-api-security-spec)
 3. [Streamlit AWS ECS Deployment Infrastructure](#streamlit-aws-ecs-deployment-infrastructure)
 3. [Integration Test Bedrock Mocks Bugfix](#integration-test-bedrock-mocks-bugfix)
@@ -47,6 +64,259 @@ VibeJudge AI is a production-ready automated hackathon judging platform that use
 15. [Current Status & Metrics](#current-status--metrics)
 16. [Key Learnings](#key-learnings)
 17. [Next Steps](#next-steps)
+
+---
+
+## API Key System Migration Complete
+
+**Date:** February 27, 2026  
+**Status:** ✅ DEPLOYED AND OPERATIONAL  
+**Type:** Critical Infrastructure Migration
+
+### Overview
+
+Successfully migrated from dual API key systems (Simple + Advanced) to single Advanced API key system. All authentication now uses the `vj_live_xxx` format with proper entity_type filtering to prevent record type confusion.
+
+### Problem
+
+The platform had two parallel API key systems causing confusion and maintenance overhead:
+- **Simple System:** 64-char hex keys stored as `api_key_hash` in ORGANIZER table
+- **Advanced System:** `vj_live_xxx` format stored in API_KEY table with rate limiting and budget controls
+
+Authentication was broken due to DynamoDB scan returning wrong record types (RATE_LIMIT_COUNTER instead of API_KEY).
+
+### Root Causes Fixed
+
+**Issue 1: Wrong Record Type Returned**
+- Both API_KEY and RATE_LIMIT_COUNTER records have `api_key` field
+- Scan filtered by `SK = "METADATA"` but still returned COUNTER records
+- **Fix:** Changed filter to `entity_type = "API_KEY"` for precise matching
+
+**Issue 2: Duplicate Scan Logic**
+- Both `dynamo.py` and `api_key_service.py` had separate scan implementations
+- Inconsistent filtering led to authentication failures
+- **Fix:** Consolidated to single implementation in `dynamo.py`
+
+**Issue 3: DynamoDB Scan Pagination**
+- Scan only checked first 1MB of data (~401 items)
+- API keys beyond first page were never found
+- **Fix:** Added pagination loop with `LastEvaluatedKey`
+
+### Changes Made
+
+**Backend:**
+- Removed `api_key_hash` field from `OrganizerRecord` model
+- Removed Simple system code from `organizer_service.py`
+- Updated `get_api_key_by_secret()` in `dynamo.py` with entity_type filter
+- Consolidated `validate_api_key()` in `api_key_service.py` to use DynamoDB helper
+- Removed fallback logic from `rate_limit.py` middleware
+- Updated `dependencies.py` to use only Advanced system
+
+**Infrastructure:**
+- Added `dynamodb:Scan` IAM permission
+- Fixed table name configuration
+- Fixed stage prefix path matching (Mangum strips /dev)
+
+### Test Results
+
+All authentication endpoints working correctly:
+- ✅ Health Check - Working
+- ✅ Get Organizer Profile (valid API key) - Working  
+- ✅ List Hackathons (valid API key) - Working
+- ✅ Public Hackathons (no auth) - Working
+- ✅ Invalid API Key - Correctly rejected (401)
+- ✅ Missing API Key - Correctly rejected (401)
+
+### Impact
+
+**Before Migration:**
+- ❌ Two parallel authentication systems
+- ❌ Authentication broken (wrong record types returned)
+- ❌ Maintenance overhead
+- ❌ All protected endpoints inaccessible
+
+**After Migration:**
+- ✅ Single, consistent authentication system
+- ✅ Proper entity_type filtering
+- ✅ All endpoints working correctly
+- ✅ Rate limiting and budget controls active
+- ✅ Reduced code complexity
+
+### Files Modified
+
+- `src/utils/dynamo.py` - Fixed get_api_key_by_secret() with entity_type filter
+- `src/services/api_key_service.py` - Consolidated to use DynamoDB helper
+- `src/services/organizer_service.py` - Removed Simple system code
+- `src/models/organizer.py` - Removed api_key_hash field
+- `src/api/dependencies.py` - Use Advanced system only
+- `src/api/middleware/rate_limit.py` - Removed fallback logic
+- `src/api/main.py` - Fixed table name and stage prefix
+- `template.yaml` - Added Scan permission
+
+---
+
+## Self-Service UI Implementation (Registration, Login, Settings)
+
+**Date:** February 27, 2026  
+**Status:** ✅ DEPLOYED TO PRODUCTION  
+**Type:** Feature Implementation (MVP User Flow Completion)
+
+### Overview
+
+Implemented complete self-service user flow for the Streamlit dashboard. Users can now register, login with email/password or API key, and manage their API keys through the UI without manual backend access.
+
+### Problem
+
+The dashboard had a critical gap in the user onboarding flow:
+- Users could only login with an existing API key
+- No way to register a new account through the UI
+- No way to login with email/password
+- No way to manage API keys (create, rotate, revoke)
+- Lost API keys meant users were locked out permanently
+
+### Pages Implemented
+
+**1. Registration Page** (`streamlit_ui/pages/0_📝_Register.py`)
+- Complete registration form (email, password, name, organization)
+- Client-side validation (8-char password minimum, required fields)
+- Terms and conditions acceptance checkbox
+- API key displayed once with warning to save it
+- Automatic session storage for immediate login after registration
+- Error handling for conflicts, validation errors, network issues
+- Direct link to login page for existing users
+
+**2. Email/Password Login** (integrated into `streamlit_ui/app.py`)
+- Added tabbed interface: "API Key Login" | "Email/Password Login"
+- Email and password input form
+- Login endpoint integration (`POST /api/v1/organizers/login`)
+- Returns new API key on successful login
+- Stores API key in session state for dashboard access
+- Helpful messaging for lost API keys
+- Links to registration page for new users
+
+**3. Settings/Profile Page** (`streamlit_ui/pages/8_⚙️_Settings.py`)
+- **Profile Section:**
+  - Display organizer information (name, email, organization, tier)
+  - Account statistics (hackathons created, member since, status)
+  
+- **API Key Management:**
+  - Create new API keys with tier selection (FREE, STARTER, PRO, ENTERPRISE)
+  - Configure expiration dates (0 = never expires)
+  - Hackathon-scoped keys support
+  - List all API keys with status (active, revoked, expired, deprecated)
+  - Rotate keys with 7-day grace period
+  - Revoke keys (soft delete)
+  - View detailed key information (rate limits, quotas, budget, usage, last used)
+  
+- **Usage Analytics:**
+  - Date range filtering for usage statistics
+  - Summary metrics (total requests, successful, failed, total cost)
+  - Daily breakdown with request counts and costs
+  - CSV export functionality
+
+### Complete User Flow
+
+**New User Journey:**
+1. Visit dashboard → See login page
+2. Click "Create an account" → Registration page
+3. Fill in registration form → Submit
+4. Receive API key (displayed once) → Save it
+5. Automatically logged in → Access dashboard
+6. Start creating hackathons
+
+**Existing User Journey (API Key):**
+1. Visit dashboard → See login page
+2. Enter API key → Login
+3. Access dashboard
+
+**Existing User Journey (Email/Password):**
+1. Visit dashboard → See login page
+2. Switch to "Email/Password Login" tab
+3. Enter email and password → Login
+4. Receive new API key → Automatically logged in
+5. Access dashboard
+
+**Lost API Key Recovery:**
+1. Visit dashboard → See login page
+2. Switch to "Email/Password Login" tab
+3. Login with email/password → Get new API key
+4. Continue using dashboard
+
+### Technical Implementation
+
+**Authentication Flow:**
+- Registration creates organizer account and returns API key
+- Login with email/password regenerates API key (revokes old keys)
+- Both methods store API key in `st.session_state["api_key"]`
+- All dashboard pages check authentication via `is_authenticated()`
+- API key validation uses `GET /api/v1/hackathons` endpoint (requires auth)
+
+**API Integration:**
+- `POST /api/v1/organizers` - Registration endpoint
+- `POST /api/v1/organizers/login` - Email/password login
+- `GET /api/v1/organizers/me` - Get profile information
+- `POST /api/v1/api-keys` - Create new API key
+- `GET /api/v1/api-keys` - List all API keys
+- `POST /api/v1/api-keys/{key_id}/rotate` - Rotate API key
+- `DELETE /api/v1/api-keys/{key_id}` - Revoke API key
+- `GET /api/v1/usage/summary` - Usage statistics
+- `GET /api/v1/usage/export` - Export usage CSV
+
+**Security Features:**
+- Password minimum length validation (8 characters)
+- API key displayed only once after registration
+- Secure session state management
+- Proper error handling for all API calls
+- Terms and conditions acceptance required
+- API key masking in UI (only first 16 chars shown)
+
+### Impact
+
+**Before Implementation:**
+- ❌ No way to register new accounts via UI
+- ❌ No email/password login option
+- ❌ Users locked out if API key lost
+- ❌ No API key management interface
+- ❌ Manual backend access required for all user operations
+- ❌ Incomplete user onboarding flow
+
+**After Implementation:**
+- ✅ Complete self-service registration
+- ✅ Dual login methods (API key + email/password)
+- ✅ Lost API key recovery via email/password login
+- ✅ Full API key lifecycle management (create, rotate, revoke)
+- ✅ Usage analytics and monitoring
+- ✅ Professional, user-friendly interface
+- ✅ Zero manual backend access required
+- ✅ Complete end-to-end user flow
+
+### Files Created/Modified
+
+**New Files:**
+- `streamlit_ui/pages/0_📝_Register.py` (150 lines) - Registration page
+- `streamlit_ui/pages/8_⚙️_Settings.py` (380 lines) - Settings and API key management
+
+**Modified Files:**
+- `streamlit_ui/app.py` - Added email/password login with tabbed interface
+
+### Testing
+
+**Manual Testing:**
+- ✅ Registration: Form validation, API key display, automatic login
+- ✅ API Key Login: Valid key accepted, invalid key rejected
+- ✅ Email/Password Login: Successful login, error handling
+- ✅ Settings: Profile display, API key creation, rotation, revocation
+- ✅ Usage Analytics: Date filtering, summary display, daily breakdown
+- ✅ Lost Key Recovery: Login with email/password to get new key
+- ✅ All pages load correctly and handle errors gracefully
+
+**User Flow Testing:**
+- ✅ New user can register and immediately access dashboard
+- ✅ Existing user can login with API key
+- ✅ Existing user can login with email/password
+- ✅ User can create multiple API keys with different tiers
+- ✅ User can rotate keys and old key stops working after grace period
+- ✅ User can revoke keys and they immediately stop working
 
 ---
 
@@ -12899,3 +13169,228 @@ curl https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev/api/v1/public/ha
 - `DEPLOYMENT_GUIDE.md` - Updated with public endpoint info
 
 ---
+
+---
+
+## URL Construction Bug Fix & Documentation Updates
+
+**Date:** February 27, 2026  
+**Status:** ✅ COMPLETE  
+**Type:** Bug Fix + Documentation Update
+
+### Overview
+
+Fixed critical URL construction bug causing double `/api/v1` prefix in registration endpoint and updated all documentation to reflect the self-service UI features and standardized URL patterns.
+
+### Problem
+
+Registration was failing with 404 errors due to inconsistent URL construction:
+- `API_BASE_URL` was set to: `https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev`
+- Registration code was appending `/api/v1/organizers`, creating: `/dev/api/v1/organizers`
+- This was correct, but the code had a leftover `/api/v1` prefix from earlier implementation
+
+### Solution
+
+**Code Fix:**
+- Fixed `streamlit_ui/pages/0_📝_Register.py` line 40
+- Changed from: `url = f"{api_base_url.rstrip('/')}/api/v1/organizers"`
+- Changed to: `url = f"{api_base_url.rstrip('/')}/organizers"`
+
+**Error Logging Enhancement:**
+- Added try/except blocks for JSON parsing failures
+- Log full response body (truncated to 200/500 chars) for debugging
+- Show actual error details instead of generic "Unknown error"
+- Better error messages for different HTTP status codes (400, 409, 422, etc.)
+
+**Documentation Updates:**
+
+1. **streamlit_ui/README.md:**
+   - Updated Prerequisites: Removed requirement for pre-existing API key
+   - Updated Installation: Added production backend example
+   - Updated First-Time Setup: New registration-first workflow (7 steps)
+   - Added URL Construction Standard section documenting endpoint patterns
+   - Added Live Deployment section with production endpoints
+
+2. **README.md:**
+   - Added detailed Self-Service Features section with:
+     - Registration page description
+     - Email/password login description
+     - Settings page with three subsections (Profile, API Keys, Usage Analytics)
+
+### URL Construction Standard
+
+**Established Pattern:**
+- Base URL: `https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev`
+- Endpoints: `/organizers`, `/hackathons`, `/submissions`, etc.
+- Auth validation: `/api/v1/hackathons` (backwards compatibility)
+- Base URL does NOT include `/api/v1` prefix
+
+### Deployment
+
+**Docker Image:** `607415053998.dkr.ecr.us-east-1.amazonaws.com/vibejudge-dashboard:41c9b11`  
+**ECS Task Definition:** vibejudge-dashboard-prod:14  
+**Deployment Status:** ✅ 2/2 tasks running (HEALTHY)  
+**Deployment Time:** ~2 minutes (rolling update)
+
+### Impact
+
+**Before Fix:**
+- ❌ Registration failing with 404 errors
+- ❌ Inconsistent URL construction across codebase
+- ❌ Documentation didn't reflect self-service features
+- ❌ Generic "Unknown error" messages unhelpful for debugging
+
+**After Fix:**
+- ✅ Registration working correctly
+- ✅ Consistent URL construction pattern documented
+- ✅ Complete documentation of self-service UI features
+- ✅ Clear user onboarding flow documented
+- ✅ Detailed error messages for debugging
+
+### Files Modified
+
+- `streamlit_ui/pages/0_📝_Register.py` - Fixed URL construction + enhanced error logging
+- `streamlit_ui/README.md` - Updated prerequisites, installation, setup, added URL standard and deployment sections
+- `README.md` - Added detailed self-service features documentation
+
+### Testing
+
+**Manual Testing:**
+- ✅ Registration with valid data works correctly
+- ✅ Error messages show actual details (not "Unknown error")
+- ✅ Dashboard health check passing (HTTP 200)
+- ✅ ECS service stable with 2 healthy tasks
+
+---
+
+## Self-Service UI Deployment (February 27, 2026)
+
+**Session Goal:** Deploy complete self-service user experience with registration, login, and API key management.
+
+### Problem Statement
+
+The Streamlit dashboard lacked self-service capabilities:
+- No registration page for new users
+- No email/password login (only API key)
+- No API key management interface
+- Users couldn't recover from lost API keys
+
+### Implementation
+
+**1. Registration Page (`streamlit_ui/pages/0_📝_Register.py`)**
+- Complete user onboarding flow
+- Email, password, name, organization fields
+- API key displayed once after registration
+- Proper error handling for duplicate emails, validation errors
+- Fixed to handle HTTP 400 status codes from backend
+
+**2. Email/Password Login (`streamlit_ui/app.py`)**
+- Tabbed interface: API Key Login | Email/Password Login
+- Lost API key recovery via email/password
+- Generates new API key on successful login
+- Both methods store API key in session
+
+**3. Settings Page (`streamlit_ui/pages/8_⚙️_Settings.py`)**
+- Profile information display
+- API key lifecycle management:
+  - Create new keys with tier selection (FREE, STARTER, PRO, ENTERPRISE)
+  - Set expiration dates
+  - Scope keys to specific hackathons
+  - Rotate existing keys
+  - Revoke keys
+- Usage statistics with date range filtering
+- CSV export functionality
+- Detailed key information (rate limits, quotas, budget, usage)
+
+**4. Authentication Component Fix (`streamlit_ui/components/auth.py`)**
+- Added missing `require_authentication` decorator
+- Used by Settings page to protect access
+
+### Technical Details
+
+**Docker Image Builds:**
+- Commit `c7db7ce`: Added `require_authentication` decorator
+- Commit `4b8234a`: Fixed registration error handling for HTTP 400
+
+**ECS Deployments:**
+- Task Definition 9: Image tag `54b472c` (initial deployment with new pages)
+- Task Definition 10: Image tag `c7db7ce` (auth fix)
+- Task Definition 11: Image tag `4b8234a` (registration error handling fix)
+
+**Error Handling Improvements:**
+- Registration page now handles both HTTP 400 and 409 for duplicate emails
+- Backend returns 400 when ValueError raised (e.g., "Email already registered")
+- Frontend checks error message content for better user feedback
+
+### Deployment Architecture
+
+**Frontend Stack:**
+- ECS Fargate with 2 tasks (high availability)
+- Application Load Balancer for traffic distribution
+- Docker multi-stage build (<500MB image)
+- Auto-scaling based on CPU (70% target)
+- Health checks via Streamlit's `/_stcore/health` endpoint
+
+**Deployment Process:**
+1. Commit changes to git
+2. Build Docker image with commit SHA as tag
+3. Push to ECR (607415053998.dkr.ecr.us-east-1.amazonaws.com/vibejudge-dashboard)
+4. Register new ECS task definition
+5. Update ECS service with force new deployment
+6. Rolling deployment (200% max, 100% min healthy)
+
+### Results
+
+✅ Complete self-service user flow operational
+✅ Users can register without manual intervention
+✅ Lost API key recovery via email/password login
+✅ Full API key lifecycle management in UI
+✅ All authentication endpoints working correctly
+✅ ECS deployment stable with health checks passing
+
+**Live URLs:**
+- Dashboard: http://vibejudge-alb-prod-1135403146.us-east-1.elb.amazonaws.com
+- Registration: http://vibejudge-alb-prod-1135403146.us-east-1.elb.amazonaws.com/Register
+- Settings: http://vibejudge-alb-prod-1135403146.us-east-1.elb.amazonaws.com/Settings
+
+### Files Modified
+
+**New Files:**
+- `streamlit_ui/pages/0_📝_Register.py` - Registration page
+- `streamlit_ui/pages/8_⚙️_Settings.py` - Settings and API key management
+
+**Modified Files:**
+- `streamlit_ui/app.py` - Added email/password login tab
+- `streamlit_ui/components/auth.py` - Added `require_authentication` decorator
+
+**Commits:**
+- `c7db7ce`: Add require_authentication decorator to auth component
+- `4b8234a`: Fix registration error handling to support HTTP 400 status code
+
+
+### URL Construction Bug Fix (February 27, 2026)
+
+**Critical Bug:** Double `/api/v1` prefix causing 404 errors on registration and login.
+
+**Root Cause:**
+Inconsistent URL construction - `API_BASE_URL` included `/api/v1`, and Streamlit code also appended `/api/v1/`, creating paths like `/api/v1/api/v1/organizers`.
+
+**Solution:**
+Standardized URL construction across all Streamlit files:
+- Set `API_BASE_URL` to base without `/api/v1`: `https://...amazonaws.com/dev`
+- All Streamlit code uses full paths: `/organizers`, `/api-keys`, `/hackathons`
+- Auth validation adds `/api/v1` prefix for backend compatibility
+
+**Files Fixed:**
+- `streamlit_ui/app.py` - Login function
+- `streamlit_ui/pages/0_📝_Register.py` - Registration function  
+- `streamlit_ui/pages/8_⚙️_Settings.py` - All API calls (6 locations)
+- `streamlit_ui/components/auth.py` - Validation endpoint
+- `template-ecs.yaml` - Environment variable
+
+**Commits:**
+- `7909ea0`: Fix API_BASE_URL to remove duplicate /api/v1 prefix
+- `682299d`: Fix URL construction consistency - remove /api/v1 from all Streamlit paths
+
+**Result:** ✅ All registration, login, and API calls now work correctly with consistent URL construction.
+
