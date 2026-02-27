@@ -13816,3 +13816,262 @@ curl -X POST "https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev/api/v1/
 **Verification:**
 - API endpoint working correctly (returns 2 submissions in ~1.3 seconds)
 - Streamlit page will load submissions without timeout after deployment completes
+
+
+---
+
+## Session: Live Dashboard Response Parsing Fix (February 27, 2026)
+
+### Problem
+Live Dashboard page showing "⚠️ No active hackathons found" despite hackathons existing in the system.
+
+### Root Cause
+Same response parsing issue as previous pages - `fetch_hackathons()` function checking `isinstance(response, list)` when API returns paginated response format: `{"hackathons": [...], "next_cursor": null, "has_more": false}`.
+
+### Solution
+Updated `fetch_hackathons()` in Live Dashboard to correctly parse paginated API response:
+```python
+# API returns {"hackathons": [...], "next_cursor": null, "has_more": false}
+if isinstance(response, dict):
+    return response.get("hackathons", [])
+return response if isinstance(response, list) else []
+```
+
+### Files Modified
+- `streamlit_ui/pages/2_📊_Live_Dashboard.py` - Fixed response parsing at line 73
+
+### Commits
+- `6695ccb`: Fix paginated API response parsing in Live Dashboard
+
+### Deployment
+- Built Docker image: `vibejudge-dashboard:6695ccb`
+- Pushed to ECR: `607415053998.dkr.ecr.us-east-1.amazonaws.com/vibejudge-dashboard:6695ccb`
+- Registered ECS Task Definition: 26
+- Updated ECS Service: `vibejudge-dashboard-service-prod`
+- Status: ✅ Deployed successfully (2/2 tasks running)
+
+### Impact
+All three dashboard pages now correctly parse the paginated API response format:
+- ✅ Manage Hackathons (fixed in previous session)
+- ✅ Submissions Management (fixed in previous session)
+- ✅ Live Dashboard (fixed in this session)
+
+### Verification
+Dashboard accessible at: http://vibejudge-alb-prod-1135403146.us-east-1.elb.amazonaws.com
+
+
+---
+
+## Session: Hackathon Stats Endpoint Implementation (February 27, 2026)
+
+### Problem
+Live Dashboard showing "❌ Failed to fetch statistics: Resource not found" because the `/api/v1/hackathons/{hack_id}/stats` endpoint didn't exist.
+
+### Solution
+Created new stats endpoint that returns real-time hackathon statistics:
+- `submission_count`: Total submissions
+- `verified_count`: Submissions with verified repositories
+- `pending_count`: Submissions awaiting verification
+- `participant_count`: Total participants (set to 0 for now - team_members not in model)
+- `hackathon_status`: Current hackathon status
+
+### Implementation Details
+1. Added `get_hackathon_stats()` endpoint in `src/api/routes/hackathons.py`
+2. Uses `SubmissionService.list_submissions()` to get all submissions
+3. Calculates counts by filtering submission status
+4. Returns JSON response with statistics
+
+### Bug Fix
+Initial implementation had `TypeError` because `list_submissions()` returns `SubmissionListResponse` object, not a list. Fixed by accessing `.submissions` attribute.
+
+### Files Modified
+- `src/api/routes/hackathons.py` - Added stats endpoint
+
+### Commits
+- `14d8b73`: feat: Add hackathon stats endpoint
+- `12de50b`: fix: Correct stats endpoint to use SubmissionListResponse
+
+### Deployment
+- Backend: vibejudge-dev stack deployed successfully
+- API endpoint: `GET /api/v1/hackathons/{hack_id}/stats`
+
+### Testing
+```bash
+curl -H "X-API-Key: vj_live_xxx" \
+  "https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev/api/v1/hackathons/01KJFQW23JKE473T0ZPSGSQ2J6/stats"
+
+Response:
+{
+  "submission_count": 2,
+  "verified_count": 0,
+  "pending_count": 2,
+  "participant_count": 0,
+  "hackathon_status": "configured"
+}
+```
+
+### Status
+✅ Stats endpoint working
+✅ Live Dashboard can now fetch statistics
+⚠️ Participant count returns 0 (team_members field not in data model - future enhancement)
+
+
+---
+
+## CRITICAL ISSUE: DynamoDB Throttling (February 27, 2026)
+
+### Problem
+Live Dashboard loading forever, API returning 401 errors and timeouts.
+
+### Root Cause
+**ProvisionedThroughputExceededException** - DynamoDB table exceeded 5 RCU provisioned capacity.
+
+The API key authentication middleware performs a **Scan operation** on every request to look up the API key. Combined with:
+- Live Dashboard auto-refresh every 5 seconds
+- Multiple concurrent requests
+- Scan operations consuming many RCUs
+
+This causes:
+1. DynamoDB throttling (exceeded 5 RCU limit)
+2. Lambda timeouts (30 seconds waiting for retries)
+3. API returning 401 "Invalid API key" errors
+4. Service unavailable errors
+
+### Evidence from Logs
+```
+{"error": "An error occurred (ProvisionedThroughputExceededException) when calling the Scan operation (reached max retries: 9): The level of configured provisioned throughput for the table was exceeded. Consider increasing your provisioning level with the UpdateTable API.", "event": "get_api_key_by_secret_failed"}
+
+Duration: 30000.00 ms   Status: timeout
+```
+
+### Immediate Workarounds
+1. Increase Live Dashboard auto-refresh interval from 5s to 30s+
+2. Temporarily disable auto-refresh
+3. Use API sparingly until fix is deployed
+
+### Proper Solutions (Priority Order)
+1. **Optimize API key lookup** - Change from Scan to Query using GSI
+2. **Add caching** - Cache API key lookups in Lambda memory (TTL: 5 minutes)
+3. **Increase RCU** - Temporarily increase from 5 to 10-15 RCU (costs ~$0.65/month extra)
+4. **Add rate limiting** - Implement client-side rate limiting in dashboard
+
+### Status
+🔴 BLOCKING - Dashboard unusable, API unstable
+⚠️ Requires immediate fix before continued testing
+
+### Next Steps
+1. Fix API key lookup to use Query instead of Scan
+2. Add Lambda-level caching for API keys
+3. Increase dashboard refresh interval to 30 seconds
+4. Consider switching to on-demand billing mode for development
+
+
+---
+
+## Session: Live Dashboard Auto-Refresh Optimization (February 27, 2026)
+
+### Problem
+Live Dashboard's 5-second auto-refresh was causing DynamoDB throttling, making the entire API unstable.
+
+### Solution
+Reduced auto-refresh interval from 5 seconds to 5 minutes (300 seconds).
+
+### Impact
+- **API Load Reduction:** 98% decrease (from 12 req/min to 0.2 req/min)
+- **DynamoDB Pressure:** Significantly reduced Scan operation frequency
+- **User Experience:** Manual refresh button still available for immediate updates
+
+### Files Modified
+- `streamlit_ui/pages/2_📊_Live_Dashboard.py` - Changed refresh interval to 300000ms (5 minutes)
+
+### Commits
+- `fc370a7`: Reduce Live Dashboard auto-refresh to 5 minutes
+
+### Deployment
+- Frontend: ECS Task Definition 27
+- Status: ✅ Deployed successfully
+
+### Rationale
+The 5-second refresh combined with Scan-based API key lookups was exceeding DynamoDB's 5 RCU provisioned capacity, causing:
+- Lambda timeouts (30 seconds)
+- 401 authentication errors
+- Service unavailable errors
+
+The 5-minute interval provides a reasonable balance between monitoring and resource usage while the underlying API key lookup optimization is being developed.
+
+### Next Steps
+1. Implement proper API key lookup optimization (Scan → Query with GSI)
+2. Add Lambda-level caching for API keys
+3. Monitor DynamoDB metrics to confirm throttling is resolved
+
+
+---
+
+## Session: Cost Estimate Endpoint Fix (February 27, 2026)
+
+### Problem
+Live Dashboard "Start Analysis" button was failing with "Resource not found" error when trying to fetch cost estimate.
+
+### Root Cause
+Frontend was calling incorrect endpoint path and parsing wrong response structure:
+1. **Wrong endpoint:** `/hackathons/{id}/estimate` instead of `/hackathons/{id}/analyze/estimate`
+2. **Wrong parsing:** Trying to access `estimated_cost_usd` directly instead of nested `estimate.total_cost_usd.expected`
+
+### Backend Endpoint Structure
+```python
+POST /api/v1/hackathons/{hack_id}/analyze/estimate
+
+Response: CostEstimate {
+  "hack_id": str,
+  "submission_count": int,
+  "agents_enabled": list[str],
+  "estimate": {
+    "total_cost_usd": {
+      "low": float,
+      "expected": float,  # ← This is what we need
+      "high": float
+    },
+    "per_submission_cost_usd": {...},
+    "cost_by_agent": {...},
+    "estimated_duration_minutes": {...}
+  },
+  "budget_check": {...}
+}
+```
+
+### Solution
+Fixed frontend to:
+1. Call correct endpoint: `/hackathons/{hack_id}/analyze/estimate`
+2. Parse nested response structure correctly:
+```python
+estimate_detail = response.get("estimate", {})
+total_cost_range = estimate_detail.get("total_cost_usd", {})
+estimated_cost = total_cost_range.get("expected", 0.0)
+```
+
+### Files Modified
+- `streamlit_ui/pages/2_📊_Live_Dashboard.py` - Fixed endpoint path and response parsing
+
+### Commits
+- `12b4466`: fix: Correct cost estimate endpoint path and response parsing
+
+### Deployment
+- Frontend: ECS Task Definition 28 ✅ DEPLOYED
+- Docker image: `607415053998.dkr.ecr.us-east-1.amazonaws.com/vibejudge-dashboard:12b4466`
+- Digest: `sha256:0dd61e7b6190f9fdca6b6459460ba37db1fa695bd4549c0c0cbb2f0725ed13cf`
+- Status: 2/2 tasks running successfully
+
+### Testing
+To verify the fix:
+1. Navigate to Live Dashboard: http://vibejudge-alb-prod-1135403146.us-east-1.elb.amazonaws.com/Live_Dashboard
+2. Select hackathon "testttttt" (ID: 01KJFQW23JKE473T0ZPSGSQ2J6)
+3. Click "Start Analysis" button
+4. Should display cost estimate (e.g., "$0.02") and confirmation dialog
+5. Confirm and verify analysis starts successfully
+
+### Status
+✅ DEPLOYED - Cost estimate endpoint fix is live
+
+### Related Issues
+- This fix unblocks the analysis workflow testing
+- Still need to address DynamoDB throttling issue for production use (API key lookup optimization)
