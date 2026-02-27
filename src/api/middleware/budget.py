@@ -35,6 +35,7 @@ class BudgetMiddleware(BaseHTTPMiddleware):
         app: ASGIApp,
         db_helper: DynamoDBHelper,
         max_cost_per_submission: float | None = None,
+        exempt_paths: list[str] | None = None,
     ) -> None:
         """Initialize budget enforcement middleware.
         
@@ -42,10 +43,36 @@ class BudgetMiddleware(BaseHTTPMiddleware):
             app: ASGI application
             db_helper: DynamoDB helper instance
             max_cost_per_submission: Maximum cost per submission (default from config)
+            exempt_paths: List of paths to exempt from budget checks (supports * wildcard)
         """
         super().__init__(app)
         self.db_helper = db_helper
         self.max_cost_per_submission = max_cost_per_submission or settings.max_cost_per_submission_usd
+        self.exempt_paths = exempt_paths or []
+
+    def _is_path_exempt(self, path: str) -> bool:
+        """Check if path is exempt from budget checks (supports * wildcard).
+        
+        Args:
+            path: Request path to check
+            
+        Returns:
+            True if path is exempt, False otherwise
+        """
+        for exempt_path in self.exempt_paths:
+            # Exact match
+            if path == exempt_path:
+                return True
+
+            # Wildcard match (e.g., "/api/v1/public/hackathons/*/submissions")
+            if "*" in exempt_path:
+                import re
+                # Convert wildcard pattern to regex (escape special chars, replace * with .*)
+                pattern = "^" + re.escape(exempt_path).replace(r"\*", ".*") + "$"
+                if re.match(pattern, path):
+                    return True
+
+        return False
 
     async def dispatch(
         self, request: Request, call_next: Callable
@@ -59,6 +86,11 @@ class BudgetMiddleware(BaseHTTPMiddleware):
         Returns:
             HTTP response with budget information or 402 if exceeded
         """
+        # Check if path is exempt (supports wildcard matching with *)
+        if self._is_path_exempt(request.url.path):
+            logger.info("path_exempt_from_budget", path=request.url.path)
+            return await call_next(request)
+
         # Only check budget for analysis endpoints
         if not self._should_check_budget(request):
             return await call_next(request)

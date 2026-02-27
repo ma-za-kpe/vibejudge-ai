@@ -87,6 +87,18 @@ app.add_middleware(
     BudgetMiddleware,
     db_helper=db_helper,
     max_cost_per_submission=settings.max_cost_per_submission_usd,
+    exempt_paths=[
+        "/health",
+        "/docs",
+        "/openapi.json",
+        "/redoc",
+        "/api/v1/public/hackathons",
+        "/api/v1/public/hackathons/*/submissions",  # Public submission endpoint
+        "/api/v1/organizers",  # Registration endpoint
+        "/api/v1/organizers/login",  # Login endpoint
+        "/organizers",  # Registration endpoint (without prefix)
+        "/organizers/login",  # Login endpoint (without prefix)
+    ],
 )
 
 # 3. Rate Limit Middleware (runs first, fastest check)
