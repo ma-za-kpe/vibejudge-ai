@@ -28,15 +28,19 @@ VibeJudge AI is a production-ready automated hackathon judging platform that use
 - **API Documentation:** https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev/docs
 - **Dashboard UI:** http://vibejudge-alb-prod-1135403146.us-east-1.elb.amazonaws.com
 
-**Latest Deployment (February 28, 2026):**
+**Latest Deployment (February 28, 2026 - HOTFIX):**
+- ✅ Critical indentation error fixed in Live Dashboard
+- ✅ ECS task definition: vibejudge-dashboard-prod:31
+- ✅ Docker image: 5d92885 (linux/amd64)
+- ✅ Deployment: COMPLETE - 2/2 tasks running
+- ✅ Live Dashboard page now loads without IndentationError
+- ✅ All functionality operational
+
+**Previous Deployment (February 28, 2026):**
 - ✅ DNS egress rules added to ECS security group (UDP/53, TCP/53, TCP/80)
 - ✅ API_BASE_URL environment variable corrected (removed double /api/v1)
 - ✅ Server-side job discovery implemented for Live Dashboard
-- ✅ ECS task definition: vibejudge-dashboard-prod:30
-- ✅ Docker image: 2bc9947 (linux/amd64)
-- ✅ Deployment: COMPLETE - 2/2 tasks running
 - ✅ Dashboard fully operational with robust state management
-- ✅ All connection timeout issues resolved
 - ✅ Page refresh, cross-browser, and error recovery working
 
 **Previous Deployment (February 27, 2026):**
