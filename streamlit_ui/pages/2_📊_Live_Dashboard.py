@@ -261,7 +261,10 @@ if active_job_id is None:
 # Step 2: Display cost estimate and confirmation dialog
 else:
     estimated_cost = st.session_state["cost_estimate"]
-    st.info(f"💰 Estimated cost: ${estimated_cost:.2f}")
+    if estimated_cost is not None:
+        st.info(f"💰 Estimated cost: ${estimated_cost:.2f}")
+    else:
+        st.warning("⚠️ Cost estimate unavailable")
     st.warning("⚠️ This will start the analysis process. Do you want to continue?")
 
     col1, col2 = st.columns(2)
