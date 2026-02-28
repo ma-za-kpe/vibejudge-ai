@@ -14396,3 +14396,115 @@ else:
 ✅ All critical bugs fixed and deployed
 ✅ Platform fully operational
 ✅ Ready for production use and competition submission
+
+
+---
+
+## Session 2026-02-28 (Late Evening): Cost Estimate Timeout Fix
+
+### Issue
+Dashboard experiencing connection timeouts when fetching cost estimates. Users reported "Connection timeout. Please check your network" error when clicking "Start Analysis" button.
+
+### Root Cause Analysis
+The default 10-second timeout in APIClient was too short for the cost estimate endpoint, especially during Lambda cold starts which can take 2-13 seconds. The cost estimate endpoint is particularly slow because it:
+- Queries DynamoDB for all submissions
+- Calculates estimates for 4 different agents
+- Performs budget validation
+- Returns complex nested JSON structure
+
+### Solution Implemented
+
+**Dashboard Fix:**
+Increased timeout from 10s to 30s specifically for cost estimate API call in Live Dashboard, following the precedent already established in the Submissions page (line 59).
+
+**Code Change:**
+```python
+# Before (line 237-240)
+estimate_response = api_client.post(
+    f"/hackathons/{selected_hack_id}/analyze/estimate", json={}
+)
+
+# After (with extended timeout)
+estimate_client = APIClient(
+    st.session_state["api_base_url"],
+    st.session_state["api_key"],
+    timeout=30  # Extended for Lambda cold starts
+)
+estimate_response = estimate_client.post(
+    f"/hackathons/{selected_hack_id}/analyze/estimate", json={}
+)
+```
+
+**Files Modified:**
+- `streamlit_ui/pages/2_📊_Live_Dashboard.py` - Added 30s timeout for cost estimate call
+
+### Infrastructure Fixes Required
+
+During deployment, discovered missing AWS infrastructure components:
+
+1. **Missing IAM Role:**
+   - Created `ecsTaskExecutionRole` with proper trust policy for `ecs-tasks.amazonaws.com`
+   - Attached `AmazonECSTaskExecutionRolePolicy` for ECR and CloudWatch access
+
+2. **Missing CloudWatch Log Group:**
+   - Created `/ecs/vibejudge-dashboard-prod` log group
+   - Required for container logging
+
+3. **Container Name Mismatch:**
+   - Service expected container name `streamlit-dashboard`
+   - Initial task definition used `vibejudge-dashboard`
+   - Fixed in task definition 35
+
+### Deployment Timeline
+
+1. **Code Changes:**
+   - Committed timeout fix (commit 759e1d2)
+   - Built Docker image with `--platform linux/amd64`
+   - Pushed to ECR: `607415053998.dkr.ecr.us-east-1.amazonaws.com/vibejudge-dashboard:759e1d2`
+
+2. **Infrastructure Setup:**
+   - Created IAM role: `ecsTaskExecutionRole`
+   - Created CloudWatch log group: `/ecs/vibejudge-dashboard-prod`
+   - Registered task definition 34 (wrong container name)
+   - Registered task definition 35 (correct container name: `streamlit-dashboard`)
+
+3. **ECS Deployment:**
+   - Scaled service to 0 tasks (drain old containers)
+   - Updated service to use task definition 35
+   - Scaled back to 2 tasks
+   - Deployment completed: 2/2 tasks running successfully
+
+### Testing Results
+- ✅ Dashboard accessible at http://vibejudge-alb-prod-1135403146.us-east-1.elb.amazonaws.com
+- ✅ Cost estimate endpoint now handles Lambda cold starts properly
+- ✅ 30-second timeout prevents connection timeouts
+- ✅ All dashboard functionality operational
+
+### Current Production State
+- **Backend API:** vibejudge-dev stack (latest)
+- **Dashboard:** Task definition 35, image 759e1d2
+- **Status:** 2/2 tasks running, healthy
+- **IAM Role:** ecsTaskExecutionRole (newly created)
+- **Log Group:** /ecs/vibejudge-dashboard-prod (newly created)
+
+### Key Learnings
+
+1. **Timeout Configuration:** Default 10s timeout is insufficient for Lambda cold starts. Use 30s for slow endpoints like cost estimation.
+
+2. **Infrastructure Dependencies:** ECS tasks require:
+   - Proper IAM execution role with trust policy
+   - CloudWatch log group for container logs
+   - Correct container name matching service configuration
+
+3. **Lambda Cold Starts:** Can take 2-13 seconds, especially for functions that:
+   - Query DynamoDB
+   - Perform complex calculations
+   - Return large JSON payloads
+
+4. **Precedent Following:** The Submissions page already used 30s timeout (line 59), which should have been applied consistently across all slow endpoints.
+
+### Status
+✅ Cost estimate timeout issue resolved
+✅ Infrastructure dependencies created
+✅ Dashboard fully operational
+✅ Platform ready for production use
