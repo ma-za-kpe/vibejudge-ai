@@ -233,9 +233,14 @@ if active_job_id is None:
             "🚀 Start Analysis", help="Trigger analysis for all submissions in this hackathon"
         ):
             try:
-                # Fetch cost estimate
+                # Fetch cost estimate with extended timeout (Lambda cold starts can take 2-13s)
                 with st.spinner("💰 Fetching cost estimate..."):
-                    estimate_response = api_client.post(
+                    estimate_client = APIClient(
+                        st.session_state["api_base_url"],
+                        st.session_state["api_key"],
+                        timeout=30
+                    )
+                    estimate_response = estimate_client.post(
                         f"/hackathons/{selected_hack_id}/analyze/estimate", json={}
                     )
 
