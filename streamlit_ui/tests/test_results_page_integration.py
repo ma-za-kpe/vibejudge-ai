@@ -221,7 +221,9 @@ def test_search_functionality_filters_by_team_name(
     # Find the search input (should have "search" in key or label)
     search_input = None
     for text_input in at.text_input:
-        if "search" in text_input.key.lower() or "search" in str(text_input.label).lower():
+        key_match = text_input.key and "search" in text_input.key.lower()
+        label_match = "search" in str(text_input.label).lower()
+        if key_match or label_match:
             search_input = text_input
             break
 
@@ -276,7 +278,9 @@ def test_sort_functionality_by_score(
     # Find the sort dropdown (should have "sort" in key or label)
     sort_dropdown = None
     for selectbox in at.selectbox:
-        if "sort" in selectbox.key.lower() or "sort" in str(selectbox.label).lower():
+        key_match = selectbox.key and "sort" in selectbox.key.lower()
+        label_match = "sort" in str(selectbox.label).lower()
+        if key_match or label_match:
             sort_dropdown = selectbox
             break
 
@@ -309,14 +313,28 @@ def test_team_detail_navigation(
         mock_response.status_code = 200
         mock_response.ok = True
 
-        if "/scorecard" in url:
+        if "/individual-scorecards" in url:
+            # Return individual scorecards data
+            mock_response.json.return_value = {
+                "team_dynamics": {
+                    "collaboration_quality": "excellent",
+                    "role_distribution": "balanced",
+                    "communication_frequency": "high"
+                },
+                "members": []
+            }
+        elif "/scorecard" in url:
             mock_response.json.return_value = mock_scorecard_data
         elif "/leaderboard" in url:
             mock_response.json.return_value = mock_leaderboard_data
         else:
-            mock_response.json.return_value = [
-                {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
-            ]
+            mock_response.json.return_value = {
+                "hackathons": [
+                    {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
+                ],
+                "next_cursor": None,
+                "has_more": False
+            }
 
         return mock_response
 
@@ -339,7 +357,8 @@ def test_team_detail_navigation(
     at.run()
 
     # Verify we're now in team detail view
-    assert at.session_state.get("view_mode") == "team_detail"
+    # AppTest session_state doesn't have .get(), use 'in' operator
+    assert "view_mode" in at.session_state and at.session_state["view_mode"] == "team_detail"
     assert "selected_sub_id" in at.session_state
 
     # Verify scorecard API was called
@@ -374,14 +393,26 @@ def test_scorecard_display_completeness(
         mock_response.status_code = 200
         mock_response.ok = True
 
-        if "/scorecard" in url:
+        if "/individual-scorecards" in url:
+            mock_response.json.return_value = {
+                "team_dynamics": {
+                    "collaboration_quality": "excellent",
+                    "role_distribution": "balanced"
+                },
+                "members": []
+            }
+        elif "/scorecard" in url:
             mock_response.json.return_value = mock_scorecard_data
         elif "/leaderboard" in url:
             mock_response.json.return_value = mock_leaderboard_data
         else:
-            mock_response.json.return_value = [
-                {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
-            ]
+            mock_response.json.return_value = {
+                "hackathons": [
+                    {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
+                ],
+                "next_cursor": None,
+                "has_more": False
+            }
 
         return mock_response
 
@@ -464,9 +495,13 @@ def test_pagination_limit_50_submissions(mock_get: MagicMock, authenticated_app:
         if "/leaderboard" in url:
             mock_response.json.return_value = large_leaderboard_data
         else:
-            mock_response.json.return_value = [
-                {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
-            ]
+            mock_response.json.return_value = {
+                "hackathons": [
+                    {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
+                ],
+                "next_cursor": None,
+                "has_more": False
+            }
 
         return mock_response
 

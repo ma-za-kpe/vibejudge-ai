@@ -46,6 +46,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.db_helper = db_helper
         self.exempt_paths = exempt_paths or [
             "/health",
+            "/api/v1/health",  # Health check with prefix
             "/docs",
             "/openapi.json",
             "/redoc",

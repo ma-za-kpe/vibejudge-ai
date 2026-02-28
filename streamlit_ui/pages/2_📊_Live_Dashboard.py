@@ -258,70 +258,70 @@ if active_job_id is None:
                 st.error(f"❌ Failed to fetch cost estimate: {e}")
                 logger.error(f"Failed to fetch cost estimate for {selected_hack_id}: {e}")
 
-# Step 2: Display cost estimate and confirmation dialog
-else:
-    estimated_cost = st.session_state["cost_estimate"]
-    if estimated_cost is not None:
-        st.info(f"💰 Estimated cost: ${estimated_cost:.2f}")
+    # Step 2: Display cost estimate and confirmation dialog
     else:
-        st.warning("⚠️ Cost estimate unavailable")
-    st.warning("⚠️ This will start the analysis process. Do you want to continue?")
+        estimated_cost = st.session_state["cost_estimate"]
+        if estimated_cost is not None:
+            st.info(f"💰 Estimated cost: ${estimated_cost:.2f}")
+        else:
+            st.warning("⚠️ Cost estimate unavailable")
+        st.warning("⚠️ This will start the analysis process. Do you want to continue?")
 
-    col1, col2 = st.columns(2)
+        col1, col2 = st.columns(2)
 
-    with col1:
-        if st.button("✅ Confirm & Start", type="primary"):
-            try:
-                # Send POST to start analysis
-                with st.spinner("🚀 Starting analysis..."):
-                    analysis_response = api_client.post(
-                        f"/hackathons/{selected_hack_id}/analyze", json={}
+        with col1:
+            if st.button("✅ Confirm & Start", type="primary"):
+                try:
+                    # Send POST to start analysis
+                    with st.spinner("🚀 Starting analysis..."):
+                        analysis_response = api_client.post(
+                            f"/hackathons/{selected_hack_id}/analyze", json={}
+                        )
+
+                    # Display job_id and estimated_cost_usd on success (HTTP 202)
+                    job_id = analysis_response.get("job_id")
+                    estimated_cost_usd = analysis_response.get("estimated_cost_usd", 0.0)
+
+                    # Clear cost estimate (ephemeral UI state)
+                    st.session_state["cost_estimate"] = None
+
+                    st.success("✅ Analysis started successfully!")
+                    st.info(f"**Job ID:** {job_id}")
+                    st.info(f"**Estimated Cost:** ${estimated_cost_usd:.2f}")
+
+                    # Clear cache to refresh stats
+                    st.cache_data.clear()
+                    st.rerun()
+
+                except BudgetExceededError as e:
+                    # Handle HTTP 402 - Budget exceeded
+                    st.error(f"💰 {e}")
+                    st.warning("Please increase your budget limit or reduce the number of submissions.")
+                    # Clear cost estimate to allow retry
+                    st.session_state["cost_estimate"] = None
+
+                except ConflictError as e:
+                    # Handle HTTP 409 - Analysis already running
+                    st.error(f"⚠️ {e}")
+                    st.info(
+                        "Please wait for the current analysis to complete before starting a new one."
                     )
+                    # Clear cost estimate
+                    st.session_state["cost_estimate"] = None
 
-                # Display job_id and estimated_cost_usd on success (HTTP 202)
-                job_id = analysis_response.get("job_id")
-                estimated_cost_usd = analysis_response.get("estimated_cost_usd", 0.0)
+                except APIError as e:
+                    # Handle other API errors
+                    st.error(f"❌ Failed to start analysis: {e}")
+                    logger.error(f"Failed to start analysis for {selected_hack_id}: {e}")
+                    # Clear cost estimate to allow retry
+                    st.session_state["cost_estimate"] = None
 
-                # Clear cost estimate (ephemeral UI state)
+        with col2:
+            if st.button("❌ Cancel"):
+                # Clear cost estimate and return to initial state
                 st.session_state["cost_estimate"] = None
-
-                st.success("✅ Analysis started successfully!")
-                st.info(f"**Job ID:** {job_id}")
-                st.info(f"**Estimated Cost:** ${estimated_cost_usd:.2f}")
-
-                # Clear cache to refresh stats
-                st.cache_data.clear()
+                st.info("Analysis cancelled.")
                 st.rerun()
-
-            except BudgetExceededError as e:
-                # Handle HTTP 402 - Budget exceeded
-                st.error(f"💰 {e}")
-                st.warning("Please increase your budget limit or reduce the number of submissions.")
-                # Clear cost estimate to allow retry
-                st.session_state["cost_estimate"] = None
-
-            except ConflictError as e:
-                # Handle HTTP 409 - Analysis already running
-                st.error(f"⚠️ {e}")
-                st.info(
-                    "Please wait for the current analysis to complete before starting a new one."
-                )
-                # Clear cost estimate
-                st.session_state["cost_estimate"] = None
-
-            except APIError as e:
-                # Handle other API errors
-                st.error(f"❌ Failed to start analysis: {e}")
-                logger.error(f"Failed to start analysis for {selected_hack_id}: {e}")
-                # Clear cost estimate to allow retry
-                st.session_state["cost_estimate"] = None
-
-    with col2:
-        if st.button("❌ Cancel"):
-            # Clear cost estimate and return to initial state
-            st.session_state["cost_estimate"] = None
-            st.info("Analysis cancelled.")
-            st.rerun()
 
 # Analysis progress monitoring section - Show if active job exists
 if active_job_id:

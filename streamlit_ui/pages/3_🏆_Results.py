@@ -99,7 +99,7 @@ if st.session_state["view_mode"] == "team_detail":
         st.stop()
 
     sub_id = st.session_state["selected_sub_id"]
-    hack_id = st.session_state.get("selected_hackathon", "")
+    hack_id = st.session_state["selected_hackathon"] if "selected_hackathon" in st.session_state else ""
 
     if not hack_id:
         st.error("❌ No hackathon selected")

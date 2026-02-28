@@ -108,6 +108,7 @@ app.add_middleware(
     db_helper=db_helper,
     exempt_paths=[
         "/health",
+        "/api/v1/health",  # Health check with prefix
         "/docs",
         "/openapi.json",
         "/redoc",

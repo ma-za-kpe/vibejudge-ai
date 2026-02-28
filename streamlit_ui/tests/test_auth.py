@@ -20,7 +20,7 @@ class TestValidateAPIKey:
 
         assert result is True
         mock_get.assert_called_once_with(
-            "http://test-api.com/health", headers={"X-API-Key": "valid_key"}, timeout=5
+            "http://test-api.com/hackathons", headers={"X-API-Key": "valid_key"}, timeout=5
         )
 
     @patch("components.auth.requests.get")
@@ -44,7 +44,7 @@ class TestValidateAPIKey:
         validate_api_key("test_key", "http://test-api.com/")
 
         mock_get.assert_called_once_with(
-            "http://test-api.com/health", headers={"X-API-Key": "test_key"}, timeout=5
+            "http://test-api.com/hackathons", headers={"X-API-Key": "test_key"}, timeout=5
         )
 
     @patch("components.auth.requests.get")
