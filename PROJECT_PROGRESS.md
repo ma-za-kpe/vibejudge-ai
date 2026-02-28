@@ -31,11 +31,13 @@ VibeJudge AI is a production-ready automated hackathon judging platform that use
 **Latest Deployment (February 28, 2026):**
 - ✅ DNS egress rules added to ECS security group (UDP/53, TCP/53, TCP/80)
 - ✅ API_BASE_URL environment variable corrected (removed double /api/v1)
-- ✅ ECS task definition: vibejudge-dashboard-prod:29
-- ✅ Docker image: 12b4466 (linux/amd64)
+- ✅ Server-side job discovery implemented for Live Dashboard
+- ✅ ECS task definition: vibejudge-dashboard-prod:30
+- ✅ Docker image: 2bc9947 (linux/amd64)
 - ✅ Deployment: COMPLETE - 2/2 tasks running
-- ✅ Dashboard can now successfully connect to backend API
+- ✅ Dashboard fully operational with robust state management
 - ✅ All connection timeout issues resolved
+- ✅ Page refresh, cross-browser, and error recovery working
 
 **Previous Deployment (February 27, 2026):**
 - ✅ Backend API deployed with rate limit middleware fixes (commit 15c676d)
@@ -53,8 +55,9 @@ VibeJudge AI is a production-ready automated hackathon judging platform that use
 
 ## Table of Contents
 
-1. [ECS Network Configuration Fix (February 28, 2026)](#ecs-network-configuration-fix-february-28-2026)
-2. [Manage Hackathons Response Parsing Bug Fix (February 27, 2026)](#manage-hackathons-response-parsing-bug-fix-february-27-2026)
+1. [Server-Side Job Discovery Implementation (February 28, 2026)](#server-side-job-discovery-implementation-february-28-2026)
+2. [ECS Network Configuration Fix (February 28, 2026)](#ecs-network-configuration-fix-february-28-2026)
+3. [Manage Hackathons Response Parsing Bug Fix (February 27, 2026)](#manage-hackathons-response-parsing-bug-fix-february-27-2026)
 3. [Double API Prefix Bug Fix (February 27, 2026)](#double-api-prefix-bug-fix-february-27-2026)
 4. [URL Construction Bug Fix & Documentation Updates](#url-construction-bug-fix--documentation-updates)
 5. [Self-Service UI Deployment](#self-service-ui-deployment)
@@ -77,6 +80,85 @@ VibeJudge AI is a production-ready automated hackathon judging platform that use
 20. [Current Status & Metrics](#current-status--metrics)
 21. [Key Learnings](#key-learnings)
 22. [Next Steps](#next-steps)
+
+---
+
+## Server-Side Job Discovery Implementation (February 28, 2026)
+
+**Date:** February 28, 2026  
+**Status:** ✅ DEPLOYED AND OPERATIONAL  
+**Type:** Critical UX Fix
+
+### Overview
+
+Implemented server-side job discovery to replace client-side session state management in Live Dashboard. This architectural fix makes the backend database the source of truth for analysis job status, resolving page refresh, cross-browser, and error recovery issues.
+
+### Problem
+
+Live Dashboard relied on browser session state to track active analysis jobs, causing multiple UX issues:
+- Page refresh lost job status (users couldn't see running jobs)
+- Different browsers/tabs showed inconsistent state
+- Error recovery failed (if job start failed, UI showed no job but backend had one)
+- Session state could become out of sync with backend reality
+
+### Root Cause
+
+Client-side session state (`st.session_state["analysis_job_id"]`) was being used as the source of truth instead of querying the backend database. This violated standard web architecture principles where the database should always be authoritative.
+
+### Solution
+
+Implemented `fetch_active_job()` function that queries backend API on every page load:
+
+```python
+@st.cache_data(ttl=10)
+def fetch_active_job(api_key: str, hack_id: str) -> str | None:
+    """Check if there's an active analysis job for this hackathon.
+    
+    Returns:
+        job_id if active job exists (queued/running), None otherwise
+    """
+    client = APIClient(st.session_state["api_base_url"], api_key)
+    try:
+        status = client.get(f"/hackathons/{hack_id}/analyze/status")
+        if status.get("status") in ["queued", "running"]:
+            return status.get("job_id")
+    except Exception:
+        pass
+    return None
+```
+
+**Key Changes:**
+1. Removed all `st.session_state["analysis_job_id"]` references
+2. Added server-side job discovery with 10-second cache
+3. Only show "Start Analysis" button when `active_job_id is None`
+4. Use `active_job_id` from backend for progress monitoring
+5. Keep only ephemeral UI state in session (cost estimate)
+
+### Deployment
+
+- Commit: 2bc9947
+- Task Definition: vibejudge-dashboard-prod:30
+- Docker Image: 607415053998.dkr.ecr.us-east-1.amazonaws.com/vibejudge-dashboard:2bc9947
+- Status: 2/2 tasks running successfully
+
+### Benefits
+
+✅ Page refresh works - Job status fetched from backend on every load  
+✅ Cross-browser compatible - No client-side state dependency  
+✅ Error recovery works - If start fails, next refresh shows existing job  
+✅ Source of truth is backend - Database knows real state  
+✅ No session state bugs - Session only stores ephemeral UI state  
+✅ Auto-refresh compatible - Will show job if created in another tab
+
+### Files Modified
+
+- `streamlit_ui/pages/2_📊_Live_Dashboard.py` - Implemented server-side job discovery
+
+### Impact
+
+- **Before:** Dashboard UX broken on refresh, inconsistent across browsers
+- **After:** Robust state management with backend as source of truth
+- **User Experience:** Seamless job tracking across page loads and browser tabs
 
 ---
 
@@ -158,7 +240,7 @@ Backend logs: path: /api/v1/api/v1/hackathons
    ```python
    # Before
    response = requests.get(f"{base_url}/api/v1/hackathons", ...)
-   
+
    # After (with comment)
    # Note: base_url already includes /api/v1 prefix
    response = requests.get(f"{base_url}/hackathons", ...)
@@ -168,7 +250,7 @@ Backend logs: path: /api/v1/api/v1/hackathons
    ```python
    # Before
    url = f"{api_base_url.rstrip('/')}/api/v1/organizers/login"
-   
+
    # After (with comment)
    # Note: api_base_url already includes /api/v1 prefix
    url = f"{api_base_url.rstrip('/')}/organizers/login"
@@ -178,7 +260,7 @@ Backend logs: path: /api/v1/api/v1/hackathons
    ```python
    # Before
    url = f"{api_base_url.rstrip('/')}/api/v1/organizers"
-   
+
    # After (with comment)
    # Note: api_base_url already includes /api/v1 prefix
    url = f"{api_base_url.rstrip('/')}/organizers"
@@ -369,7 +451,7 @@ The dashboard had a critical gap in the user onboarding flow:
 - **Profile Section:**
   - Display organizer information (name, email, organization, tier)
   - Account statistics (hackathons created, member since, status)
-  
+
 - **API Key Management:**
   - Create new API keys with tier selection (FREE, STARTER, PRO, ENTERPRISE)
   - Configure expiration dates (0 = never expires)
@@ -378,7 +460,7 @@ The dashboard had a critical gap in the user onboarding flow:
   - Rotate keys with 7-day grace period
   - Revoke keys (soft delete)
   - View detailed key information (rate limits, quotas, budget, usage, last used)
-  
+
 - **Usage Analytics:**
   - Date range filtering for usage statistics
   - Summary metrics (total requests, successful, failed, total cost)
