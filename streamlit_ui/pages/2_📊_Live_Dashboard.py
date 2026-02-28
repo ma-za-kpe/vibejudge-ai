@@ -10,7 +10,7 @@ import logging
 from datetime import datetime
 
 import streamlit as st
-from components.api_client import APIClient, APIError, BudgetExceededError, ConflictError
+from components.api_client import APIClient, APIError, BudgetExceededError, ConflictError, ResourceNotFoundError
 from components.auth import is_authenticated
 from components.retry_helpers import retry_button
 from streamlit_autorefresh import st_autorefresh
@@ -429,6 +429,19 @@ if active_job_id:
             # Clear cache to allow retry
             st.cache_data.clear()
 
+    except ResourceNotFoundError:
+        # Job no longer exists (completed, failed, or expired)
+        st.warning("⚠️ Analysis job not found. It may have completed or expired.")
+        st.info("💡 Refresh the page to see updated status.")
+        logger.info(f"Job {active_job_id} not found, clearing cache")
+        
+        # Clear cache to remove stale job ID
+        st.cache_data.clear()
+        
+        # Offer refresh button
+        if st.button("🔄 Refresh Page"):
+            st.rerun()
+            
     except APIError as e:
         st.error(f"❌ Failed to fetch job status: {e}")
         logger.error(f"Failed to fetch job status for {active_job_id}: {e}")
