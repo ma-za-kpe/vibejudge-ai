@@ -239,24 +239,24 @@ if active_job_id is None:
                         f"/hackathons/{selected_hack_id}/analyze/estimate", json={}
                     )
 
-            # Parse nested cost estimate structure
-            estimate_detail = estimate_response.get("estimate", {})
-            total_cost_range = estimate_detail.get("total_cost_usd", {})
-            estimated_cost = total_cost_range.get("expected", 0.0)
+                # Parse nested cost estimate structure
+                estimate_detail = estimate_response.get("estimate", {})
+                total_cost_range = estimate_detail.get("total_cost_usd", {})
+                estimated_cost = total_cost_range.get("expected", 0.0)
 
-            # Store estimate in session state
-            st.session_state["cost_estimate"] = estimated_cost
-            st.rerun()
+                # Store estimate in session state
+                st.session_state["cost_estimate"] = estimated_cost
+                st.rerun()
 
-        except BudgetExceededError as e:
-            # Handle HTTP 402 during estimate
-            st.error(f"💰 {e}")
-            st.warning("Cannot estimate cost - budget limit would be exceeded.")
+            except BudgetExceededError as e:
+                # Handle HTTP 402 during estimate
+                st.error(f"💰 {e}")
+                st.warning("Cannot estimate cost - budget limit would be exceeded.")
 
-        except APIError as e:
-            # Handle errors during cost estimate
-            st.error(f"❌ Failed to fetch cost estimate: {e}")
-            logger.error(f"Failed to fetch cost estimate for {selected_hack_id}: {e}")
+            except APIError as e:
+                # Handle errors during cost estimate
+                st.error(f"❌ Failed to fetch cost estimate: {e}")
+                logger.error(f"Failed to fetch cost estimate for {selected_hack_id}: {e}")
 
 # Step 2: Display cost estimate and confirmation dialog
 else:
