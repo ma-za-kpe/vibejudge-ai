@@ -28,7 +28,16 @@ VibeJudge AI is a production-ready automated hackathon judging platform that use
 - **API Documentation:** https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev/docs
 - **Dashboard UI:** http://vibejudge-alb-prod-1135403146.us-east-1.elb.amazonaws.com
 
-**Latest Deployment (February 27, 2026):**
+**Latest Deployment (February 28, 2026):**
+- ✅ DNS egress rules added to ECS security group (UDP/53, TCP/53, TCP/80)
+- ✅ API_BASE_URL environment variable corrected (removed double /api/v1)
+- ✅ ECS task definition: vibejudge-dashboard-prod:29
+- ✅ Docker image: 12b4466 (linux/amd64)
+- ✅ Deployment: COMPLETE - 2/2 tasks running
+- ✅ Dashboard can now successfully connect to backend API
+- ✅ All connection timeout issues resolved
+
+**Previous Deployment (February 27, 2026):**
 - ✅ Backend API deployed with rate limit middleware fixes (commit 15c676d)
 - ✅ Frontend dashboard double /api/v1 prefix bug fixed (commit 999b208)
 - ✅ Manage Hackathons page response parsing bug fixed (commit 097e267)
@@ -39,17 +48,16 @@ VibeJudge AI is a production-ready automated hackathon judging platform that use
 - ✅ All public endpoints accessible without API keys
 - ✅ ECS task definition: vibejudge-dashboard-prod:22
 - ✅ Docker image: 097e267 (linux/amd64)
-- ✅ Deployment: COMPLETE - 2/2 tasks running
-- ✅ Documentation updated in PROJECT_PROGRESS.md
 
 ---
 
 ## Table of Contents
 
-1. [Manage Hackathons Response Parsing Bug Fix (February 27, 2026)](#manage-hackathons-response-parsing-bug-fix-february-27-2026)
-2. [Double API Prefix Bug Fix (February 27, 2026)](#double-api-prefix-bug-fix-february-27-2026)
-3. [URL Construction Bug Fix & Documentation Updates](#url-construction-bug-fix--documentation-updates)
-3. [Self-Service UI Deployment](#self-service-ui-deployment)
+1. [ECS Network Configuration Fix (February 28, 2026)](#ecs-network-configuration-fix-february-28-2026)
+2. [Manage Hackathons Response Parsing Bug Fix (February 27, 2026)](#manage-hackathons-response-parsing-bug-fix-february-27-2026)
+3. [Double API Prefix Bug Fix (February 27, 2026)](#double-api-prefix-bug-fix-february-27-2026)
+4. [URL Construction Bug Fix & Documentation Updates](#url-construction-bug-fix--documentation-updates)
+5. [Self-Service UI Deployment](#self-service-ui-deployment)
 4. [API Key System Migration Complete](#api-key-system-migration-complete)
 5. [Rate Limiting and API Security Implementation](#rate-limiting-and-api-security-implementation)
 6. [Rate Limiting and API Security Spec](#rate-limiting-and-api-security-spec)
@@ -69,6 +77,39 @@ VibeJudge AI is a production-ready automated hackathon judging platform that use
 20. [Current Status & Metrics](#current-status--metrics)
 21. [Key Learnings](#key-learnings)
 22. [Next Steps](#next-steps)
+
+---
+
+## ECS Network Configuration Fix (February 28, 2026)
+
+**Date:** February 28, 2026  
+**Status:** ✅ DEPLOYED AND OPERATIONAL  
+**Type:** Critical Infrastructure Fix
+
+### Overview
+
+Fixed two critical ECS networking issues preventing the Streamlit dashboard from communicating with the backend API: missing DNS egress rules in the security group and incorrect API_BASE_URL environment variable.
+
+### Problem 1: Connection Timeouts
+
+All API calls from ECS containers were timing out after 10 seconds. Root cause: ECS security group only allowed TCP/443 (HTTPS) egress but was missing UDP/53 and TCP/53 (DNS) egress rules. Containers couldn't resolve domain names, causing all API calls to fail.
+
+### Problem 2: API_BASE_URL Mismatch
+
+Environment variable had wrong value: `https://...amazonaws.com/dev/api/v1` instead of `https://...amazonaws.com/dev`, which would have caused double `/api/v1` prefix issues.
+
+### Solution
+
+1. Added DNS egress rules to security group sg-0da3c8cb090c5adf2 (UDP/53, TCP/53, TCP/80)
+2. Registered new ECS task definition 29 with corrected API_BASE_URL
+3. Updated ECS service with force-new-deployment
+
+### Deployment
+
+- Task Definition: vibejudge-dashboard-prod:29
+- Docker Image: 12b4466 (linux/amd64)
+- Status: 2/2 tasks running successfully
+- Dashboard now fully operational with successful API communication
 
 ---
 
