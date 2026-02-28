@@ -2,7 +2,7 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
   VibeJudge AI Streamlit Dashboard - ECS Fargate Deployment
-  
+
   Production deployment architecture for the VibeJudge AI Streamlit Organizer Dashboard
   on AWS ECS Fargate with Application Load Balancer, auto-scaling, and CloudWatch monitoring.
   Targets <$60/month operational cost while supporting 100 concurrent users with 99.9% uptime.
@@ -39,14 +39,14 @@ Parameters:
       - prod
     Description: >
       Deployment environment (dev or prod). Affects resource naming and configuration.
-  
+
   ImageTag:
     Type: String
     Default: latest
     Description: >
       Docker image tag to deploy (typically Git commit SHA or 'latest').
       Example: abc123f or latest
-  
+
   DomainName:
     Type: String
     Default: ""
@@ -59,7 +59,7 @@ Resources:
   # ============================================================================
   # Networking Resources
   # ============================================================================
-  
+
   VPC:
     Type: AWS::EC2::VPC
     Properties:
@@ -73,7 +73,7 @@ Resources:
           Value: !Ref Environment
         - Key: Project
           Value: VibeJudge-Streamlit-Dashboard
-  
+
   PublicSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
@@ -88,7 +88,7 @@ Resources:
           Value: !Ref Environment
         - Key: Project
           Value: VibeJudge-Streamlit-Dashboard
-  
+
   PublicSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
@@ -103,7 +103,7 @@ Resources:
           Value: !Ref Environment
         - Key: Project
           Value: VibeJudge-Streamlit-Dashboard
-  
+
   InternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
@@ -114,13 +114,13 @@ Resources:
           Value: !Ref Environment
         - Key: Project
           Value: VibeJudge-Streamlit-Dashboard
-  
+
   AttachGateway:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
       VpcId: !Ref VPC
       InternetGatewayId: !Ref InternetGateway
-  
+
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
@@ -132,7 +132,7 @@ Resources:
           Value: !Ref Environment
         - Key: Project
           Value: VibeJudge-Streamlit-Dashboard
-  
+
   PublicRoute:
     Type: AWS::EC2::Route
     DependsOn: AttachGateway
@@ -140,23 +140,23 @@ Resources:
       RouteTableId: !Ref PublicRouteTable
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref InternetGateway
-  
+
   SubnetRouteTableAssociation1:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref PublicSubnet1
       RouteTableId: !Ref PublicRouteTable
-  
+
   SubnetRouteTableAssociation2:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref PublicSubnet2
       RouteTableId: !Ref PublicRouteTable
-  
+
   # ============================================================================
   # Security Groups
   # ============================================================================
-  
+
   ALBSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -181,7 +181,7 @@ Resources:
           Value: !Ref Environment
         - Key: Project
           Value: VibeJudge-Streamlit-Dashboard
-  
+
   ECSSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -226,17 +226,17 @@ Resources:
           Value: !Ref Environment
         - Key: Project
           Value: VibeJudge-Streamlit-Dashboard
-  
+
   # ============================================================================
   # Container Registry
   # ============================================================================
   # Note: ECR repository already exists and is shared across environments
   # Repository URI: 607415053998.dkr.ecr.us-east-1.amazonaws.com/vibejudge-dashboard
-  
+
   # ============================================================================
   # IAM Roles
   # ============================================================================
-  
+
   TaskExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -281,7 +281,7 @@ Resources:
           Value: !Ref Environment
         - Key: Project
           Value: VibeJudge-Streamlit-Dashboard
-  
+
   TaskRole:
     Type: AWS::IAM::Role
     Properties:
@@ -303,11 +303,11 @@ Resources:
           Value: !Ref Environment
         - Key: Project
           Value: VibeJudge-Streamlit-Dashboard
-  
+
   # ============================================================================
   # ECS Cluster
   # ============================================================================
-  
+
   ECSCluster:
     Type: AWS::ECS::Cluster
     Properties:
@@ -332,11 +332,11 @@ Resources:
           Value: !Ref Environment
         - Key: Project
           Value: VibeJudge-Streamlit-Dashboard
-  
+
   # ============================================================================
   # CloudWatch Logs
   # ============================================================================
-  
+
   LogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -349,11 +349,11 @@ Resources:
           Value: !Ref Environment
         - Key: Project
           Value: VibeJudge-Streamlit-Dashboard
-  
+
   # ============================================================================
   # ECS Task Definition
   # ============================================================================
-  
+
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
@@ -374,7 +374,7 @@ Resources:
               Protocol: tcp
           Environment:
             - Name: API_BASE_URL
-              Value: https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev
+              Value: https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev/api/v1
             - Name: STREAMLIT_SERVER_PORT
               Value: '8501'
             - Name: STREAMLIT_SERVER_ADDRESS
@@ -404,11 +404,11 @@ Resources:
           Value: !Ref Environment
         - Key: Project
           Value: VibeJudge-Streamlit-Dashboard
-  
+
   # ============================================================================
   # Application Load Balancer
   # ============================================================================
-  
+
   ApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
@@ -428,7 +428,7 @@ Resources:
           Value: !Ref Environment
         - Key: Project
           Value: VibeJudge-Streamlit-Dashboard
-  
+
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
@@ -456,7 +456,7 @@ Resources:
           Value: !Ref Environment
         - Key: Project
           Value: VibeJudge-Streamlit-Dashboard
-  
+
   ALBListenerHTTP:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
@@ -466,7 +466,7 @@ Resources:
       DefaultActions:
         - Type: forward
           TargetGroupArn: !Ref TargetGroup
-  
+
   # HTTPS listener commented out for MVP - requires valid ACM certificate with DNS validation
   # ALBListenerHTTPS:
   #   Type: AWS::ElasticLoadBalancingV2::Listener
@@ -479,11 +479,11 @@ Resources:
   #     DefaultActions:
   #       - Type: forward
   #         TargetGroupArn: !Ref TargetGroup
-  
+
   # ============================================================================
   # ECS Service
   # ============================================================================
-  
+
   ECSService:
     Type: AWS::ECS::Service
     DependsOn:
@@ -520,11 +520,11 @@ Resources:
           Value: !Ref Environment
         - Key: Project
           Value: VibeJudge-Streamlit-Dashboard
-  
+
   # ============================================================================
   # Auto Scaling
   # ============================================================================
-  
+
   ScalableTarget:
     Type: AWS::ApplicationAutoScaling::ScalableTarget
     Properties:
@@ -534,7 +534,7 @@ Resources:
       MinCapacity: 2
       MaxCapacity: 10
       RoleARN: !Sub arn:aws:iam::${AWS::AccountId}:role/aws-service-role/ecs.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_ECSService
-  
+
   ScalingPolicy:
     Type: AWS::ApplicationAutoScaling::ScalingPolicy
     Properties:
@@ -547,11 +547,11 @@ Resources:
           PredefinedMetricType: ECSServiceAverageCPUUtilization
         ScaleOutCooldown: 60
         ScaleInCooldown: 300
-  
+
   # ============================================================================
   # CloudWatch Monitoring and Alarms
   # ============================================================================
-  
+
   AlarmNotificationTopic:
     Type: AWS::SNS::Topic
     Properties:
@@ -564,7 +564,7 @@ Resources:
           Value: !Ref Environment
         - Key: Project
           Value: VibeJudge-Streamlit-Dashboard
-  
+
   HealthyHostCountAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
@@ -596,7 +596,7 @@ Resources:
           Value: VibeJudge-Streamlit-Dashboard
         - Key: Severity
           Value: Critical
-  
+
   ResponseTimeAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
@@ -632,7 +632,7 @@ Resources:
   # ============================================================================
   # DynamoDB Tables for Rate Limiting and API Security
   # ============================================================================
-  
+
   # Main VibeJudge Table (Single-table design for API keys, usage, budget)
   # Note: This table stores APIKeys, UsageTracking, and BudgetTracking entities
   # using the existing GSI1 and GSI2 for cross-entity lookups
@@ -700,7 +700,7 @@ Resources:
           Value: VibeJudge-AI
         - Key: Purpose
           Value: Main single-table for organizers, hackathons, submissions, API keys, usage, budget
-  
+
   # Rate Limit Counters Table (Separate table for high-volume, short-lived counters)
   # Stores sliding window counters with 60-second TTL for automatic cleanup
   RateLimitCountersTable:
@@ -734,7 +734,7 @@ Resources:
           Value: VibeJudge-AI
         - Key: Purpose
           Value: Rate limit counters with 60s TTL for sliding window algorithm
-  
+
   # Security Events Table (Separate table for audit logs with 30-day retention)
   # Stores authentication failures, rate limit violations, budget exceeded events
   SecurityEventsTable:
@@ -789,37 +789,37 @@ Outputs:
   TemplateVersion:
     Description: "SAM template version"
     Value: "1.0.0"
-  
+
   LoadBalancerDNS:
     Description: "ALB DNS name for accessing the Streamlit dashboard (use http://)"
     Value: !GetAtt ApplicationLoadBalancer.DNSName
     Export:
       Name: !Sub ${AWS::StackName}-ALB-DNS
-  
+
   ECSClusterArn:
     Description: "ECS Cluster ARN for management and monitoring"
     Value: !GetAtt ECSCluster.Arn
     Export:
       Name: !Sub ${AWS::StackName}-Cluster-ARN
-  
+
   ECSServiceArn:
     Description: "ECS Service ARN for management and monitoring"
     Value: !Ref ECSService
     Export:
       Name: !Sub ${AWS::StackName}-Service-ARN
-  
+
   VibeJudgeTableName:
     Description: "Main DynamoDB table name for API keys, usage tracking, and budget tracking"
     Value: !Ref VibeJudgeTable
     Export:
       Name: !Sub ${AWS::StackName}-Main-Table
-  
+
   RateLimitCountersTableName:
     Description: "DynamoDB table name for rate limit counters (60s TTL)"
     Value: !Ref RateLimitCountersTable
     Export:
       Name: !Sub ${AWS::StackName}-RateLimit-Table
-  
+
   SecurityEventsTableName:
     Description: "DynamoDB table name for security events (30-day TTL)"
     Value: !Ref SecurityEventsTable
