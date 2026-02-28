@@ -58,7 +58,7 @@ aws cloudformation describe-stacks \
 
 **Purpose**: Check the current state of the ECS service, including running task count and deployment status.
 
-**When to use**: 
+**When to use**:
 - After deployments to verify success
 - During incidents to assess service health
 - Regular health checks
@@ -716,10 +716,10 @@ Example `dashboard-config.json`:
      --cluster $CLUSTER_NAME \
      --service-name $SERVICE_NAME \
      --region $REGION
-   
+
    # If tasks exist, check why they're unhealthy
    TASK_ARN=$(aws ecs list-tasks --cluster $CLUSTER_NAME --service-name $SERVICE_NAME --region $REGION --query 'taskArns[0]' --output text)
-   
+
    aws ecs describe-tasks \
      --cluster $CLUSTER_NAME \
      --tasks $TASK_ARN \
@@ -734,7 +734,7 @@ Example `dashboard-config.json`:
 4. **Check ALB target health**:
    ```bash
    TARGET_GROUP_ARN=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --region $REGION --query 'Stacks[0].Outputs[?OutputKey==`TargetGroupArn`].OutputValue' --output text)
-   
+
    aws elbv2 describe-target-health \
      --target-group-arn $TARGET_GROUP_ARN \
      --region $REGION
@@ -1033,4 +1033,3 @@ aws ecs update-service \
 **Last Updated**: February 2026  
 **Version**: 1.0  
 **Maintained by**: VibeJudge AI Team
-

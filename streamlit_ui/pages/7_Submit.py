@@ -7,23 +7,24 @@ No authentication is required - this is a public-facing form.
 import logging
 
 import streamlit as st
-from components.api_client import APIClient, APIError
+from components.api_client import APIClient
 
 logger = logging.getLogger(__name__)
 
 
 def _validate_github_url(url: str) -> bool:
     """Validate GitHub repository URL format.
-    
+
     Args:
         url: GitHub repository URL to validate
-        
+
     Returns:
         True if URL matches expected format, False otherwise
     """
     import re
+
     # Match: https://github.com/username/repository (with optional trailing slash)
-    pattern = r'^https://github\.com/[\w-]+/[\w.-]+/?$'
+    pattern = r"^https://github\.com/[\w-]+/[\w.-]+/?$"
     return bool(re.match(pattern, url))
 
 
@@ -150,7 +151,9 @@ with st.form("submission_form"):
     )
 
     # Submit button
-    submit_button = st.form_submit_button("Submit Project", type="primary", use_container_width=True)
+    submit_button = st.form_submit_button(
+        "Submit Project", type="primary", use_container_width=True
+    )
 
     if submit_button:
         # Validation
@@ -159,7 +162,9 @@ with st.form("submission_form"):
         elif not agree_terms:
             st.error("You must agree to the terms before submitting")
         elif not repo_url.startswith("https://github.com/"):
-            st.error("Please provide a valid GitHub repository URL (must start with https://github.com/)")
+            st.error(
+                "Please provide a valid GitHub repository URL (must start with https://github.com/)"
+            )
         else:
             # Parse team members
             members = [m.strip() for m in team_members.split("\n") if m.strip()]
@@ -193,11 +198,11 @@ with st.form("submission_form"):
                             st.info(
                                 """
                                 Your submission has been received! Here's what happens next:
-                                
+
                                 1. The organizers will verify your repository
                                 2. Your project will be analyzed by AI agents
                                 3. Results will be published on the leaderboard
-                                
+
                                 Thank you for participating!
                                 """
                             )
@@ -222,11 +227,11 @@ with st.expander("Submission Guidelines"):
     - Must be a public GitHub repository
     - Should contain your hackathon project code
     - Include a README.md with project description
-    
+
     **Team Information:**
     - Provide accurate team member names
     - All team members should have contributed to the repository
-    
+
     **After Submission:**
     - You'll receive confirmation immediately
     - Analysis results will be available on the leaderboard
@@ -237,13 +242,13 @@ with st.expander("Frequently Asked Questions"):
     st.markdown("""
     **Q: Can I submit multiple times?**
     A: Contact the hackathon organizer for their specific policy on resubmissions.
-    
+
     **Q: Does my repository need to be public?**
     A: Yes, the repository must be publicly accessible for analysis.
-    
+
     **Q: How long does analysis take?**
     A: Analysis typically completes within a few hours after the submission deadline.
-    
+
     **Q: Can I edit my submission after submitting?**
     A: Contact the hackathon organizer to request changes to your submission.
     """)

@@ -54,10 +54,10 @@ fields @timestamp, @message, @logStream
 fields @timestamp, @message
 | filter @message like /response_time|duration|elapsed/
 | parse @message /response_time[=:]?\s*(?<response_time>\d+\.?\d*)/
-| stats avg(response_time) as avg_response_ms, 
-        max(response_time) as max_response_ms, 
+| stats avg(response_time) as avg_response_ms,
+        max(response_time) as max_response_ms,
         min(response_time) as min_response_ms,
-        count() as request_count 
+        count() as request_count
   by bin(5m)
 | sort bin(5m) desc
 ```
@@ -80,8 +80,8 @@ bin(5m)              avg_response_ms  max_response_ms  min_response_ms  request_
 fields @timestamp, @message
 | filter @message like /GET|POST/
 | parse @message /(?<method>GET|POST)\s+(?<path>\/[^\s]*)\s+.*\s+(?<status>\d{3})\s+(?<duration>\d+)ms/
-| stats avg(duration) as avg_ms, 
-        max(duration) as max_ms, 
+| stats avg(duration) as avg_ms,
+        max(duration) as max_ms,
         pct(duration, 95) as p95_ms,
         pct(duration, 99) as p99_ms
   by path
@@ -203,10 +203,10 @@ fields @timestamp, @message
 fields @timestamp, @message, @logStream
 | filter @message like /(?i)(starting|started|ready|listening)/
 | sort @timestamp asc
-| stats earliest(@timestamp) as start_time, 
-        latest(@timestamp) as ready_time 
+| stats earliest(@timestamp) as start_time,
+        latest(@timestamp) as ready_time
   by @logStream
-| fields @logStream, start_time, ready_time, 
+| fields @logStream, start_time, ready_time,
          (ready_time - start_time) / 1000 as startup_seconds
 | sort startup_seconds desc
 ```
@@ -293,9 +293,9 @@ fields @timestamp, @message
         sum(@message like /(?i)(error|exception|failed)/) as error_count,
         sum(@message like /(?i)(success|completed)/) as success_count
   by bin(5m)
-| fields bin(5m), 
-         total_events, 
-         error_count, 
+| fields bin(5m),
+         total_events,
+         error_count,
          success_count,
          (error_count * 100.0 / total_events) as error_rate_percent
 | sort bin(5m) desc
@@ -341,9 +341,9 @@ fields @timestamp, @message
         sum(result = "hit") as hits,
         sum(result = "miss") as misses
   by bin(5m)
-| fields bin(5m), 
-         total, 
-         hits, 
+| fields bin(5m),
+         total,
+         hits,
          misses,
          (hits * 100.0 / total) as hit_rate_percent
 | sort bin(5m) desc

@@ -754,7 +754,7 @@ class DynamoDBHelper:
             # Filter by entity_type to only match API_KEY records (not RATE_LIMIT_COUNTER)
             response = self.table.scan(
                 FilterExpression="api_key = :key AND entity_type = :type",
-                ExpressionAttributeValues={":key": api_key, ":type": "API_KEY"}
+                ExpressionAttributeValues={":key": api_key, ":type": "API_KEY"},
             )
             items = response.get("Items", [])
 
@@ -763,7 +763,7 @@ class DynamoDBHelper:
                 response = self.table.scan(
                     FilterExpression="api_key = :key AND entity_type = :type",
                     ExpressionAttributeValues={":key": api_key, ":type": "API_KEY"},
-                    ExclusiveStartKey=response["LastEvaluatedKey"]
+                    ExclusiveStartKey=response["LastEvaluatedKey"],
                 )
                 items.extend(response.get("Items", []))
 
@@ -788,9 +788,7 @@ class DynamoDBHelper:
             API key record or None
         """
         try:
-            response = self.table.get_item(
-                Key={"PK": f"APIKEY#{api_key_id}", "SK": "METADATA"}
-            )
+            response = self.table.get_item(Key={"PK": f"APIKEY#{api_key_id}", "SK": "METADATA"})
             return response.get("Item")
         except ClientError as e:
             logger.error("get_api_key_failed", api_key_id=api_key_id, error=str(e))
@@ -826,11 +824,14 @@ class DynamoDBHelper:
         try:
             response = self.table.query(
                 IndexName="GSI1",
-                KeyConditionExpression=Key("GSI1PK").eq(f"ORG#{organizer_id}") & Key("GSI1SK").begins_with("APIKEY#"),
+                KeyConditionExpression=Key("GSI1PK").eq(f"ORG#{organizer_id}")
+                & Key("GSI1SK").begins_with("APIKEY#"),
             )
             return response.get("Items", [])
         except ClientError as e:
-            logger.error("list_api_keys_by_organizer_failed", organizer_id=organizer_id, error=str(e))
+            logger.error(
+                "list_api_keys_by_organizer_failed", organizer_id=organizer_id, error=str(e)
+            )
             return []
 
     def update_api_key_usage(

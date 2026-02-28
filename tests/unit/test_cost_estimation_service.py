@@ -29,7 +29,12 @@ class TestEstimateSubmissionCost:
         """Test cost estimation with single agent."""
         result = cost_estimation_service.estimate_submission_cost(
             repo_url="https://github.com/test/repo",
-            agent_config={"bug_hunter": True, "performance": False, "innovation": False, "ai_detection": False},
+            agent_config={
+                "bug_hunter": True,
+                "performance": False,
+                "innovation": False,
+                "ai_detection": False,
+            },
             repo_file_count=50,
         )
 
@@ -46,7 +51,12 @@ class TestEstimateSubmissionCost:
         """Test cost estimation with all agents enabled."""
         result = cost_estimation_service.estimate_submission_cost(
             repo_url="https://github.com/test/repo",
-            agent_config={"bug_hunter": True, "performance": True, "innovation": True, "ai_detection": True},
+            agent_config={
+                "bug_hunter": True,
+                "performance": True,
+                "innovation": True,
+                "ai_detection": True,
+            },
             repo_file_count=50,
         )
 
@@ -55,14 +65,20 @@ class TestEstimateSubmissionCost:
         assert result["base_cost_usd"] > 0
         # Innovation agent (Claude Sonnet) should be most expensive
         innovation_cost = next(
-            est["estimated_cost_usd"] for est in result["agent_estimates"] if est["agent_name"] == "innovation"
+            est["estimated_cost_usd"]
+            for est in result["agent_estimates"]
+            if est["agent_name"] == "innovation"
         )
         bug_hunter_cost = next(
-            est["estimated_cost_usd"] for est in result["agent_estimates"] if est["agent_name"] == "bug_hunter"
+            est["estimated_cost_usd"]
+            for est in result["agent_estimates"]
+            if est["agent_name"] == "bug_hunter"
         )
         assert innovation_cost > bug_hunter_cost
 
-    def test_large_repo_premium_applied(self, cost_estimation_service: CostEstimationService) -> None:
+    def test_large_repo_premium_applied(
+        self, cost_estimation_service: CostEstimationService
+    ) -> None:
         """Test that large repo premium is applied for repos >100 files."""
         result = cost_estimation_service.estimate_submission_cost(
             repo_url="https://github.com/test/large-repo",
@@ -72,9 +88,13 @@ class TestEstimateSubmissionCost:
 
         assert result["is_large_repo"] is True
         assert result["large_repo_premium_usd"] == LARGE_REPO_PREMIUM_USD
-        assert result["total_estimated_cost_usd"] == result["base_cost_usd"] + LARGE_REPO_PREMIUM_USD
+        assert (
+            result["total_estimated_cost_usd"] == result["base_cost_usd"] + LARGE_REPO_PREMIUM_USD
+        )
 
-    def test_large_repo_premium_not_applied(self, cost_estimation_service: CostEstimationService) -> None:
+    def test_large_repo_premium_not_applied(
+        self, cost_estimation_service: CostEstimationService
+    ) -> None:
         """Test that large repo premium is NOT applied for repos <=100 files."""
         result = cost_estimation_service.estimate_submission_cost(
             repo_url="https://github.com/test/small-repo",
@@ -199,7 +219,9 @@ class TestEstimateHackathonCost:
 class TestCheckBudgetAvailability:
     """Tests for check_budget_availability method."""
 
-    def test_within_budget(self, cost_estimation_service: CostEstimationService, mock_db: MagicMock) -> None:
+    def test_within_budget(
+        self, cost_estimation_service: CostEstimationService, mock_db: MagicMock
+    ) -> None:
         """Test budget check when within budget."""
         mock_db.get_api_key.return_value = {
             "api_key": "vj_test_abc123",
@@ -216,7 +238,9 @@ class TestCheckBudgetAvailability:
         assert remaining == 8.0
         assert warning is None
 
-    def test_exceeds_budget(self, cost_estimation_service: CostEstimationService, mock_db: MagicMock) -> None:
+    def test_exceeds_budget(
+        self, cost_estimation_service: CostEstimationService, mock_db: MagicMock
+    ) -> None:
         """Test budget check when exceeding budget."""
         mock_db.get_api_key.return_value = {
             "api_key": "vj_test_abc123",
@@ -273,7 +297,9 @@ class TestCheckBudgetAvailability:
         assert within_budget is True
         assert warning is None
 
-    def test_api_key_not_found(self, cost_estimation_service: CostEstimationService, mock_db: MagicMock) -> None:
+    def test_api_key_not_found(
+        self, cost_estimation_service: CostEstimationService, mock_db: MagicMock
+    ) -> None:
         """Test budget check when API key not found."""
         mock_db.get_api_key.return_value = None
 
@@ -309,7 +335,9 @@ class TestGetCostEstimateResponse:
         assert result.estimate.estimated_duration_minutes is not None
         assert result.budget_check is None
 
-    def test_response_with_budget_check(self, cost_estimation_service: CostEstimationService) -> None:
+    def test_response_with_budget_check(
+        self, cost_estimation_service: CostEstimationService
+    ) -> None:
         """Test response includes budget check when limit provided."""
         result = cost_estimation_service.get_cost_estimate_response(
             hack_id="hack_123",
@@ -381,10 +409,14 @@ class TestCalculateBaseCostPerSubmission:
         # Innovation (Claude Sonnet) should dominate the cost
         assert cost > 0.01
 
-    def test_cost_increases_with_agents(self, cost_estimation_service: CostEstimationService) -> None:
+    def test_cost_increases_with_agents(
+        self, cost_estimation_service: CostEstimationService
+    ) -> None:
         """Test that cost increases as more agents are added."""
         cost_one = cost_estimation_service._calculate_base_cost_per_submission(["bug_hunter"])
-        cost_two = cost_estimation_service._calculate_base_cost_per_submission(["bug_hunter", "performance"])
+        cost_two = cost_estimation_service._calculate_base_cost_per_submission(
+            ["bug_hunter", "performance"]
+        )
         cost_four = cost_estimation_service._calculate_base_cost_per_submission(
             ["bug_hunter", "performance", "innovation", "ai_detection"]
         )

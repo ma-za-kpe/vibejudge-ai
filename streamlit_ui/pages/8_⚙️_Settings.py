@@ -8,7 +8,7 @@ from datetime import datetime
 
 import streamlit as st
 from components.api_client import APIClient, APIError
-from components.auth import is_authenticated, require_authentication
+from components.auth import require_authentication
 
 logger = logging.getLogger(__name__)
 
@@ -106,64 +106,64 @@ def render_api_keys_section(api_client: APIClient) -> None:
     st.markdown("### API Key Management")
 
     # Create new API key section
-    with st.expander("➕ Create New API Key"):
-        with st.form("create_api_key_form"):
-            st.markdown("Create a new API key for your account.")
+    with st.expander("➕ Create New API Key"), st.form("create_api_key_form"):
+        st.markdown("Create a new API key for your account.")
 
-            col1, col2 = st.columns(2)
+        col1, col2 = st.columns(2)
 
-            with col1:
-                tier = st.selectbox(
-                    "Tier",
-                    options=["FREE", "STARTER", "PRO", "ENTERPRISE"],
-                    help="API key tier determines rate limits and quotas",
-                )
-
-            with col2:
-                expires_days = st.number_input(
-                    "Expires in (days)",
-                    min_value=0,
-                    max_value=365,
-                    value=0,
-                    help="0 = never expires",
-                )
-
-            hackathon_id = st.text_input(
-                "Hackathon ID (optional)",
-                placeholder="Leave empty for account-wide key",
-                help="Scope key to specific hackathon",
+        with col1:
+            tier = st.selectbox(
+                "Tier",
+                options=["FREE", "STARTER", "PRO", "ENTERPRISE"],
+                help="API key tier determines rate limits and quotas",
             )
 
-            submit_button = st.form_submit_button("Create API Key", type="primary")
+        with col2:
+            expires_days = st.number_input(
+                "Expires in (days)",
+                min_value=0,
+                max_value=365,
+                value=0,
+                help="0 = never expires",
+            )
 
-            if submit_button:
-                try:
-                    # Calculate expiration date
-                    expires_at = None
-                    if expires_days > 0:
-                        from datetime import timedelta
-                        expires_at = (datetime.utcnow() + timedelta(days=expires_days)).isoformat()
+        hackathon_id = st.text_input(
+            "Hackathon ID (optional)",
+            placeholder="Leave empty for account-wide key",
+            help="Scope key to specific hackathon",
+        )
 
-                    # Create API key
-                    payload = {"tier": tier.lower()}
-                    if hackathon_id:
-                        payload["hackathon_id"] = hackathon_id
-                    if expires_at:
-                        payload["expires_at"] = expires_at
+        submit_button = st.form_submit_button("Create API Key", type="primary")
 
-                    result = api_client.post("/api-keys", json=payload)
+        if submit_button:
+            try:
+                # Calculate expiration date
+                expires_at = None
+                if expires_days > 0:
+                    from datetime import timedelta
 
-                    # Display new API key
-                    st.success("✅ API key created successfully!")
-                    st.warning("⚠️ **IMPORTANT**: Save your API key now! It will not be shown again.")
-                    st.code(result.get("api_key"), language="text")
+                    expires_at = (datetime.utcnow() + timedelta(days=expires_days)).isoformat()
 
-                    # Rerun to refresh key list
-                    st.rerun()
+                # Create API key
+                payload = {"tier": tier.lower()}
+                if hackathon_id:
+                    payload["hackathon_id"] = hackathon_id
+                if expires_at:
+                    payload["expires_at"] = expires_at
 
-                except APIError as e:
-                    st.error(f"Failed to create API key: {str(e)}")
-                    logger.error(f"API key creation error: {str(e)}")
+                result = api_client.post("/api-keys", json=payload)
+
+                # Display new API key
+                st.success("✅ API key created successfully!")
+                st.warning("⚠️ **IMPORTANT**: Save your API key now! It will not be shown again.")
+                st.code(result.get("api_key"), language="text")
+
+                # Rerun to refresh key list
+                st.rerun()
+
+            except APIError as e:
+                st.error(f"Failed to create API key: {str(e)}")
+                logger.error(f"API key creation error: {str(e)}")
 
     # List existing API keys
     st.markdown("---")
@@ -223,9 +223,13 @@ def render_api_keys_section(api_client: APIClient) -> None:
                             col_a, col_b = st.columns(2)
 
                             with col_a:
-                                if st.button("🔄 Rotate", key=f"rotate_{key_id}", use_container_width=True):
+                                if st.button(
+                                    "🔄 Rotate", key=f"rotate_{key_id}", use_container_width=True
+                                ):
                                     try:
-                                        result = api_client.post(f"/api-keys/{key_id}/rotate", json={})
+                                        result = api_client.post(
+                                            f"/api-keys/{key_id}/rotate", json={}
+                                        )
                                         st.success("✅ Key rotated! New key:")
                                         st.code(result.get("api_key"), language="text")
                                         st.rerun()
@@ -233,7 +237,9 @@ def render_api_keys_section(api_client: APIClient) -> None:
                                         st.error(f"Rotation failed: {str(e)}")
 
                             with col_b:
-                                if st.button("🗑️ Revoke", key=f"revoke_{key_id}", use_container_width=True):
+                                if st.button(
+                                    "🗑️ Revoke", key=f"revoke_{key_id}", use_container_width=True
+                                ):
                                     try:
                                         api_client.delete(f"/api-keys/{key_id}")
                                         st.success("✅ Key revoked")
@@ -246,7 +252,9 @@ def render_api_keys_section(api_client: APIClient) -> None:
                         detail_col1, detail_col2 = st.columns(2)
 
                         with detail_col1:
-                            st.markdown(f"**Rate Limit:** {key.get('rate_limit_per_second', 0)} req/sec")
+                            st.markdown(
+                                f"**Rate Limit:** {key.get('rate_limit_per_second', 0)} req/sec"
+                            )
                             st.markdown(f"**Daily Quota:** {key.get('daily_quota', 0)} req/day")
                             st.markdown(f"**Budget Limit:** ${key.get('budget_limit_usd', 0):.2f}")
 
@@ -257,8 +265,12 @@ def render_api_keys_section(api_client: APIClient) -> None:
                             last_used = key.get("last_used_at")
                             if last_used:
                                 try:
-                                    last_used_date = datetime.fromisoformat(last_used.replace("Z", "+00:00"))
-                                    st.markdown(f"**Last Used:** {last_used_date.strftime('%Y-%m-%d %H:%M')}")
+                                    last_used_date = datetime.fromisoformat(
+                                        last_used.replace("Z", "+00:00")
+                                    )
+                                    st.markdown(
+                                        f"**Last Used:** {last_used_date.strftime('%Y-%m-%d %H:%M')}"
+                                    )
                                 except Exception:
                                     st.markdown("**Last Used:** N/A")
                             else:
@@ -300,9 +312,7 @@ def render_usage_section(api_client: APIClient) -> None:
             end_str = end_date.strftime("%Y-%m-%d")
 
             # Fetch usage summary
-            response = api_client.get(
-                f"/usage/summary?start_date={start_str}&end_date={end_str}"
-            )
+            response = api_client.get(f"/usage/summary?start_date={start_str}&end_date={end_str}")
 
             # Display summary metrics
             st.markdown("---")

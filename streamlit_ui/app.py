@@ -35,7 +35,9 @@ def get_api_base_url() -> str:
     return os.getenv("API_BASE_URL", "http://localhost:8000")
 
 
-def login_with_email_password(email: str, password: str, api_base_url: str) -> tuple[bool, str, str | None]:
+def login_with_email_password(
+    email: str, password: str, api_base_url: str
+) -> tuple[bool, str, str | None]:
     """Login with email and password to get API key.
 
     Args:
@@ -127,7 +129,9 @@ def render_authentication_form() -> None:
                 )
 
             # Login button
-            submit_button = st.form_submit_button("Login with API Key", type="primary", use_container_width=True)
+            submit_button = st.form_submit_button(
+                "Login with API Key", type="primary", use_container_width=True
+            )
 
             # Handle form submission
             if submit_button:
@@ -147,7 +151,9 @@ def render_authentication_form() -> None:
                             st.success("✅ Authentication successful! Redirecting...")
                             st.rerun()
                         else:
-                            st.error("❌ Invalid API key. Please check your credentials and try again.")
+                            st.error(
+                                "❌ Invalid API key. Please check your credentials and try again."
+                            )
                             logger.warning("Authentication failed: Invalid API key")
 
     # Tab 2: Email/Password Login
@@ -180,7 +186,9 @@ def render_authentication_form() -> None:
                 )
 
             # Login button
-            submit_button_email = st.form_submit_button("Login with Email", type="primary", use_container_width=True)
+            submit_button_email = st.form_submit_button(
+                "Login with Email", type="primary", use_container_width=True
+            )
 
             # Handle form submission
             if submit_button_email:
@@ -202,7 +210,9 @@ def render_authentication_form() -> None:
                             st.session_state["api_key"] = api_key
                             logger.info(f"User authenticated successfully with email: {email}")
                             st.success(f"✅ {message}")
-                            st.info("💡 Your new API key has been generated and stored in your session.")
+                            st.info(
+                                "💡 Your new API key has been generated and stored in your session."
+                            )
                             st.rerun()
                         else:
                             st.error(f"❌ {message}")

@@ -19,7 +19,7 @@ logger = get_logger(__name__)
 
 class BudgetMiddleware(BaseHTTPMiddleware):
     """Middleware for enforcing budget limits at submission, hackathon, and API key levels.
-    
+
     This middleware:
     1. Estimates cost for analysis requests
     2. Checks per-submission budget cap (configurable, default $0.50)
@@ -38,7 +38,7 @@ class BudgetMiddleware(BaseHTTPMiddleware):
         exempt_paths: list[str] | None = None,
     ) -> None:
         """Initialize budget enforcement middleware.
-        
+
         Args:
             app: ASGI application
             db_helper: DynamoDB helper instance
@@ -47,15 +47,17 @@ class BudgetMiddleware(BaseHTTPMiddleware):
         """
         super().__init__(app)
         self.db_helper = db_helper
-        self.max_cost_per_submission = max_cost_per_submission or settings.max_cost_per_submission_usd
+        self.max_cost_per_submission = (
+            max_cost_per_submission or settings.max_cost_per_submission_usd
+        )
         self.exempt_paths = exempt_paths or []
 
     def _is_path_exempt(self, path: str) -> bool:
         """Check if path is exempt from budget checks (supports * wildcard).
-        
+
         Args:
             path: Request path to check
-            
+
         Returns:
             True if path is exempt, False otherwise
         """
@@ -67,6 +69,7 @@ class BudgetMiddleware(BaseHTTPMiddleware):
             # Wildcard match (e.g., "/api/v1/public/hackathons/*/submissions")
             if "*" in exempt_path:
                 import re
+
                 # Convert wildcard pattern to regex (escape special chars, replace * with .*)
                 pattern = "^" + re.escape(exempt_path).replace(r"\*", ".*") + "$"
                 if re.match(pattern, path):
@@ -74,15 +77,13 @@ class BudgetMiddleware(BaseHTTPMiddleware):
 
         return False
 
-    async def dispatch(
-        self, request: Request, call_next: Callable
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """Process request through budget enforcement checks.
-        
+
         Args:
             request: Incoming HTTP request
             call_next: Next middleware/route handler
-            
+
         Returns:
             HTTP response with budget information or 402 if exceeded
         """
@@ -156,10 +157,10 @@ class BudgetMiddleware(BaseHTTPMiddleware):
 
     def _should_check_budget(self, request: Request) -> bool:
         """Determine if budget check is needed for this request.
-        
+
         Args:
             request: Incoming HTTP request
-            
+
         Returns:
             True if budget check should be performed
         """
@@ -169,10 +170,10 @@ class BudgetMiddleware(BaseHTTPMiddleware):
 
     def _extract_hackathon_id(self, request: Request) -> str | None:
         """Extract hackathon ID from request path.
-        
+
         Args:
             request: Incoming HTTP request
-            
+
         Returns:
             Hackathon ID or None if not found
         """
@@ -187,15 +188,13 @@ class BudgetMiddleware(BaseHTTPMiddleware):
             pass
         return None
 
-    async def _estimate_request_cost(
-        self, request: Request, hackathon_id: str | None
-    ) -> float:
+    async def _estimate_request_cost(self, request: Request, hackathon_id: str | None) -> float:
         """Estimate cost for this request.
-        
+
         Args:
             request: Incoming HTTP request
             hackathon_id: Hackathon ID if available
-            
+
         Returns:
             Estimated cost in USD
         """
@@ -229,13 +228,13 @@ class BudgetMiddleware(BaseHTTPMiddleware):
         estimated_cost: float,
     ) -> dict[str, Any]:
         """Check all three budget levels: submission, hackathon, and API key.
-        
+
         Args:
             api_key: API key string
             api_key_data: API key metadata object
             hackathon_id: Hackathon ID if available
             estimated_cost: Estimated cost for this request
-            
+
         Returns:
             Dict with keys: allowed (bool), level (str), limit (float), current (float), message (str)
         """
@@ -268,7 +267,10 @@ class BudgetMiddleware(BaseHTTPMiddleware):
         if hackathon_id:
             hackathon_budget = await self._get_budget_tracking("hackathon", hackathon_id)
             if hackathon_budget:
-                if hackathon_budget.current_spend_usd + estimated_cost > hackathon_budget.budget_limit_usd:
+                if (
+                    hackathon_budget.current_spend_usd + estimated_cost
+                    > hackathon_budget.budget_limit_usd
+                ):
                     return {
                         "allowed": False,
                         "level": "hackathon",
@@ -278,7 +280,9 @@ class BudgetMiddleware(BaseHTTPMiddleware):
                     }
 
                 # Check for alert thresholds
-                await self._check_and_send_alerts(hackathon_budget, estimated_cost, "hackathon", hackathon_id)
+                await self._check_and_send_alerts(
+                    hackathon_budget, estimated_cost, "hackathon", hackathon_id
+                )
 
         # All checks passed
         return {
@@ -289,15 +293,13 @@ class BudgetMiddleware(BaseHTTPMiddleware):
             "message": None,
         }
 
-    async def _get_budget_tracking(
-        self, entity_type: str, entity_id: str
-    ) -> BudgetTracking | None:
+    async def _get_budget_tracking(self, entity_type: str, entity_id: str) -> BudgetTracking | None:
         """Get budget tracking record from DynamoDB.
-        
+
         Args:
             entity_type: Type of entity (api_key, hackathon, submission)
             entity_id: Entity identifier
-            
+
         Returns:
             BudgetTracking object or None if not found
         """
@@ -336,11 +338,11 @@ class BudgetMiddleware(BaseHTTPMiddleware):
         self, entity_type: str, entity_id: str
     ) -> BudgetTracking | None:
         """Create default budget tracking record.
-        
+
         Args:
             entity_type: Type of entity (api_key, hackathon, submission)
             entity_id: Entity identifier
-            
+
         Returns:
             BudgetTracking object or None if creation fails
         """
@@ -351,14 +353,18 @@ class BudgetMiddleware(BaseHTTPMiddleware):
                 api_key_data = self.db_helper.get_api_key_by_secret(entity_id)
                 if not api_key_data:
                     return None
-                budget_limit = api_key_data.get("budget_limit_usd", settings.default_budget_limit_usd)
+                budget_limit = api_key_data.get(
+                    "budget_limit_usd", settings.default_budget_limit_usd
+                )
             elif entity_type == "hackathon":
                 # Get from hackathon metadata
                 hackathon_data = self.db_helper.get_hackathon(entity_id)
                 if not hackathon_data:
                     return None
                 # Use default if hackathon doesn't have budget_limit_usd field
-                budget_limit = hackathon_data.get("budget_limit_usd", settings.default_budget_limit_usd)
+                budget_limit = hackathon_data.get(
+                    "budget_limit_usd", settings.default_budget_limit_usd
+                )
             else:
                 # Submission level uses per-submission cap
                 budget_limit = self.max_cost_per_submission
@@ -401,7 +407,7 @@ class BudgetMiddleware(BaseHTTPMiddleware):
         entity_id: str,
     ) -> None:
         """Check if budget alerts should be sent and send them.
-        
+
         Args:
             budget_tracking: Current budget tracking record
             estimated_cost: Estimated cost for this request
@@ -437,7 +443,7 @@ class BudgetMiddleware(BaseHTTPMiddleware):
         projected_spend: float,
     ) -> None:
         """Send budget alert notification.
-        
+
         Args:
             entity_type: Type of entity (api_key, hackathon, submission)
             entity_id: Entity identifier
@@ -460,11 +466,9 @@ class BudgetMiddleware(BaseHTTPMiddleware):
         # TODO: In production, send SNS notification or email
         # For MVP, logging is sufficient
 
-    async def _mark_alert_sent(
-        self, budget_tracking: BudgetTracking, threshold: int
-    ) -> None:
+    async def _mark_alert_sent(self, budget_tracking: BudgetTracking, threshold: int) -> None:
         """Mark alert as sent in DynamoDB.
-        
+
         Args:
             budget_tracking: Budget tracking record
             threshold: Alert threshold (50, 80, 90, 100)
@@ -486,7 +490,9 @@ class BudgetMiddleware(BaseHTTPMiddleware):
             logger.info(
                 "budget_alert_marked",
                 entity_type=budget_tracking.entity_type,
-                entity_id=budget_tracking.entity_id[:8] if budget_tracking.entity_type == "api_key" else budget_tracking.entity_id,
+                entity_id=budget_tracking.entity_id[:8]
+                if budget_tracking.entity_type == "api_key"
+                else budget_tracking.entity_id,
                 threshold=threshold,
             )
 
@@ -500,7 +506,7 @@ class BudgetMiddleware(BaseHTTPMiddleware):
         actual_cost: float,
     ) -> None:
         """Update budget tracking after successful request.
-        
+
         Args:
             api_key: API key string
             hackathon_id: Hackathon ID if available
@@ -524,11 +530,9 @@ class BudgetMiddleware(BaseHTTPMiddleware):
         except Exception as e:
             logger.error("budget_tracking_update_failed", error=str(e))
 
-    async def _increment_budget_spend(
-        self, entity_type: str, entity_id: str, cost: float
-    ) -> None:
+    async def _increment_budget_spend(self, entity_type: str, entity_id: str, cost: float) -> None:
         """Atomically increment budget spend in DynamoDB.
-        
+
         Args:
             entity_type: Type of entity (api_key, hackathon, submission)
             entity_id: Entity identifier
@@ -560,24 +564,34 @@ class BudgetMiddleware(BaseHTTPMiddleware):
         self, budget_check_result: dict[str, Any], estimated_cost: float
     ) -> str:
         """Format budget exceeded error response.
-        
+
         Args:
             budget_check_result: Result from check_budget_limits
             estimated_cost: Estimated cost for this request
-            
+
         Returns:
             JSON error response string
         """
         import json
 
-        return json.dumps({
-            "error": "Budget limit exceeded",
-            "level": budget_check_result["level"],
-            "message": budget_check_result["message"],
-            "details": {
-                "estimated_cost_usd": round(estimated_cost, 4),
-                "current_spend_usd": round(budget_check_result["current"], 4) if budget_check_result["current"] else None,
-                "budget_limit_usd": round(budget_check_result["limit"], 4) if budget_check_result["limit"] else None,
-                "remaining_budget_usd": round(budget_check_result["limit"] - budget_check_result["current"], 4) if budget_check_result["limit"] and budget_check_result["current"] else None,
-            },
-        })
+        return json.dumps(
+            {
+                "error": "Budget limit exceeded",
+                "level": budget_check_result["level"],
+                "message": budget_check_result["message"],
+                "details": {
+                    "estimated_cost_usd": round(estimated_cost, 4),
+                    "current_spend_usd": round(budget_check_result["current"], 4)
+                    if budget_check_result["current"]
+                    else None,
+                    "budget_limit_usd": round(budget_check_result["limit"], 4)
+                    if budget_check_result["limit"]
+                    else None,
+                    "remaining_budget_usd": round(
+                        budget_check_result["limit"] - budget_check_result["current"], 4
+                    )
+                    if budget_check_result["limit"] and budget_check_result["current"]
+                    else None,
+                },
+            }
+        )

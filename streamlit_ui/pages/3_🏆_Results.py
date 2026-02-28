@@ -492,10 +492,7 @@ with st.spinner("🔄 Loading hackathons..."):
     hackathons = fetch_hackathons(st.session_state["api_key"])
 
 # Filter out DRAFT and ARCHIVED hackathons (only show CONFIGURED, ANALYZING, COMPLETED)
-active_hackathons = [
-    h for h in hackathons 
-    if h.get("status") not in ["draft", "archived"]
-]
+active_hackathons = [h for h in hackathons if h.get("status") not in ["draft", "archived"]]
 
 # Display hackathon selection dropdown
 if not active_hackathons:

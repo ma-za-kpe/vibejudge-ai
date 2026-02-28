@@ -34,24 +34,26 @@ st.title("Manage Hackathons")
 st.markdown("View and manage all your hackathons.")
 
 # Check if we're in detail view mode
-if st.session_state.get("view_mode") == "detail" and st.session_state.get("selected_hackathon_detail"):
+if st.session_state.get("view_mode") == "detail" and st.session_state.get(
+    "selected_hackathon_detail"
+):
     hack_id = st.session_state["selected_hackathon_detail"]
-    
+
     # Fetch full hackathon details
     try:
         hackathon_detail = api_client.get(f"/hackathons/{hack_id}")
-        
+
         # Back button
         if st.button("← Back to List"):
             st.session_state.pop("view_mode", None)
             st.session_state.pop("selected_hackathon_detail", None)
             st.rerun()
-        
+
         st.divider()
-        
+
         # Display hackathon details
         st.subheader(hackathon_detail.get("name", "Unknown"))
-        
+
         col1, col2, col3 = st.columns(3)
         with col1:
             status = hackathon_detail.get("status", "unknown")
@@ -64,20 +66,20 @@ if st.session_state.get("view_mode") == "detail" and st.session_state.get("selec
             }
             status_icon = status_colors.get(status, "⚪")
             st.metric("Status", f"{status_icon} {status.title()}")
-        
+
         with col2:
             st.metric("Submissions", hackathon_detail.get("submission_count", 0))
-        
+
         with col3:
             budget = hackathon_detail.get("budget_limit_usd")
             st.metric("Budget Limit", f"${budget:.2f}" if budget else "No limit")
-        
+
         st.divider()
-        
+
         # Description
         st.markdown("**Description:**")
         st.write(hackathon_detail.get("description", "No description provided"))
-        
+
         # Dates
         col1, col2 = st.columns(2)
         with col1:
@@ -90,7 +92,7 @@ if st.session_state.get("view_mode") == "detail" and st.session_state.get("selec
                     st.markdown(f"**Start Date:** {start_date}")
             else:
                 st.markdown("**Start Date:** Not set")
-        
+
         with col2:
             end_date = hackathon_detail.get("end_date")
             if end_date:
@@ -101,43 +103,45 @@ if st.session_state.get("view_mode") == "detail" and st.session_state.get("selec
                     st.markdown(f"**End Date:** {end_date}")
             else:
                 st.markdown("**End Date:** Not set")
-        
+
         st.divider()
-        
+
         # Rubric configuration
         st.markdown("**Rubric Configuration:**")
         rubric = hackathon_detail.get("rubric", {})
         st.write(f"Name: {rubric.get('name', 'N/A')}")
         st.write(f"Max Score: {rubric.get('max_score', 100)}")
-        
+
         dimensions = rubric.get("dimensions", [])
         if dimensions:
             st.markdown("**Dimensions:**")
             for dim in dimensions:
-                st.write(f"- {dim.get('name')}: {dim.get('weight')*100:.1f}% (Agent: {dim.get('agent')})")
-        
+                st.write(
+                    f"- {dim.get('name')}: {dim.get('weight') * 100:.1f}% (Agent: {dim.get('agent')})"
+                )
+
         # Agents enabled
         st.divider()
         st.markdown("**Enabled Agents:**")
         agents = hackathon_detail.get("agents_enabled", [])
         st.write(", ".join(agents) if agents else "None")
-        
+
         # AI Policy
         st.markdown(f"**AI Policy Mode:** {hackathon_detail.get('ai_policy_mode', 'N/A')}")
-        
+
         # Edit button
         st.divider()
         if st.button("Edit Hackathon"):
             st.session_state["edit_mode"] = True
             st.rerun()
-        
+
     except APIError as e:
         st.error(f"Failed to load hackathon details: {e}")
         if st.button("← Back to List"):
             st.session_state.pop("view_mode", None)
             st.session_state.pop("selected_hackathon_detail", None)
             st.rerun()
-    
+
     st.stop()
 
 
@@ -197,10 +201,12 @@ if status_filter != "all":
     filtered_hackathons = [h for h in filtered_hackathons if h.get("status") == status_filter]
 
 if not filtered_hackathons:
-    st.warning(f"No hackathons found matching your filters.")
+    st.warning("No hackathons found matching your filters.")
 else:
     # Display table header
-    header_col1, header_col2, header_col3, header_col4, header_col5 = st.columns([2, 1.5, 1, 1, 1.5])
+    header_col1, header_col2, header_col3, header_col4, header_col5 = st.columns(
+        [2, 1.5, 1, 1, 1.5]
+    )
     with header_col1:
         st.markdown("**Name**")
     with header_col2:
@@ -287,7 +293,9 @@ if "confirm_delete" in st.session_state and st.session_state["confirm_delete"]:
     hackathon = next((h for h in hackathons if h.get("hack_id") == hack_id), None)
 
     if hackathon:
-        st.warning(f"Are you sure you want to delete '{hackathon.get('name')}'? This action cannot be undone.")
+        st.warning(
+            f"Are you sure you want to delete '{hackathon.get('name')}'? This action cannot be undone."
+        )
 
         col1, col2 = st.columns(2)
 

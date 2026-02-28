@@ -66,7 +66,9 @@ class APIKeyService:
         tier_defaults = get_tier_defaults(tier)
 
         # Use custom limits or tier defaults
-        final_rate_limit = rate_limit if rate_limit is not None else tier_defaults["rate_limit_per_second"]
+        final_rate_limit = (
+            rate_limit if rate_limit is not None else tier_defaults["rate_limit_per_second"]
+        )
         final_daily_quota = daily_quota if daily_quota is not None else tier_defaults["daily_quota"]
         final_budget_limit = (
             budget_limit_usd if budget_limit_usd is not None else tier_defaults["budget_limit_usd"]
@@ -140,7 +142,14 @@ class APIKeyService:
 
             # Convert ISO strings to datetime objects
             from datetime import datetime
-            for field in ["created_at", "updated_at", "expires_at", "deprecated_at", "last_used_at"]:
+
+            for field in [
+                "created_at",
+                "updated_at",
+                "expires_at",
+                "deprecated_at",
+                "last_used_at",
+            ]:
                 if field in api_key_data and api_key_data[field]:
                     if isinstance(api_key_data[field], str):
                         api_key_data[field] = datetime.fromisoformat(api_key_data[field])
@@ -329,9 +338,7 @@ class APIKeyService:
             APIKeyResponse if found, None otherwise
         """
         try:
-            response = self.db.table.get_item(
-                Key={"PK": f"APIKEY#{api_key_id}", "SK": "METADATA"}
-            )
+            response = self.db.table.get_item(Key={"PK": f"APIKEY#{api_key_id}", "SK": "METADATA"})
 
             item = response.get("Item")
             if not item:

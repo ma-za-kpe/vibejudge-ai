@@ -17,7 +17,7 @@ logger = get_logger(__name__)
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """Middleware for enforcing per-API-key rate limits using sliding window algorithm.
-    
+
     This middleware:
     1. Extracts API key from X-API-Key header
     2. Validates API key exists and is active
@@ -36,7 +36,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         exempt_paths: list[str] | None = None,
     ) -> None:
         """Initialize rate limit middleware.
-        
+
         Args:
             app: ASGI application
             db_helper: DynamoDB helper instance
@@ -57,10 +57,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     def _is_path_exempt(self, path: str) -> bool:
         """Check if path is exempt from rate limiting (supports * wildcard).
-        
+
         Args:
             path: Request path to check
-            
+
         Returns:
             True if path is exempt, False otherwise
         """
@@ -72,6 +72,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             # Wildcard match (e.g., "/api/v1/public/hackathons/*/submissions")
             if "*" in exempt_path:
                 import re
+
                 # Convert wildcard pattern to regex (escape special chars, replace * with .*)
                 pattern = "^" + re.escape(exempt_path).replace(r"\*", ".*") + "$"
                 if re.match(pattern, path):
@@ -79,15 +80,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         return False
 
-    async def dispatch(
-        self, request: Request, call_next: Callable
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """Process request through rate limiting checks.
-        
+
         Args:
             request: Incoming HTTP request
             call_next: Next middleware/route handler
-            
+
         Returns:
             HTTP response with rate limit headers
         """
@@ -157,8 +156,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if not quota_allowed:
             # Calculate midnight UTC reset time
             import datetime
+
             tomorrow = datetime.datetime.utcnow().date() + datetime.timedelta(days=1)
-            reset_timestamp = int(datetime.datetime.combine(tomorrow, datetime.time.min).timestamp())
+            reset_timestamp = int(
+                datetime.datetime.combine(tomorrow, datetime.time.min).timestamp()
+            )
 
             return Response(
                 status_code=429,
@@ -189,10 +191,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     async def _get_api_key(self, api_key: str) -> APIKey | None:
         """Get API key metadata from DynamoDB using Advanced API key system.
-        
+
         Args:
             api_key: API key string
-            
+
         Returns:
             APIKey object or None if not found
         """
@@ -207,7 +209,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 from datetime import datetime
 
                 # Convert ISO strings back to datetime objects
-                for field in ["created_at", "updated_at", "expires_at", "deprecated_at", "last_used_at"]:
+                for field in [
+                    "created_at",
+                    "updated_at",
+                    "expires_at",
+                    "deprecated_at",
+                    "last_used_at",
+                ]:
                     if field in api_key_data and api_key_data[field]:
                         if isinstance(api_key_data[field], str):
                             api_key_data[field] = datetime.fromisoformat(api_key_data[field])
@@ -230,12 +238,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         rate_limit: int,
     ) -> tuple[bool, int, int]:
         """Check and enforce rate limit using sliding window algorithm.
-        
+
         Args:
             api_key: API key string
             window_start: Current Unix timestamp (second precision)
             rate_limit: Maximum requests per second
-            
+
         Returns:
             Tuple of (allowed, remaining, reset_time)
             - allowed: Whether request is allowed
@@ -291,12 +299,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         ttl: int,
     ) -> int:
         """Atomically increment rate limit counter in DynamoDB.
-        
+
         Args:
             api_key: API key string
             window_start: Window start timestamp
             ttl: TTL for auto-deletion
-            
+
         Returns:
             New counter value after increment
         """
@@ -334,12 +342,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         daily_quota: int,
     ) -> tuple[bool, int, int]:
         """Check daily quota usage.
-        
+
         Args:
             api_key: API key string
             date: Date in YYYY-MM-DD format
             daily_quota: Maximum requests per day
-            
+
         Returns:
             Tuple of (allowed, used, remaining)
             - allowed: Whether request is allowed
@@ -389,7 +397,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         date: str,
     ) -> None:
         """Increment daily usage counter.
-        
+
         Args:
             api_key: API key string
             date: Date in YYYY-MM-DD format

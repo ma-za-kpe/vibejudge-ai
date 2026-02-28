@@ -45,7 +45,7 @@ class SubmissionService:
 
         Returns:
             Batch creation response
-            
+
         Raises:
             ValueError: If duplicate repo_url found for this hackathon
         """

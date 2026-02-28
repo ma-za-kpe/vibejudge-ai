@@ -61,18 +61,14 @@ async def get_usage_summary(
 
         # Validate date range
         if start_dt and end_dt and start_dt > end_dt:
-            raise HTTPException(
-                status_code=400, detail="start_date must be before end_date"
-            )
+            raise HTTPException(status_code=400, detail="start_date must be before end_date")
 
         return service.get_usage_summary(org_id, start_dt, end_dt)
 
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to get usage summary: {str(e)}"
-        ) from e
+        raise HTTPException(status_code=500, detail=f"Failed to get usage summary: {str(e)}") from e
 
 
 @router.get("/export")
@@ -118,9 +114,7 @@ async def export_usage_csv(
 
         # Validate date range
         if start_dt and end_dt and start_dt > end_dt:
-            raise HTTPException(
-                status_code=400, detail="start_date must be before end_date"
-            )
+            raise HTTPException(status_code=400, detail="start_date must be before end_date")
 
         # Generate CSV content
         csv_content = service.export_usage_csv(org_id, start_dt, end_dt)
@@ -137,6 +131,4 @@ async def export_usage_csv(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to export usage data: {str(e)}"
-        ) from e
+        raise HTTPException(status_code=500, detail=f"Failed to export usage data: {str(e)}") from e

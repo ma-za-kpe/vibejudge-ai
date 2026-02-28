@@ -6,7 +6,6 @@ This page allows new users to create an organizer account and receive their API 
 import logging
 
 import streamlit as st
-from components.api_client import APIClient, APIError
 
 logger = logging.getLogger(__name__)
 
@@ -113,9 +112,7 @@ def main() -> None:
                 help="Your email address (used for login)",
             )
 
-            name = st.text_input(
-                "Full Name *", placeholder="John Doe", help="Your full name"
-            )
+            name = st.text_input("Full Name *", placeholder="John Doe", help="Your full name")
 
         with col2:
             password = st.text_input(
@@ -178,8 +175,7 @@ def main() -> None:
                         # Display API key with copy button
                         st.markdown("### 🔑 Your API Key")
                         st.warning(
-                            "⚠️ **IMPORTANT**: Save your API key now! "
-                            "It will not be shown again."
+                            "⚠️ **IMPORTANT**: Save your API key now! It will not be shown again."
                         )
 
                         # Show API key in a code block
@@ -203,7 +199,9 @@ def main() -> None:
                         st.session_state["just_registered"] = True
 
                         # Add button to go to home page
-                        if st.button("🏠 Go to Dashboard", type="primary", use_container_width=True):
+                        if st.button(
+                            "🏠 Go to Dashboard", type="primary", use_container_width=True
+                        ):
                             st.switch_page("app.py")
 
                     else:

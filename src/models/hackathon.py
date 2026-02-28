@@ -146,4 +146,3 @@ class PublicHackathonListResponse(VibeJudgeBase):
     """GET /api/v1/public/hackathons"""
 
     hackathons: list[PublicHackathonInfo]
-

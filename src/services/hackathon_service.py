@@ -335,6 +335,7 @@ class HackathonService:
         record["updated_at"] = datetime.now(UTC).isoformat()
 
         return self.db.put_hackathon_detail(record)
+
     def list_all_configured_hackathons(self) -> list[HackathonResponse]:
         """List all CONFIGURED hackathons across all organizers (for public endpoint).
 
@@ -372,4 +373,3 @@ class HackathonService:
         except Exception as e:
             logger.error("list_all_configured_hackathons_failed", error=str(e))
             return []
-

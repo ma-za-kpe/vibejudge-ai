@@ -50,9 +50,7 @@ class APIKeyCreate(VibeJudgeBase):
         default=None, description="Scope key to specific hackathon (optional)"
     )
     tier: Tier = Field(default=Tier.FREE, description="API key tier")
-    expires_at: datetime | None = Field(
-        default=None, description="Expiration timestamp (optional)"
-    )
+    expires_at: datetime | None = Field(default=None, description="Expiration timestamp (optional)")
     rate_limit_per_second: int | None = Field(
         default=None, gt=0, description="Custom rate limit (uses tier default if None)"
     )
@@ -94,16 +92,12 @@ class APIKeyResponse(VibeJudgeBase, TimestampMixin):
     active: bool = Field(description="Whether key is active")
     expires_at: datetime | None = Field(default=None, description="Expiration timestamp")
     deprecated: bool = Field(default=False, description="Whether key is deprecated")
-    deprecated_at: datetime | None = Field(
-        default=None, description="When key was deprecated"
-    )
+    deprecated_at: datetime | None = Field(default=None, description="When key was deprecated")
 
     # Usage tracking
     total_requests: int = Field(default=0, description="Total requests made")
     total_cost_usd: float = Field(default=0.0, description="Total cost incurred")
-    last_used_at: datetime | None = Field(
-        default=None, description="Last request timestamp"
-    )
+    last_used_at: datetime | None = Field(default=None, description="Last request timestamp")
 
 
 class APIKeyCreateResponse(APIKeyResponse):
@@ -165,9 +159,7 @@ class APIKey(VibeJudgeBase, TimestampMixin):
     def validate_api_key_format(cls, v: str) -> str:
         """Validate API key format: vj_{env}_{32-char-base64}."""
         if not API_KEY_PATTERN.match(v):
-            raise ValueError(
-                "API key must match format: vj_(live|test)_[A-Za-z0-9+/]{32}"
-            )
+            raise ValueError("API key must match format: vj_(live|test)_[A-Za-z0-9+/]{32}")
         return v
 
     @field_validator("expires_at")

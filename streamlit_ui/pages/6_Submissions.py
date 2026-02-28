@@ -71,9 +71,7 @@ with st.spinner("Loading hackathons..."):
     hackathons = fetch_hackathons(st.session_state["api_key"])
 
 # Filter active hackathons
-active_hackathons = [
-    h for h in hackathons if h.get("status") not in ["draft", "archived"]
-]
+active_hackathons = [h for h in hackathons if h.get("status") not in ["draft", "archived"]]
 
 if not active_hackathons:
     st.warning("No active hackathons found.")
@@ -140,7 +138,7 @@ with st.form("add_submission_form"):
                             ]
                         },
                     )
-                st.success(f"Submission added successfully!")
+                st.success("Submission added successfully!")
                 st.cache_data.clear()
                 st.rerun()
             except APIError as e:

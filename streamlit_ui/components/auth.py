@@ -111,10 +111,12 @@ def require_authentication(func):
         ... def main():
         ...     st.title("Protected Page")
     """
+
     def wrapper(*args, **kwargs):
         if not is_authenticated():
             st.error("⚠️ Authentication required. Please login first.")
             st.info("👉 Go to the [home page](/) to authenticate.")
             st.stop()
         return func(*args, **kwargs)
+
     return wrapper

@@ -53,9 +53,7 @@ async def create_api_key(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to create API key: {str(e)}"
-        ) from e
+        raise HTTPException(status_code=500, detail=f"Failed to create API key: {str(e)}") from e
 
 
 @router.get("", response_model=APIKeyListResponse)
@@ -78,9 +76,7 @@ async def list_api_keys(
         return service.list_api_keys(org_id)
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to list API keys: {str(e)}"
-        ) from e
+        raise HTTPException(status_code=500, detail=f"Failed to list API keys: {str(e)}") from e
 
 
 @router.get("/{key_id}", response_model=APIKeyResponse)
@@ -117,9 +113,7 @@ async def get_api_key(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to get API key: {str(e)}"
-        ) from e
+        raise HTTPException(status_code=500, detail=f"Failed to get API key: {str(e)}") from e
 
 
 @router.post("/{key_id}/rotate", response_model=APIKeyCreateResponse)
@@ -165,9 +159,7 @@ async def rotate_api_key(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to rotate API key: {str(e)}"
-        ) from e
+        raise HTTPException(status_code=500, detail=f"Failed to rotate API key: {str(e)}") from e
 
 
 @router.delete("/{key_id}", status_code=204)
@@ -208,6 +200,4 @@ async def revoke_api_key(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to revoke API key: {str(e)}"
-        ) from e
+        raise HTTPException(status_code=500, detail=f"Failed to revoke API key: {str(e)}") from e

@@ -31,7 +31,9 @@ class RateLimitCounter(VibeJudgeBase):
         """Ensure TTL is window_start + 60."""
         expected_ttl = self.window_start + 60
         if self.ttl != expected_ttl:
-            raise ValueError(f"TTL must be window_start + 60 (expected {expected_ttl}, got {self.ttl})")
+            raise ValueError(
+                f"TTL must be window_start + 60 (expected {expected_ttl}, got {self.ttl})"
+            )
         return self
 
     def set_dynamodb_keys(self) -> None:
@@ -80,7 +82,8 @@ class UsageRecord(VibeJudgeBase, TimestampMixin):
         """Validate date is in YYYY-MM-DD format."""
         # Check format with regex first for strict validation
         import re
-        if not re.match(r'^\d{4}-\d{2}-\d{2}$', v):
+
+        if not re.match(r"^\d{4}-\d{2}-\d{2}$", v):
             raise ValueError("date must be in YYYY-MM-DD format")
         # Then validate it's a real date
         try:
@@ -191,9 +194,7 @@ class SecurityEvent(VibeJudgeBase):
     """Security event log for monitoring and incident response."""
 
     event_id: str = Field(description="ULID identifier")
-    event_type: str = Field(
-        description="auth_failure | rate_limit | budget_exceeded | anomaly"
-    )
+    event_type: str = Field(description="auth_failure | rate_limit | budget_exceeded | anomaly")
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
     # Request context
@@ -287,6 +288,12 @@ class UsageSummary(VibeJudgeBase):
     successful_requests: int = Field(ge=0, description="Number of successful requests")
     failed_requests: int = Field(ge=0, description="Number of failed requests")
     total_cost_usd: float = Field(ge=0.0, description="Total cost in USD")
-    endpoints_used: dict[str, int] = Field(default_factory=dict, description="Breakdown by endpoint")
-    daily_breakdown: list[DailyUsageBreakdown] = Field(default_factory=list, description="Daily usage records")
-    error: str | None = Field(default=None, description="Error message if summary generation failed")
+    endpoints_used: dict[str, int] = Field(
+        default_factory=dict, description="Breakdown by endpoint"
+    )
+    daily_breakdown: list[DailyUsageBreakdown] = Field(
+        default_factory=list, description="Daily usage records"
+    )
+    error: str | None = Field(
+        default=None, description="Error message if summary generation failed"
+    )

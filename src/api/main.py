@@ -168,6 +168,7 @@ async def unauthorized_handler(request: Request, exc: Exception) -> JSONResponse
         },
     )
 
+
 # ============================================================
 # ROUTE REGISTRATION
 # ============================================================

@@ -10,27 +10,27 @@ This design implements a comprehensive rate limiting and API security system for
 graph TB
     Client[API Client]
     APIGW[API Gateway<br/>Global Throttle: 10 req/s]
-    
+
     subgraph Lambda["API Lambda (FastAPI)"]
         MW1[Rate Limit Middleware]
         MW2[Budget Check Middleware]
         MW3[Security Logger Middleware]
         Routes[API Routes]
     end
-    
+
     subgraph DynamoDB["DynamoDB Tables"]
         APIKeys[APIKeys Table<br/>PK: api_key]
         RateLimit[RateLimitCounters<br/>PK: key#window<br/>TTL: 60s]
         Usage[UsageTracking<br/>PK: api_key#date]
         Budget[BudgetTracking<br/>PK: api_key]
     end
-    
+
     subgraph Monitoring["CloudWatch"]
         Logs[CloudWatch Logs<br/>Security Events]
         Alarms[Billing Alarms<br/>$50/day threshold]
         Metrics[Custom Metrics<br/>Rate Limits, Quotas]
     end
-    
+
     Client -->|Request + X-API-Key| APIGW
     APIGW -->|Throttle Check| MW1
     MW1 -->|Check Rate Limit| RateLimit
@@ -43,7 +43,7 @@ graph TB
     MW3 --> Routes
     Routes -->|Update Usage| Usage
     Routes -->|Update Budget| Budget
-    
+
     Logs -->|Anomaly Detection| Alarms
     Metrics -->|Cost Tracking| Alarms
 ```
@@ -60,44 +60,44 @@ sequenceDiagram
     participant Route
     participant DynamoDB
     participant CloudWatch
-    
+
     Client->>APIGateway: Request + X-API-Key
     APIGateway->>APIGateway: Check Global Throttle (10 req/s)
-    
+
     alt Global Throttle Exceeded
         APIGateway-->>Client: 429 Too Many Requests
     end
-    
+
     APIGateway->>RateLimitMW: Forward Request
     RateLimitMW->>DynamoDB: Get API Key Metadata
-    
+
     alt Invalid/Expired Key
         RateLimitMW-->>Client: 401 Unauthorized
     end
-    
+
     RateLimitMW->>DynamoDB: Check Rate Limit Counter
     RateLimitMW->>DynamoDB: Increment Counter (Sliding Window)
-    
+
     alt Rate Limit Exceeded
         RateLimitMW->>CloudWatch: Log Rate Limit Event
         RateLimitMW-->>Client: 429 + X-RateLimit-* Headers
     end
-    
+
     RateLimitMW->>DynamoDB: Check Daily Quota
-    
+
     alt Quota Exceeded
         RateLimitMW->>CloudWatch: Log Quota Event
         RateLimitMW-->>Client: 429 + X-Quota-* Headers
     end
-    
+
     RateLimitMW->>BudgetMW: Pass Request
     BudgetMW->>DynamoDB: Check Budget Limits
-    
+
     alt Budget Exceeded
         BudgetMW->>CloudWatch: Log Budget Event
         BudgetMW-->>Client: 402 Payment Required
     end
-    
+
     BudgetMW->>SecurityMW: Pass Request
     SecurityMW->>CloudWatch: Log Request Metadata
     SecurityMW->>Route: Execute Business Logic
@@ -123,14 +123,14 @@ class RateLimitMiddleware:
         db_helper: DynamoDBHelper,
         exempt_paths: list[str] = ["/health", "/docs"]
     ) -> None: ...
-    
+
     async def __call__(
         self,
         scope: Scope,
         receive: Receive,
         send: Send
     ) -> None: ...
-    
+
     async def check_rate_limit(
         self,
         api_key: str,
@@ -159,14 +159,14 @@ class BudgetMiddleware:
         db_helper: DynamoDBHelper,
         max_cost_per_submission: float = 0.50
     ) -> None: ...
-    
+
     async def __call__(
         self,
         scope: Scope,
         receive: Receive,
         send: Send
     ) -> None: ...
-    
+
     async def check_budget_limits(
         self,
         api_key: str,
@@ -195,21 +195,21 @@ class SecurityLoggerMiddleware:
         app: ASGIApp,
         logger: structlog.BoundLogger
     ) -> None: ...
-    
+
     async def __call__(
         self,
         scope: Scope,
         receive: Receive,
         send: Send
     ) -> None: ...
-    
+
     async def log_security_event(
         self,
         event_type: str,
         api_key_prefix: str,
         details: dict[str, Any]
     ) -> None: ...
-    
+
     async def detect_anomalies(
         self,
         api_key: str,
@@ -234,7 +234,7 @@ class SecurityLoggerMiddleware:
 ```python
 class APIKeyService:
     def __init__(self, db_helper: DynamoDBHelper) -> None: ...
-    
+
     def create_api_key(
         self,
         organizer_id: str,
@@ -245,22 +245,22 @@ class APIKeyService:
         daily_quota: int,
         budget_limit_usd: float
     ) -> APIKey: ...
-    
+
     def validate_api_key(
         self,
         api_key: str
     ) -> APIKey | None: ...
-    
+
     def rotate_api_key(
         self,
         api_key_id: str
     ) -> tuple[APIKey, APIKey]: ...
-    
+
     def revoke_api_key(
         self,
         api_key_id: str
     ) -> bool: ...
-    
+
     def list_api_keys(
         self,
         organizer_id: str
@@ -283,7 +283,7 @@ class APIKeyService:
 ```python
 class UsageTrackingService:
     def __init__(self, db_helper: DynamoDBHelper) -> None: ...
-    
+
     def record_request(
         self,
         api_key: str,
@@ -292,20 +292,20 @@ class UsageTrackingService:
         response_time_ms: float,
         cost_usd: float
     ) -> None: ...
-    
+
     def check_daily_quota(
         self,
         api_key: str,
         date: str
     ) -> tuple[int, int]: ...
-    
+
     def get_usage_summary(
         self,
         organizer_id: str,
         start_date: datetime,
         end_date: datetime
     ) -> UsageSummary: ...
-    
+
     def export_usage_csv(
         self,
         organizer_id: str,
@@ -334,18 +334,18 @@ class CostEstimationService:
         db_helper: DynamoDBHelper,
         model_rates: dict[str, dict[str, float]]
     ) -> None: ...
-    
+
     def estimate_submission_cost(
         self,
         repo_url: str,
         agent_config: dict[str, bool]
     ) -> CostEstimate: ...
-    
+
     def estimate_hackathon_cost(
         self,
         hackathon_id: str
     ) -> CostEstimate: ...
-    
+
     def check_budget_availability(
         self,
         api_key: str,
@@ -370,25 +370,25 @@ class CostEstimationService:
 ```python
 class APIKey(VibeJudgeBase):
     """API key with scoping, rate limits, and budget controls."""
-    
+
     api_key_id: str = Field(description="ULID identifier")
     api_key: str = Field(description="Secret key: vj_{env}_{32-char-base64}")
     organizer_id: str = Field(description="Owner organizer ID")
     hackathon_id: str | None = Field(default=None, description="Scoped to hackathon")
-    
+
     # Tier and limits
     tier: Tier = Field(default=Tier.FREE)
     rate_limit_per_second: int = Field(description="Requests per second")
     daily_quota: int = Field(description="Requests per day")
     budget_limit_usd: float = Field(description="Maximum spend in USD")
-    
+
     # Status
     active: bool = Field(default=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     expires_at: datetime | None = Field(default=None)
     deprecated: bool = Field(default=False)
     deprecated_at: datetime | None = Field(default=None)
-    
+
     # Usage tracking
     total_requests: int = Field(default=0)
     total_cost_usd: float = Field(default=0.0)
@@ -418,7 +418,7 @@ GSI2SK: APIKEY#{api_key_id}
 ```python
 class RateLimitCounter(VibeJudgeBase):
     """Sliding window counter for rate limiting."""
-    
+
     counter_key: str = Field(description="api_key#{window_start_epoch}")
     api_key: str = Field(description="API key being tracked")
     window_start: int = Field(description="Unix timestamp (second precision)")
@@ -443,21 +443,21 @@ TTL: ttl (auto-cleanup)
 ```python
 class UsageRecord(VibeJudgeBase):
     """Daily usage tracking for quota management."""
-    
+
     usage_id: str = Field(description="ULID identifier")
     api_key: str = Field(description="API key")
     date: str = Field(description="YYYY-MM-DD format")
-    
+
     # Counters
     request_count: int = Field(default=0)
     successful_requests: int = Field(default=0)
     failed_requests: int = Field(default=0)
-    
+
     # Cost tracking
     total_cost_usd: float = Field(default=0.0)
     bedrock_cost_usd: float = Field(default=0.0)
     lambda_cost_usd: float = Field(default=0.0)
-    
+
     # Metadata
     endpoints_used: dict[str, int] = Field(default_factory=dict)
     last_updated: datetime = Field(default_factory=datetime.utcnow)
@@ -481,20 +481,20 @@ GSI1SK: DATE#{date}
 ```python
 class BudgetTracking(VibeJudgeBase):
     """Real-time budget tracking for cost control."""
-    
+
     entity_type: str = Field(description="api_key | hackathon | submission")
     entity_id: str = Field(description="Entity identifier")
-    
+
     # Budget limits
     budget_limit_usd: float = Field(description="Maximum allowed spend")
     current_spend_usd: float = Field(default=0.0)
-    
+
     # Alerts
     alert_50_sent: bool = Field(default=False)
     alert_80_sent: bool = Field(default=False)
     alert_90_sent: bool = Field(default=False)
     alert_100_sent: bool = Field(default=False)
-    
+
     # Metadata
     last_updated: datetime = Field(default_factory=datetime.utcnow)
 ```
@@ -518,21 +518,21 @@ GSI1SK: SPEND#{current_spend_usd}
 ```python
 class SecurityEvent(VibeJudgeBase):
     """Security event log for monitoring and incident response."""
-    
+
     event_id: str = Field(description="ULID identifier")
     event_type: str = Field(description="auth_failure | rate_limit | budget_exceeded | anomaly")
     timestamp: datetime = Field(default_factory=datetime.utcnow)
-    
+
     # Request context
     api_key_prefix: str = Field(description="First 8 chars of API key")
     ip_address: str | None = Field(default=None)
     endpoint: str = Field(description="API endpoint")
-    
+
     # Event details
     status_code: int = Field(description="HTTP status code")
     error_message: str | None = Field(default=None)
     metadata: dict[str, Any] = Field(default_factory=dict)
-    
+
     # Severity
     severity: Severity = Field(default=Severity.INFO)
 ```
@@ -716,24 +716,24 @@ OUTPUT: response (200 OK or 429 Too Many Requests)
 BEGIN
   # Step 1: Validate API key
   api_key_data ← db.get_api_key(request.api_key)
-  
+
   IF api_key_data is None OR NOT api_key_data.active THEN
     RETURN 401 Unauthorized
   END IF
-  
+
   # Step 2: Check rate limit (sliding window)
   window_start ← floor(request.timestamp)
   counter_key ← f"{request.api_key}#{window_start}"
   current_count ← db.get_counter(counter_key) OR 0
-  
+
   IF current_count >= api_key_data.rate_limit_per_second THEN
     RETURN 429 Too Many Requests WITH headers
   END IF
-  
+
   # Step 3: Increment counter atomically
   new_count ← db.increment_atomic(key=counter_key, ttl=window_start + 60)
   remaining ← api_key_data.rate_limit_per_second - new_count
-  
+
   RETURN CONTINUE with rate_limit_headers
 END
 ```
@@ -750,13 +750,13 @@ BEGIN
   IF estimated_cost > MAX_COST_PER_SUBMISSION THEN
     RETURN (False, "Per-submission limit exceeded")
   END IF
-  
+
   # Step 2: Check API key budget
   api_key_budget ← db.get_budget_tracking("api_key", api_key)
   IF api_key_budget.current_spend + estimated_cost > api_key_budget.budget_limit THEN
     RETURN (False, "API key budget exceeded")
   END IF
-  
+
   # Step 3: Check hackathon budget
   IF hackathon_id is not None THEN
     hackathon_budget ← db.get_budget_tracking("hackathon", hackathon_id)
@@ -764,7 +764,7 @@ BEGIN
       RETURN (False, "Hackathon budget exceeded")
     END IF
   END IF
-  
+
   RETURN (True, None)
 END
 ```
@@ -781,10 +781,10 @@ BEGIN
   random_bytes ← secrets.token_bytes(24)
   base64_key ← base64.urlsafe_b64encode(random_bytes).decode()
   api_key_string ← f"vj_{environment}_{base64_key}"
-  
+
   # Step 2: Set tier-based limits
   rate_limit, daily_quota, budget_limit ← get_tier_limits(tier)
-  
+
   # Step 3: Create and store API key
   api_key_obj ← APIKey(
     api_key_id=generate_ulid(),
@@ -796,9 +796,9 @@ BEGIN
     budget_limit_usd=budget_limit,
     active=True
   )
-  
+
   db.put_item(api_key_obj)
-  
+
   RETURN api_key_obj
 END
 ```
@@ -819,7 +819,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         api_key = request.headers.get("X-API-Key")
         if not api_key:
             return Response(status_code=401, content="Missing API key")
-        
+
         # Check rate limit
         current_time = int(time.time())
         allowed, remaining, reset_time = await check_rate_limit(
@@ -828,7 +828,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             rate_limit=10,  # From API key metadata
             db_helper=self.db
         )
-        
+
         if not allowed:
             return Response(
                 status_code=429,
@@ -840,15 +840,15 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 },
                 content="Rate limit exceeded"
             )
-        
+
         # Process request
         response = await call_next(request)
-        
+
         # Add rate limit headers
         response.headers["X-RateLimit-Limit"] = "10"
         response.headers["X-RateLimit-Remaining"] = str(remaining)
         response.headers["X-RateLimit-Reset"] = str(reset_time)
-        
+
         return response
 ```
 
@@ -864,20 +864,20 @@ async def trigger_analysis(
 ):
     # Estimate cost
     estimate = await cost_service.estimate_hackathon_cost(hackathon_id)
-    
+
     # Check budget limits
     allowed, error_msg = await enforce_budget_limits(
         api_key=api_key,
         hackathon_id=hackathon_id,
         estimated_cost=estimate.total_cost_usd
     )
-    
+
     if not allowed:
         return Response(
             status_code=402,
             content={"error": error_msg, "estimated_cost": estimate.total_cost_usd}
         )
-    
+
     # Proceed with analysis
     job_id = await analysis_service.start_analysis(hackathon_id)
     return {"job_id": job_id, "estimated_cost": estimate.total_cost_usd}
@@ -903,7 +903,7 @@ async def create_api_key(
         daily_quota=request.daily_quota or get_default_quota(request.tier),
         budget_limit_usd=request.budget_limit_usd or get_default_budget(request.tier)
     )
-    
+
     # Return key (only shown once)
     return {
         "api_key_id": api_key.api_key_id,
@@ -937,7 +937,7 @@ async def log_security_event(
         metadata=details,
         severity=get_severity(event_type, status_code)
     )
-    
+
     # Log to CloudWatch
     logger.warning(
         "security_event",
@@ -947,10 +947,10 @@ async def log_security_event(
         status_code=status_code,
         **details
     )
-    
+
     # Store in DynamoDB for analytics
     await db.put_item(event)
-    
+
     # Trigger alarm if critical
     if event.severity == Severity.CRITICAL:
         await cloudwatch.put_metric_data(
@@ -1074,4 +1074,3 @@ async def log_security_event(
 - Add budget enforcement to cost tracking
 - Add middleware to FastAPI routes
 - Add API key management to Streamlit dashboard
-

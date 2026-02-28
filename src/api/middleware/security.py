@@ -18,7 +18,7 @@ logger = get_logger(__name__)
 
 class SecurityLoggerMiddleware(BaseHTTPMiddleware):
     """Middleware for logging security events and detecting anomalies.
-    
+
     This middleware:
     1. Logs all authentication failures (401/403)
     2. Logs rate limit violations (429)
@@ -36,7 +36,7 @@ class SecurityLoggerMiddleware(BaseHTTPMiddleware):
         anomaly_threshold: int = 100,  # requests per minute
     ) -> None:
         """Initialize security logger middleware.
-        
+
         Args:
             app: ASGI application
             db_helper: DynamoDB helper instance
@@ -46,15 +46,13 @@ class SecurityLoggerMiddleware(BaseHTTPMiddleware):
         self.db_helper = db_helper
         self.anomaly_threshold = anomaly_threshold
 
-    async def dispatch(
-        self, request: Request, call_next: Callable
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """Process request and log security events.
-        
+
         Args:
             request: Incoming HTTP request
             call_next: Next middleware/route handler
-            
+
         Returns:
             HTTP response
         """
@@ -93,7 +91,7 @@ class SecurityLoggerMiddleware(BaseHTTPMiddleware):
         duration_ms: float,
     ) -> None:
         """Log security event if status code indicates a security issue.
-        
+
         Args:
             request: HTTP request
             response: HTTP response
@@ -147,7 +145,7 @@ class SecurityLoggerMiddleware(BaseHTTPMiddleware):
         details: dict,
     ) -> None:
         """Log a security event to DynamoDB.
-        
+
         Args:
             event_type: Type of security event (auth_failure, rate_limit, budget_exceeded, anomaly)
             api_key_prefix: First 8 characters of API key (masked)
@@ -192,11 +190,9 @@ class SecurityLoggerMiddleware(BaseHTTPMiddleware):
                 error=str(e),
             )
 
-    async def _detect_and_log_anomalies(
-        self, api_key: str, api_key_prefix: str
-    ) -> None:
+    async def _detect_and_log_anomalies(self, api_key: str, api_key_prefix: str) -> None:
         """Detect unusual patterns and log anomalies.
-        
+
         Args:
             api_key: Full API key string
             api_key_prefix: First 8 characters (masked)
@@ -235,16 +231,14 @@ class SecurityLoggerMiddleware(BaseHTTPMiddleware):
                 error=str(e),
             )
 
-    async def _count_recent_requests(
-        self, api_key: str, start_time: int, end_time: int
-    ) -> int:
+    async def _count_recent_requests(self, api_key: str, start_time: int, end_time: int) -> int:
         """Count requests from API key in time window.
-        
+
         Args:
             api_key: API key string
             start_time: Start of time window (Unix timestamp)
             end_time: End of time window (Unix timestamp)
-            
+
         Returns:
             Total request count in time window
         """
@@ -271,7 +265,7 @@ class SecurityLoggerMiddleware(BaseHTTPMiddleware):
 
     async def _trigger_cloudwatch_alarm(self, event: SecurityEvent) -> None:
         """Trigger CloudWatch alarm for critical security events.
-        
+
         Args:
             event: Security event that triggered the alarm
         """

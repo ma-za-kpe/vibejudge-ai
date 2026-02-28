@@ -306,9 +306,7 @@ class TestGetUsageSummary:
             endpoints_used={"/api/v1/hackathons": 40, "/api/v1/submissions": 35},
         )
 
-        mock_db.table.query.return_value = {
-            "Items": [usage1.model_dump(), usage2.model_dump()]
-        }
+        mock_db.table.query.return_value = {"Items": [usage1.model_dump(), usage2.model_dump()]}
 
         start_date = datetime(2024, 1, 15)
         end_date = datetime(2024, 1, 16)

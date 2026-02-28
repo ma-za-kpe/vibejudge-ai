@@ -354,7 +354,9 @@ class CostEstimationService:
             submission_count=submission_count,
             agents_enabled=agents_enabled,
             estimate=CostEstimateDetail(
-                total_cost_usd=CostRange(low=total_low, expected=total_estimated_cost, high=total_high),
+                total_cost_usd=CostRange(
+                    low=total_low, expected=total_estimated_cost, high=total_high
+                ),
                 per_submission_cost_usd=CostRange(
                     low=per_sub_low, expected=per_sub_expected, high=per_sub_high
                 ),

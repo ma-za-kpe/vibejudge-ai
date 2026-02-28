@@ -576,7 +576,7 @@ sam deploy --config-env dev --debug
      --region us-east-1 \
      --query 'Stacks[0].Outputs[?OutputKey==`TargetGroupArn`].OutputValue' \
      --output text)
-   
+
    # Check health
    aws elbv2 describe-target-health \
      --target-group-arn $TARGET_GROUP_ARN \

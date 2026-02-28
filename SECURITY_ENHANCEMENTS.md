@@ -48,7 +48,7 @@ def create_submissions(self, hack_id: str, data: SubmissionBatchCreate):
     # Check for duplicates
     existing_submissions = self.list_submissions(hack_id)
     existing_repo_urls = {sub.repo_url.lower() for sub in existing_submissions.submissions}
-    
+
     for sub_input in data.submissions:
         if sub_input.repo_url.lower() in existing_repo_urls:
             raise ValueError(

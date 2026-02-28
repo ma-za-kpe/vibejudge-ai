@@ -18,4 +18,3 @@ VibeJudge currently has TWO conflicting API key systems that don't work together
 Fixed the public hackathons endpoint by creating a dedicated public router. The endpoint now works without authentication and returns only CONFIGURED hackathons with minimal public data.
 
 Created comprehensive plan for API key system consolidation to remove the conflicting simple key system and use only the Advanced API key system with rate limiting, budget control, and proper security features.
-

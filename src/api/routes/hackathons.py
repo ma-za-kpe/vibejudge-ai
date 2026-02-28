@@ -150,7 +150,9 @@ async def activate_hackathon(
         else:
             raise HTTPException(status_code=400, detail=error_msg) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to activate hackathon: {str(e)}") from e
+        raise HTTPException(
+            status_code=500, detail=f"Failed to activate hackathon: {str(e)}"
+        ) from e
 
 
 @router.delete("/{hack_id}", status_code=204)
@@ -180,6 +182,8 @@ async def delete_hackathon(
     success = service.delete_hackathon(hack_id, org_id)
     if not success:
         raise HTTPException(status_code=404, detail="Hackathon not found")
+
+
 @router.get("/{hack_id}/stats")
 async def get_hackathon_stats(
     hack_id: str,
@@ -216,7 +220,6 @@ async def get_hackathon_stats(
         "participant_count": participant_count,
         "hackathon_status": hackathon.status,
     }
-
 
 
 @router.get("/{hack_id}/leaderboard", response_model=LeaderboardResponse)
