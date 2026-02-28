@@ -108,7 +108,7 @@ with st.spinner("🔄 Loading hackathons..."):
 
 # Filter out DRAFT and ARCHIVED hackathons (only show CONFIGURED, ANALYZING, COMPLETED)
 active_hackathons = [
-    h for h in hackathons 
+    h for h in hackathons
     if h.get("status") not in ["draft", "archived"]
 ]
 
@@ -194,30 +194,50 @@ else:
 st.markdown("---")
 st.subheader("🚀 Analysis")
 
-# Initialize analysis job ID in session state if not present
-if "analysis_job_id" not in st.session_state:
-    st.session_state["analysis_job_id"] = None
 
-# Initialize cost estimate in session state
+# Fetch active analysis job from backend (source of truth)
+@st.cache_data(ttl=10)
+def fetch_active_job(api_key: str, hack_id: str) -> str | None:
+    """Check if there's an active analysis job for this hackathon.
+
+    Returns:
+        job_id if active job exists (queued/running), None otherwise
+    """
+    client = APIClient(st.session_state["api_base_url"], api_key)
+    try:
+        status = client.get(f"/hackathons/{hack_id}/analyze/status")
+        if status.get("status") in ["queued", "running"]:
+            return status.get("job_id")
+    except Exception:
+        pass  # No active job or endpoint not found
+    return None
+
+
+# Get active job from backend (not session state!)
+active_job_id = fetch_active_job(st.session_state["api_key"], selected_hack_id)
+
+# Initialize cost estimate in session state (ephemeral UI state only)
 if "cost_estimate" not in st.session_state:
     st.session_state["cost_estimate"] = None
 
-# Check if there's an active analysis job
-if st.session_state["analysis_job_id"]:
-    st.info(f"📊 Analysis job running: {st.session_state['analysis_job_id']}")
-    st.caption("View progress in the analysis monitoring section below.")
+# Display info if active job exists
+if active_job_id:
+    st.info(f"📊 Analysis job in progress: {active_job_id}")
+    st.caption("Monitoring progress below...")
 
-# Start Analysis button - Step 1: Fetch cost estimate
-if st.session_state["cost_estimate"] is None:
-    if st.button(
-        "🚀 Start Analysis", help="Trigger analysis for all submissions in this hackathon"
-    ):
-        try:
-            # Fetch cost estimate
-            with st.spinner("💰 Fetching cost estimate..."):
-                estimate_response = api_client.post(
-                    f"/hackathons/{selected_hack_id}/analyze/estimate", json={}
-                )
+# Start Analysis button - Only show if NO active job
+if active_job_id is None:
+    # Step 1: Fetch cost estimate
+    if st.session_state["cost_estimate"] is None:
+        if st.button(
+            "🚀 Start Analysis", help="Trigger analysis for all submissions in this hackathon"
+        ):
+            try:
+                # Fetch cost estimate
+                with st.spinner("💰 Fetching cost estimate..."):
+                    estimate_response = api_client.post(
+                        f"/hackathons/{selected_hack_id}/analyze/estimate", json={}
+                    )
 
             # Parse nested cost estimate structure
             estimate_detail = estimate_response.get("estimate", {})
@@ -259,10 +279,7 @@ else:
                 job_id = analysis_response.get("job_id")
                 estimated_cost_usd = analysis_response.get("estimated_cost_usd", 0.0)
 
-                # Store job_id in session state
-                st.session_state["analysis_job_id"] = job_id
-
-                # Clear cost estimate
+                # Clear cost estimate (ephemeral UI state)
                 st.session_state["cost_estimate"] = None
 
                 st.success("✅ Analysis started successfully!")
@@ -303,16 +320,16 @@ else:
             st.info("Analysis cancelled.")
             st.rerun()
 
-# Analysis progress monitoring section
-if st.session_state["analysis_job_id"]:
+# Analysis progress monitoring section - Show if active job exists
+if active_job_id:
     st.markdown("---")
     st.subheader("📊 Analysis Progress")
 
     try:
-        # Poll job status
+        # Poll job status using active_job_id from backend
         with st.spinner("📊 Fetching analysis progress..."):
             job_status = api_client.get(
-                f"/hackathons/{selected_hack_id}/jobs/{st.session_state['analysis_job_id']}"
+                f"/hackathons/{selected_hack_id}/jobs/{active_job_id}"
             )
 
         # Extract job status fields
@@ -374,10 +391,7 @@ if st.session_state["analysis_job_id"]:
             st.success("✅ Analysis completed successfully!")
             st.balloons()
 
-            # Clear job ID from session state
-            st.session_state["analysis_job_id"] = None
-
-            # Clear cache to refresh stats
+            # Clear cache to refresh stats and job status
             st.cache_data.clear()
 
             # Display final summary
@@ -405,12 +419,12 @@ if st.session_state["analysis_job_id"]:
             st.info("🔄 Analysis is currently running...")
         elif status == "failed":
             st.error("❌ Analysis job failed")
-            # Clear job ID to allow retry
-            st.session_state["analysis_job_id"] = None
+            # Clear cache to allow retry
+            st.cache_data.clear()
 
     except APIError as e:
         st.error(f"❌ Failed to fetch job status: {e}")
-        logger.error(f"Failed to fetch job status for {st.session_state['analysis_job_id']}: {e}")
+        logger.error(f"Failed to fetch job status for {active_job_id}: {e}")
 
         # Offer retry button
         if st.button("🔄 Retry Job Status"):
