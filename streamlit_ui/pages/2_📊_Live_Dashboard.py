@@ -13,27 +13,12 @@ import streamlit as st
 from components.api_client import APIClient, APIError, BudgetExceededError, ConflictError, ResourceNotFoundError
 from components.auth import is_authenticated
 from components.retry_helpers import retry_button
-from streamlit_autorefresh import st_autorefresh
 
 logger = logging.getLogger(__name__)
 
 
 # Page configuration
 st.set_page_config(page_title="Live Dashboard", page_icon="📊", layout="wide")
-
-
-# Auto-refresh every 5 minutes (300000 milliseconds)
-# Reduced from 5s to prevent DynamoDB throttling - users can manually refresh
-# Returns the number of times the page has refreshed
-refresh_count = st_autorefresh(interval=300000, key="live_dashboard_refresh")
-
-
-# Initialize last refresh timestamp in session state
-if "last_refresh" not in st.session_state:
-    st.session_state["last_refresh"] = datetime.now()
-else:
-    # Update timestamp on each refresh
-    st.session_state["last_refresh"] = datetime.now()
 
 
 # Authentication check
@@ -50,10 +35,7 @@ api_client = APIClient(st.session_state["api_base_url"], st.session_state["api_k
 # Page header
 st.title("📊 Live Dashboard")
 st.markdown("Monitor your hackathon submissions in real-time.")
-
-# Display last refresh timestamp
-last_refresh_time = st.session_state["last_refresh"].strftime("%Y-%m-%d %H:%M:%S")
-st.caption(f"🕐 Last refreshed: {last_refresh_time} (auto-refresh every 5 minutes)")
+st.caption("💡 Click 'Refresh Now' at the bottom to update data")
 
 
 # Cached function to fetch hackathons list
