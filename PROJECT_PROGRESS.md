@@ -14349,3 +14349,50 @@ All backend endpoints tested and working:
 ✅ Dashboard deployed and healthy
 ✅ All endpoints responding correctly
 ✅ Platform ready for final testing
+
+---
+
+## Session 2026-02-28 (Final Deployment): None Check Fix
+
+### Issue
+Dashboard crashed with TypeError when cost estimate API returned None value. This was previously fixed in commit e9e49a3 but the running ECS tasks were using an older image (5d92885) that didn't include the fix.
+
+### Root Cause
+ECS service was not updated after the None check fix was committed. The running containers were still using the old Docker image without the defensive None handling.
+
+### Solution Implemented
+
+**Dashboard Fix Deployment:**
+- Built new Docker image with commit 379b815 (includes all recent fixes)
+- Tagged and pushed to ECR: `607415053998.dkr.ecr.us-east-1.amazonaws.com/vibejudge-dashboard:379b815`
+- Registered new task definition: vibejudge-dashboard-prod:33
+- Updated ECS service to use new task definition
+- Deployment completed: 2/2 tasks running successfully
+
+**Fix Details:**
+The None check from commit e9e49a3 handles cases where cost estimate API fails:
+```python
+if estimated_cost is not None:
+    st.info(f"💰 Estimated cost: ${estimated_cost:.2f}")
+else:
+    st.warning("⚠️ Cost estimate unavailable")
+```
+
+### Deployment Timeline
+1. Built Docker image: 379b815
+2. Pushed to ECR
+3. Registered task definition 33
+4. Updated ECS service
+5. Rolling deployment completed (~75 seconds)
+6. Old tasks (revision 32) drained successfully
+
+### Current Production State
+- **Backend API:** vibejudge-dev stack (latest)
+- **Dashboard:** Task definition 33, image 379b815
+- **Status:** 2/2 tasks running, healthy
+- **All fixes deployed:** None check, rate limiting, API_BASE_URL, server-side job discovery
+
+### Status
+✅ All critical bugs fixed and deployed
+✅ Platform fully operational
+✅ Ready for production use and competition submission
