@@ -24,6 +24,11 @@ def authenticated_app() -> AppTest:
     Returns:
         An AppTest instance with authentication already set up.
     """
+    import streamlit as st
+
+    # Clear all caches before each test to prevent cache pollution
+    st.cache_data.clear()
+
     at = AppTest.from_file("streamlit_ui/pages/3_🏆_Results.py")
 
     # Set up authentication in session state
@@ -343,6 +348,12 @@ def test_team_detail_navigation(
     at = authenticated_app
     at.run()
 
+    # Verify hackathon dropdown exists and select first hackathon
+    assert len(at.selectbox) > 0, "Hackathon dropdown not found"
+
+    # The selectbox should auto-select the first hackathon
+    # Now verify leaderboard is displayed with View Details buttons
+
     # Find "View Details" button for first submission
     view_button = None
     for button in at.button:
@@ -350,7 +361,7 @@ def test_team_detail_navigation(
             view_button = button
             break
 
-    assert view_button is not None, "View Details button not found"
+    assert view_button is not None, f"View Details button not found. Available buttons: {[b.label for b in at.button]}"
 
     # Click the button to navigate to team detail
     view_button.click()
@@ -550,12 +561,21 @@ def test_back_to_leaderboard_button(
         mock_response.status_code = 200
         mock_response.ok = True
 
-        if "/scorecard" in url:
+        if "/individual-scorecards" in url:
+            mock_response.json.return_value = {
+                "team_dynamics": {},
+                "members": []
+            }
+        elif "/scorecard" in url:
             mock_response.json.return_value = mock_scorecard_data
         else:
-            mock_response.json.return_value = [
-                {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
-            ]
+            mock_response.json.return_value = {
+                "hackathons": [
+                    {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
+                ],
+                "next_cursor": None,
+                "has_more": False
+            }
 
         return mock_response
 
@@ -584,7 +604,8 @@ def test_back_to_leaderboard_button(
     at.run()
 
     # Verify we're back in leaderboard view
-    assert at.session_state.get("view_mode") == "leaderboard"
+    # AppTest session_state doesn't have .get(), use 'in' operator
+    assert "view_mode" in at.session_state and at.session_state["view_mode"] == "leaderboard"
 
 
 @patch("components.api_client.requests.Session.get")
@@ -613,9 +634,13 @@ def test_no_submissions_message(mock_get: MagicMock, authenticated_app: AppTest)
         if "/leaderboard" in url:
             mock_response.json.return_value = empty_leaderboard_data
         else:
-            mock_response.json.return_value = [
-                {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
-            ]
+            mock_response.json.return_value = {
+                "hackathons": [
+                    {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
+                ],
+                "next_cursor": None,
+                "has_more": False
+            }
 
         return mock_response
 
@@ -625,7 +650,7 @@ def test_no_submissions_message(mock_get: MagicMock, authenticated_app: AppTest)
     at.run()
 
     # Verify info message is displayed
-    assert len(at.info) > 0
+    assert len(at.info) > 0, f"Expected info message but got {len(at.info)} info messages"
     info_message = at.info[0].value
     assert "no submissions" in info_message.lower() or "analyzed" in info_message.lower()
 

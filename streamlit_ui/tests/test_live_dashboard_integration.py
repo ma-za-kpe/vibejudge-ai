@@ -32,6 +32,11 @@ def authenticated_app() -> AppTest:
     Returns:
         An AppTest instance with authentication already set up.
     """
+    import streamlit as st
+
+    # Clear all caches before each test to prevent cache pollution
+    st.cache_data.clear()
+
     at = AppTest.from_file("streamlit_ui/pages/2_📊_Live_Dashboard.py")
 
     # Set up authentication in session state
@@ -625,21 +630,26 @@ def test_analysis_failure_details_display(
                 "pending_count": 5,
                 "participant_count": 450,
             }
+        elif "/analyze/status" in url:
+            # Return active job
+            mock_response.json.return_value = {
+                "status": "running",
+                "job_id": "01HYYY123456789"
+            }
         else:
-            mock_response.json.return_value = [
-                {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
-            ]
+            mock_response.json.return_value = {
+                "hackathons": [
+                    {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
+                ],
+                "next_cursor": None,
+                "has_more": False
+            }
 
         return mock_response
 
     mock_get.side_effect = mock_get_side_effect
 
     at = authenticated_app
-
-    # Set up session state with active analysis job
-    at.session_state["analysis_job_id"] = "01HYYY123456789"
-    at.session_state["selected_hackathon"] = "01HXXX111"
-
     at.run()
 
     # Verify warning about failures is displayed
@@ -856,21 +866,27 @@ def test_analysis_completion_success_message(
                 "pending_count": 0,
                 "participant_count": 450,
             }
+        elif "/analyze/status" in url:
+            # Return running status so active_job_id is set and progress section is shown
+            # Then /jobs/ endpoint will return completed status
+            mock_response.json.return_value = {
+                "status": "running",
+                "job_id": "01HYYY123456789"
+            }
         else:
-            mock_response.json.return_value = [
-                {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
-            ]
+            mock_response.json.return_value = {
+                "hackathons": [
+                    {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
+                ],
+                "next_cursor": None,
+                "has_more": False
+            }
 
         return mock_response
 
     mock_get.side_effect = mock_get_side_effect
 
     at = authenticated_app
-
-    # Set up session state with active analysis job
-    at.session_state["analysis_job_id"] = "01HYYY123456789"
-    at.session_state["selected_hackathon"] = "01HXXX111"
-
     at.run()
 
     # Verify success message is displayed

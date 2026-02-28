@@ -25,6 +25,11 @@ def authenticated_app() -> AppTest:
     Returns:
         An AppTest instance with authentication already set up.
     """
+    import streamlit as st
+
+    # Clear all caches before each test to prevent cache pollution
+    st.cache_data.clear()
+
     at = AppTest.from_file("streamlit_ui/pages/1_🎯_Create_Hackathon.py")
 
     # Set up authentication in session state
