@@ -14202,3 +14202,60 @@ To verify the fix:
 ### Related Issues
 - This fix unblocks the analysis workflow testing
 - Still need to address DynamoDB throttling issue for production use (API key lookup optimization)
+
+
+---
+
+## Session 2026-02-28: API_BASE_URL Environment Variable Fix
+
+### Issue
+Critical mismatch between ECS environment variable and code expectations causing 404 errors on login and hackathon list endpoints.
+
+**Root Cause:**
+- ECS Environment Variable: `https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev`
+- Code Expectation (documented in `auth.py:34` and `app.py:54`): URL should include `/api/v1` suffix
+- Actual URL called: `https://...amazonaws.com/dev/hackathons` ❌ (404 Not Found)
+- Expected URL: `https://...amazonaws.com/dev/api/v1/hackathons` ✅
+
+**Impact:**
+- Login functionality broken
+- Hackathon list endpoint returning 404
+- Users unable to authenticate or view hackathons
+
+### Solution
+Updated `template-ecs.yaml` line 377 to include the `/api/v1` suffix:
+```yaml
+- Name: API_BASE_URL
+  Value: https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev/api/v1
+```
+
+### Files Modified
+- `template-ecs.yaml` - Corrected API_BASE_URL environment variable
+
+### Commits
+- `5702c2b`: fix: Correct API_BASE_URL to include /api/v1 suffix
+
+### Deployment
+- Task Definition: vibejudge-dashboard-prod:32 ✅ DEPLOYED
+- Status: 2/2 tasks running successfully
+- ALB Health Check: HTTP 200 ✅
+- Environment Variable Verified: `https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev/api/v1` ✅
+
+### Deployment Timeline
+1. Registered task definition 32 with corrected environment variable
+2. Updated ECS service to use task definition 32
+3. Deployment completed: 2 tasks running with revision 32
+4. Old tasks (revision 31) drained successfully
+
+### Testing
+To verify the fix:
+1. Navigate to dashboard: http://vibejudge-alb-prod-1135403146.us-east-1.elb.amazonaws.com
+2. Login should now work correctly
+3. Hackathon list should load without 404 errors
+4. All API endpoints should be accessible
+
+### Status
+✅ DEPLOYED - API_BASE_URL fix is live in production
+
+### Related Context
+This fix addresses the issue discovered during the previous session where task definitions 29, 30, and 31 were deployed with the incorrect URL (missing `/api/v1` suffix). The code comments clearly documented the expected format, but the environment variable was not aligned with this expectation.
