@@ -1,0 +1,16 @@
+{
+  "name": "vibejudge-e2e-tests",
+  "version": "1.0.0",
+  "description": "Playwright E2E tests for VibeJudge",
+  "scripts": {
+    "test:e2e": "pytest e2e_tests/ -v",
+    "test:smoke": "pytest e2e_tests/ -m smoke -v",
+    "test:critical": "pytest e2e_tests/ -m critical -v",
+    "test:headed": "pytest e2e_tests/ --headed",
+    "test:debug": "PWDEBUG=1 pytest e2e_tests/",
+    "test:parallel": "pytest e2e_tests/ -n 4"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0"
+  }
+}
