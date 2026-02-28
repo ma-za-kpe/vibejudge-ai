@@ -195,11 +195,30 @@ Resources:
           SourceSecurityGroupId: !Ref ALBSecurityGroup
           Description: Allow traffic from ALB on Streamlit port 8501
       SecurityGroupEgress:
+        # HTTPS for API calls
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
           CidrIp: 0.0.0.0/0
           Description: Allow outbound HTTPS to reach backend API
+        # DNS for domain resolution (UDP - primary)
+        - IpProtocol: udp
+          FromPort: 53
+          ToPort: 53
+          CidrIp: 0.0.0.0/0
+          Description: Allow DNS resolution (UDP)
+        # DNS for domain resolution (TCP - fallback)
+        - IpProtocol: tcp
+          FromPort: 53
+          ToPort: 53
+          CidrIp: 0.0.0.0/0
+          Description: Allow DNS resolution (TCP)
+        # HTTP for redirects (optional but recommended)
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: Allow HTTP for redirects
       Tags:
         - Key: Name
           Value: !Sub vibejudge-ecs-sg-${Environment}
