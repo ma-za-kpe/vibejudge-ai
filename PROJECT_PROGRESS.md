@@ -14259,3 +14259,48 @@ To verify the fix:
 
 ### Related Context
 This fix addresses the issue discovered during the previous session where task definitions 29, 30, and 31 were deployed with the incorrect URL (missing `/api/v1` suffix). The code comments clearly documented the expected format, but the environment variable was not aligned with this expectation.
+
+
+---
+
+## Session 2026-02-28 (Continued): Critical Bug Fixes and Test Infrastructure
+
+### Critical Bug Fixed
+
+**Live Dashboard TypeError on None Cost Estimate**
+- Fixed crash when cost estimate API fails
+- Added defensive None check before formatting
+- File: `streamlit_ui/pages/2_📊_Live_Dashboard.py`
+- Commit: `e9e49a3`
+
+### Test Improvements
+
+**Added 30 Edge Case Tests**
+- File: `streamlit_ui/tests/test_live_dashboard_edge_cases.py`
+- Coverage: None handling, API errors, calculations
+- All 30 tests passing
+- Commit: `64a1083`
+
+**Fixed Integration Test Infrastructure**
+- Created `create_comprehensive_api_mock()` in conftest.py
+- Fixed API mock data structures (dict vs list)
+- Fixed 2 integration tests (5 more passing overall)
+- Tests: 292 passing (up from 287), 27 failing (down from 32)
+
+### Deployment
+
+**Task Definition 32 (Deployed):**
+- API_BASE_URL corrected to include `/api/v1`
+- 2/2 tasks running, ALB healthy
+
+**Task Definition 33 (Pending):**
+- None check fix needs deployment
+
+### Coverage: 27.91%
+- Components: 80%+ (well-tested)
+- Pages: 0-22% (integration tests need fixes)
+
+### Status
+✅ Critical bug fixed
+✅ Test infrastructure improved
+⚠️ Deployment pending
