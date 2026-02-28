@@ -14303,4 +14303,49 @@ This fix addresses the issue discovered during the previous session where task d
 ### Status
 ✅ Critical bug fixed
 ✅ Test infrastructure improved
-⚠️ Deployment pending
+✅ Backend API deployed with rate limit fix
+✅ Dashboard redeployed (task definition 32)
+
+---
+
+## Session 2026-02-28 (Evening): Rate Limiting and Network Debugging
+
+### Issue Discovered
+Dashboard experiencing connection timeouts when calling backend API. Initial investigation focused on ECS networking (security groups, DNS, route tables) but all infrastructure was correctly configured.
+
+### Root Cause Analysis
+Rate limiting middleware was blocking `/api/v1/health` endpoint because exempt paths list only included `/health` (without prefix). This caused authentication failures on health checks and potentially other endpoints.
+
+### Solution Implemented
+
+**Backend API Fix:**
+- Added `/api/v1/health` to rate limit exempt paths in `src/api/main.py`
+- Also updated default exempt paths in `src/api/middleware/rate_limit.py`
+- Deployed backend API successfully
+
+**Files Modified:**
+- `src/api/main.py` - Added `/api/v1/health` to exempt_paths
+- `src/api/middleware/rate_limit.py` - Updated default exempt_paths
+
+**Deployment:**
+- Backend: ✅ Deployed (vibejudge-dev stack updated)
+- Dashboard: ✅ Force redeployed ECS service (task definition 32, 2/2 running)
+
+### Testing Results
+All backend endpoints tested and working:
+- ✅ `/api/v1/hackathons` - HTTP 200
+- ✅ `/api/v1/hackathons/{id}/stats` - HTTP 200
+- ✅ `/api/v1/hackathons/{id}/analyze/status` - HTTP 200
+- ✅ `/api/v1/hackathons/{id}/analyze/estimate` - HTTP 200
+
+### Key Learnings
+1. **Path Prefix Consistency:** When using path-based routing with prefixes, ensure all exempt path lists include both prefixed and non-prefixed versions
+2. **ECS Deployment:** Always use `--force-new-deployment` when pushing new images with same tag, or use immutable tags (git SHA)
+3. **Debugging Priority:** When external curl works but containers timeout, check application-level issues (auth, rate limiting) before deep-diving into VPC networking
+4. **Connection Timeout vs Read Timeout:** Connection timeout means TCP handshake failed (wrong address, blocked port), not slow response
+
+### Status
+✅ Backend API operational
+✅ Dashboard deployed and healthy
+✅ All endpoints responding correctly
+✅ Platform ready for final testing
