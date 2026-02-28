@@ -58,27 +58,25 @@ st.caption(f"🕐 Last refreshed: {last_refresh_time} (auto-refresh every 5 minu
 
 # Cached function to fetch hackathons list
 @st.cache_data(ttl=30)
-def fetch_hackathons(api_key: str) -> list[dict]:
+def fetch_hackathons(api_key: str) -> tuple[list[dict], str | None]:
     """Fetch list of hackathons from the backend.
 
     Args:
         api_key: The API key for authentication (used as cache key)
 
     Returns:
-        List of hackathon dictionaries
+        Tuple of (list of hackathon dictionaries, error message or None)
     """
     client = APIClient(st.session_state["api_base_url"], api_key)
     try:
         response = client.get("/hackathons")
         # API returns {"hackathons": [...], "next_cursor": null, "has_more": false}
         if isinstance(response, dict):
-            return response.get("hackathons", [])
-        return response if isinstance(response, list) else []
+            return response.get("hackathons", []), None
+        return (response if isinstance(response, list) else []), None
     except APIError as e:
         logger.error(f"Failed to fetch hackathons: {e}")
-        st.error(f"❌ Failed to fetch hackathons: {e}")
-        retry_button(lambda: st.cache_data.clear() or st.rerun(), "🔄 Retry Loading Hackathons")
-        return []
+        return [], str(e)
 
 
 # Cached function to fetch hackathon stats
@@ -104,7 +102,13 @@ def fetch_stats(api_key: str, hack_id: str) -> dict | None:
 
 # Fetch hackathons for dropdown
 with st.spinner("🔄 Loading hackathons..."):
-    hackathons = fetch_hackathons(st.session_state["api_key"])
+    hackathons, error = fetch_hackathons(st.session_state["api_key"])
+
+# Display error if fetch failed
+if error:
+    st.error(f"❌ Failed to fetch hackathons: {error}")
+    retry_button(lambda: st.cache_data.clear() or st.rerun(), "🔄 Retry Loading Hackathons")
+    st.stop()
 
 # Filter out DRAFT and ARCHIVED hackathons (only show CONFIGURED, ANALYZING, COMPLETED)
 active_hackathons = [
@@ -233,14 +237,9 @@ if active_job_id is None:
             "🚀 Start Analysis", help="Trigger analysis for all submissions in this hackathon"
         ):
             try:
-                # Fetch cost estimate with extended timeout (Lambda cold starts can take 2-13s)
+                # Fetch cost estimate (uses default 60s timeout for Lambda cold starts)
                 with st.spinner("💰 Fetching cost estimate..."):
-                    estimate_client = APIClient(
-                        st.session_state["api_base_url"],
-                        st.session_state["api_key"],
-                        timeout=30
-                    )
-                    estimate_response = estimate_client.post(
+                    estimate_response = api_client.post(
                         f"/hackathons/{selected_hack_id}/analyze/estimate", json={}
                     )
 

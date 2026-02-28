@@ -55,8 +55,7 @@ def fetch_hackathons(api_key: str) -> list[dict]:
 @st.cache_data(ttl=30)
 def fetch_submissions(api_key: str, hack_id: str) -> list[dict]:
     """Fetch submissions for a specific hackathon."""
-    # Use longer timeout for submissions endpoint (can be slow with many submissions)
-    client = APIClient(st.session_state["api_base_url"], api_key, timeout=30)
+    client = APIClient(st.session_state["api_base_url"], api_key)
     try:
         response = client.get(f"/hackathons/{hack_id}/submissions")
         return response.get("submissions", []) if isinstance(response, dict) else []

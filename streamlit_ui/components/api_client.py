@@ -90,13 +90,13 @@ class APIClient:
         timeout: Default timeout in seconds for all requests
     """
 
-    def __init__(self, base_url: str, api_key: str, timeout: int = 10) -> None:
+    def __init__(self, base_url: str, api_key: str, timeout: int = 60) -> None:
         """Initialize the API client.
 
         Args:
             base_url: The base URL of the FastAPI backend (e.g., "http://localhost:8000")
             api_key: The API key for authentication
-            timeout: Default timeout in seconds for all requests (default: 10)
+            timeout: Default timeout in seconds for all requests (default: 60)
         """
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
