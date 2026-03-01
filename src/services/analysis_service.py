@@ -296,4 +296,30 @@ class AnalysisService:
                 else:
                     job_record[key] = value
 
+        # Reset hackathon analysis_status when job completes or fails
+        if status in [JobStatus.COMPLETED, JobStatus.FAILED]:
+            self._reset_hackathon_analysis_status(hack_id)
+
         return self.db.put_analysis_job(job_record)
+
+    def _reset_hackathon_analysis_status(self, hack_id: str) -> None:
+        """Reset hackathon analysis_status to allow new analysis jobs.
+
+        Args:
+            hack_id: Hackathon ID
+        """
+        try:
+            self.db.table.update_item(
+                Key={"PK": f"HACK#{hack_id}", "SK": "META"},
+                UpdateExpression="SET analysis_status = :not_started",
+                ExpressionAttributeValues={
+                    ":not_started": "not_started",
+                },
+            )
+            logger.info("hackathon_analysis_status_reset", hackathon_id=hack_id)
+        except Exception as e:
+            logger.error(
+                "failed_to_reset_analysis_status",
+                hackathon_id=hack_id,
+                error=str(e),
+            )

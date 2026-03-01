@@ -16,22 +16,22 @@ API_KEY_PATTERN = re.compile(r"^vj_(live|test)_[A-Za-z0-9+/]{32}$")
 # Tier-based default limits
 TIER_DEFAULTS = {
     Tier.FREE: {
-        "rate_limit_per_second": 2,
+        "rate_limit_per_second": 10,
         "daily_quota": 100,
         "budget_limit_usd": 10.0,
     },
     Tier.STARTER: {
-        "rate_limit_per_second": 5,
+        "rate_limit_per_second": 20,
         "daily_quota": 500,
         "budget_limit_usd": 50.0,
     },
     Tier.PRO: {
-        "rate_limit_per_second": 10,
+        "rate_limit_per_second": 50,
         "daily_quota": 2500,
         "budget_limit_usd": 250.0,
     },
     Tier.ENTERPRISE: {
-        "rate_limit_per_second": 50,
+        "rate_limit_per_second": 100,
         "daily_quota": 999999,  # Effectively unlimited
         "budget_limit_usd": 10000.0,
     },

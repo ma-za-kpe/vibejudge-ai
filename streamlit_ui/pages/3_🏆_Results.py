@@ -55,9 +55,7 @@ def api_call(endpoint: str) -> dict | None:
     except requests.HTTPError as e:
         status = e.response.status_code
 
-        if status == 400:
-            st.error("❌ Bad request - hackathon may not have analyzed submissions yet")
-        elif status == 401:
+        if status == 401:
             st.error("❌ Invalid API key")
         elif status == 404:
             st.error("❌ Resource not found")
@@ -66,7 +64,7 @@ def api_call(endpoint: str) -> dict | None:
                 error_detail = e.response.json().get("detail", str(e))
             except:
                 error_detail = str(e)
-            st.error(f"❌ Error: {error_detail}")
+            st.error(f"❌ {error_detail}")
 
         logger.error(f"API error: {status} - {e}")
         return None

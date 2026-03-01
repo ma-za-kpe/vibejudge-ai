@@ -219,6 +219,8 @@ class SubmissionService:
                 rank=r.get("rank"),
                 total_cost_usd=r.get("total_cost_usd"),
                 created_at=datetime.fromisoformat(r["created_at"]),
+                error_message=r.get("error_message"),
+                disqualification_reason=r.get("disqualification_reason"),
             )
             for r in records
         ]

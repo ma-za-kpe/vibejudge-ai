@@ -321,6 +321,7 @@ class DynamoDBHelper:
         """
         try:
             from datetime import datetime
+            from decimal import Decimal
 
             update_expr = "SET #status = :status, updated_at = :updated_at"
             expr_attr_names = {"#status": "status"}
@@ -338,6 +339,12 @@ class DynamoDBHelper:
                     # Serialize datetime values
                     if isinstance(value, datetime):
                         value = value.isoformat()
+                    # Convert float to Decimal for DynamoDB
+                    elif isinstance(value, float):
+                        value = Decimal(str(value))
+                    # Recursively serialize nested dicts
+                    elif isinstance(value, dict):
+                        value = self._serialize_item(value)
                     update_expr += f", {key} = :{key}"
                     expr_attr_values[f":{key}"] = value
 
