@@ -1,18 +1,13 @@
 """Hackathon Management page for viewing and managing all hackathons.
 
-This page allows organizers to:
-- View all hackathons (including DRAFT)
-- Edit hackathon configuration
-- Activate DRAFT hackathons
-- Delete/archive hackathons
-- View hackathon status
+Simplified version - backend is source of truth, no caching complexity.
 """
 
 import logging
 from datetime import datetime
 
+import requests
 import streamlit as st
-from components.api_client import APIClient, APIError
 from components.auth import is_authenticated
 
 logger = logging.getLogger(__name__)
@@ -26,12 +21,58 @@ if not is_authenticated():
     st.info("Go to the Home page to log in with your API key.")
     st.stop()
 
-# Initialize API client
-api_client = APIClient(st.session_state["api_base_url"], st.session_state["api_key"])
-
 # Page header
 st.title("Manage Hackathons")
 st.markdown("View and manage all your hackathons.")
+
+
+# Helper function for API calls
+def api_call(endpoint: str, method: str = "GET", json_data: dict | None = None) -> dict | None:
+    """Make API call with error handling."""
+    try:
+        base_url = st.session_state["api_base_url"].rstrip("/")
+        headers = {"X-API-Key": st.session_state["api_key"]}
+        url = f"{base_url}{endpoint}"
+
+        if method == "GET":
+            response = requests.get(url, headers=headers, timeout=60)
+        elif method == "POST":
+            response = requests.post(url, headers=headers, json=json_data or {}, timeout=60)
+        elif method == "DELETE":
+            response = requests.delete(url, headers=headers, timeout=60)
+            if response.ok:
+                return {"success": True}
+            response.raise_for_status()
+        else:
+            raise ValueError(f"Unsupported method: {method}")
+
+        response.raise_for_status()
+        return response.json()
+
+    except requests.HTTPError as e:
+        status = e.response.status_code
+        if status == 401:
+            st.error("❌ Invalid API key")
+        elif status == 404:
+            st.error("❌ Resource not found")
+        else:
+            try:
+                error_detail = e.response.json().get("detail", str(e))
+            except:
+                error_detail = str(e)
+            st.error(f"❌ Error: {error_detail}")
+        logger.error(f"API error: {status} - {e}")
+        return None
+
+    except requests.Timeout:
+        st.error("⏱️ Request timed out. Please try again.")
+        return None
+
+    except Exception as e:
+        st.error(f"❌ Unexpected error: {e}")
+        logger.error(f"Unexpected error: {e}")
+        return None
+
 
 # Check if we're in detail view mode
 if st.session_state.get("view_mode") == "detail" and st.session_state.get(
@@ -40,9 +81,9 @@ if st.session_state.get("view_mode") == "detail" and st.session_state.get(
     hack_id = st.session_state["selected_hackathon_detail"]
 
     # Fetch full hackathon details
-    try:
-        hackathon_detail = api_client.get(f"/hackathons/{hack_id}")
+    hackathon_detail = api_call(f"/hackathons/{hack_id}")
 
+    if hackathon_detail:
         # Back button
         if st.button("← Back to List"):
             st.session_state.pop("view_mode", None)
@@ -129,14 +170,7 @@ if st.session_state.get("view_mode") == "detail" and st.session_state.get(
         # AI Policy
         st.markdown(f"**AI Policy Mode:** {hackathon_detail.get('ai_policy_mode', 'N/A')}")
 
-        # Edit button
-        st.divider()
-        if st.button("Edit Hackathon"):
-            st.session_state["edit_mode"] = True
-            st.rerun()
-
-    except APIError as e:
-        st.error(f"Failed to load hackathon details: {e}")
+    else:
         if st.button("← Back to List"):
             st.session_state.pop("view_mode", None)
             st.session_state.pop("selected_hackathon_detail", None)
@@ -145,26 +179,16 @@ if st.session_state.get("view_mode") == "detail" and st.session_state.get(
     st.stop()
 
 
-# Cached function to fetch hackathons list
-@st.cache_data(ttl=30)
-def fetch_hackathons(api_key: str) -> list[dict]:
-    """Fetch list of hackathons from the backend."""
-    client = APIClient(st.session_state["api_base_url"], api_key)
-    try:
-        response = client.get("/hackathons")
-        # API returns {"hackathons": [...], "next_cursor": null, "has_more": false}
-        if isinstance(response, dict) and "hackathons" in response:
-            return response["hackathons"]
-        return []
-    except APIError as e:
-        logger.error(f"Failed to fetch hackathons: {e}")
-        st.error(f"Failed to fetch hackathons: {e}")
-        return []
-
-
 # Fetch hackathons
 with st.spinner("Loading hackathons..."):
-    hackathons = fetch_hackathons(st.session_state["api_key"])
+    hackathons_response = api_call("/hackathons")
+
+if not hackathons_response:
+    if st.button("🔄 Retry"):
+        st.rerun()
+    st.stop()
+
+hackathons = hackathons_response.get("hackathons", [])
 
 if not hackathons:
     st.info("No hackathons found. Create your first hackathon to get started.")
@@ -271,14 +295,11 @@ else:
             with action_col2:
                 if status == "draft":
                     if st.button("Activate", key=f"activate_{hack_id}"):
-                        try:
-                            with st.spinner("Activating..."):
-                                api_client.post(f"/hackathons/{hack_id}/activate", json={})
+                        with st.spinner("Activating..."):
+                            result = api_call(f"/hackathons/{hack_id}/activate", method="POST")
+                        if result:
                             st.success("Hackathon activated!")
-                            st.cache_data.clear()
                             st.rerun()
-                        except APIError as e:
-                            st.error(f"Failed to activate: {e}")
 
             with action_col3:
                 if st.button("Delete", key=f"delete_{hack_id}"):
@@ -300,26 +321,20 @@ if "confirm_delete" in st.session_state and st.session_state["confirm_delete"]:
         col1, col2 = st.columns(2)
 
         with col1:
-            if st.button("Confirm Delete", type="primary"):
-                try:
-                    with st.spinner("Deleting..."):
-                        success = api_client.delete(f"/hackathons/{hack_id}")
-                        if not success:
-                            raise APIError("Delete request failed")
+            if st.button("Confirm Delete", type="primary", key="confirm_delete_btn"):
+                with st.spinner("Deleting..."):
+                    result = api_call(f"/hackathons/{hack_id}", method="DELETE")
+                if result:
                     st.success("Hackathon deleted successfully!")
                     st.session_state.pop("confirm_delete", None)
-                    st.cache_data.clear()
                     st.rerun()
-                except APIError as e:
-                    st.error(f"Failed to delete: {e}")
 
         with col2:
-            if st.button("Cancel"):
+            if st.button("Cancel", key="cancel_delete_btn"):
                 st.session_state.pop("confirm_delete", None)
                 st.rerun()
 
 # Manual refresh button
 st.markdown("---")
-if st.button("Refresh"):
-    st.cache_data.clear()
+if st.button("🔄 Refresh Data"):
     st.rerun()
