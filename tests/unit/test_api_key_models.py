@@ -341,28 +341,28 @@ class TestHelperFunctions:
     def test_get_tier_defaults_free(self) -> None:
         """Test tier defaults for FREE tier."""
         defaults = get_tier_defaults(Tier.FREE)
-        assert defaults["rate_limit_per_second"] == 2
+        assert defaults["rate_limit_per_second"] == 10
         assert defaults["daily_quota"] == 100
         assert defaults["budget_limit_usd"] == 10.0
 
     def test_get_tier_defaults_starter(self) -> None:
         """Test tier defaults for STARTER tier."""
         defaults = get_tier_defaults(Tier.STARTER)
-        assert defaults["rate_limit_per_second"] == 5
+        assert defaults["rate_limit_per_second"] == 20
         assert defaults["daily_quota"] == 500
         assert defaults["budget_limit_usd"] == 50.0
 
     def test_get_tier_defaults_pro(self) -> None:
         """Test tier defaults for PRO tier."""
         defaults = get_tier_defaults(Tier.PRO)
-        assert defaults["rate_limit_per_second"] == 10
+        assert defaults["rate_limit_per_second"] == 50
         assert defaults["daily_quota"] == 2500
         assert defaults["budget_limit_usd"] == 250.0
 
     def test_get_tier_defaults_enterprise(self) -> None:
         """Test tier defaults for ENTERPRISE tier."""
         defaults = get_tier_defaults(Tier.ENTERPRISE)
-        assert defaults["rate_limit_per_second"] == 50
+        assert defaults["rate_limit_per_second"] == 100
         assert defaults["daily_quota"] == 999999
         assert defaults["budget_limit_usd"] == 10000.0
 
@@ -371,7 +371,7 @@ class TestHelperFunctions:
         defaults1 = get_tier_defaults(Tier.FREE)
         defaults2 = get_tier_defaults(Tier.FREE)
         defaults1["rate_limit_per_second"] = 999
-        assert defaults2["rate_limit_per_second"] == 2  # Not modified
+        assert defaults2["rate_limit_per_second"] == 10  # Not modified
 
     def test_validate_api_key_format_valid(self) -> None:
         """Test validate_api_key_format with valid keys."""

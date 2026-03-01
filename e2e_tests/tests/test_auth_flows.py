@@ -11,9 +11,10 @@ Tests:
 - 1.7: "Just Registered" Auto-Login Flow
 - 1.8: Lost API Key Recovery Flow
 """
+
 import pytest
-from playwright.sync_api import Page
 from pages.login_page import LoginPage
+from playwright.sync_api import Page
 from playwright_config import TEST_API_KEY, TEST_EMAIL, TEST_PASSWORD
 
 

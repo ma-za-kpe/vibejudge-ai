@@ -1,8 +1,11 @@
 """Live Dashboard page object - Analysis lifecycle management."""
-from playwright.sync_api import expect
-from pages.base_page import BasePage
-import time
+
 import re
+import time
+
+from playwright.sync_api import expect
+
+from pages.base_page import BasePage
 
 
 class LiveDashboardPage(BasePage):
@@ -65,7 +68,7 @@ class LiveDashboardPage(BasePage):
 
     def get_last_refresh_time(self) -> str:
         """Get last refresh timestamp."""
-        caption = self.page.locator('text=/🕐 Last refreshed:/').inner_text()
+        caption = self.page.locator("text=/🕐 Last refreshed:/").inner_text()
         return caption.split("Last refreshed: ")[1].split(" (")[0]
 
     # ========================================================================
@@ -120,8 +123,8 @@ class LiveDashboardPage(BasePage):
 
     def get_cost_estimate(self) -> float:
         """Get displayed cost estimate (STATE 3)."""
-        cost_text = self.page.locator('text=/💰 Estimated cost: \\$([0-9.]+)/').inner_text()
-        match = re.search(r'\$([0-9.]+)', cost_text)
+        cost_text = self.page.locator("text=/💰 Estimated cost: \\$([0-9.]+)/").inner_text()
+        match = re.search(r"\$([0-9.]+)", cost_text)
         if match:
             return float(match.group(1))
         return 0.0
@@ -138,9 +141,9 @@ class LiveDashboardPage(BasePage):
 
     def get_job_id(self) -> str:
         """Extract job ID from progress section (STATE 4-5)."""
-        job_text = self.page.locator('text=/📊 Analysis job in progress: ([\\w]+)/').inner_text()
+        job_text = self.page.locator("text=/📊 Analysis job in progress: ([\\w]+)/").inner_text()
         # Extract job ID (alphanumeric string after "in progress: ")
-        match = re.search(r'in progress: ([A-Za-z0-9]+)', job_text)
+        match = re.search(r"in progress: ([A-Za-z0-9]+)", job_text)
         if match:
             return match.group(1)
         return ""
@@ -151,8 +154,8 @@ class LiveDashboardPage(BasePage):
 
     def get_progress_percent(self) -> float:
         """Get progress percentage."""
-        caption = self.page.locator('text=/Progress: ([0-9.]+)%/').inner_text()
-        match = re.search(r'([0-9.]+)%', caption)
+        caption = self.page.locator("text=/Progress: ([0-9.]+)%/").inner_text()
+        match = re.search(r"([0-9.]+)%", caption)
         if match:
             return float(match.group(1))
         return 0.0
@@ -181,7 +184,7 @@ class LiveDashboardPage(BasePage):
 
     def get_estimated_completion(self) -> str:
         """Get estimated completion timestamp."""
-        completion_text = self.page.locator('text=/⏱️ Estimated completion:/').inner_text()
+        completion_text = self.page.locator("text=/⏱️ Estimated completion:/").inner_text()
         return completion_text.split("completion: ")[1]
 
     def has_error_details_expander(self) -> bool:
@@ -202,7 +205,7 @@ class LiveDashboardPage(BasePage):
             "completed": self.get_completed_count(),
             "failed": self.get_failed_count(),
             "total": self.get_total_count(),
-            "cost": self.get_current_cost()
+            "cost": self.get_current_cost(),
         }
 
     def wait_for_analysis_complete(self, timeout: int = 300000, poll_interval: int = 10000) -> bool:
@@ -294,8 +297,9 @@ class LiveDashboardPage(BasePage):
         failed = self.get_failed_count()
         total = self.get_total_count()
 
-        assert completed + failed <= total, \
+        assert completed + failed <= total, (
             f"Completed ({completed}) + Failed ({failed}) > Total ({total})"
+        )
 
         cost = self.get_current_cost()
         assert cost >= 0, f"Cost should be non-negative, got {cost}"
@@ -307,6 +311,6 @@ class LiveDashboardPage(BasePage):
 
     def assert_cost_estimate_displayed(self):
         """Assert cost estimate is shown with confirmation buttons."""
-        expect(self.page.locator('text=/💰 Estimated cost: \\$/')).to_be_visible()
+        expect(self.page.locator("text=/💰 Estimated cost: \\$/")).to_be_visible()
         self.assert_button_visible("✅ Confirm & Start")
         self.assert_button_visible("❌ Cancel")

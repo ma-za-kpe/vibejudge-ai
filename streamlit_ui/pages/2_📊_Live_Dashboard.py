@@ -152,7 +152,9 @@ if submissions_response:
         st.markdown(f"**Total: {len(submissions)} submissions**")
 
         # Table header
-        header_col1, header_col2, header_col3, header_col4, header_col5 = st.columns([2, 2, 1.5, 1.5, 1])
+        header_col1, header_col2, header_col3, header_col4, header_col5 = st.columns(
+            [2, 2, 1.5, 1.5, 1]
+        )
         with header_col1:
             st.markdown("**Team Name**")
         with header_col2:
@@ -209,9 +211,11 @@ if submissions_response:
                     sub_id = submission.get("sub_id")
 
                     # Check if this submission is being analyzed
-                    if (st.session_state.get("analysis_confirmation")
+                    if (
+                        st.session_state.get("analysis_confirmation")
                         and isinstance(st.session_state["analysis_confirmation"], dict)
-                        and st.session_state["analysis_confirmation"].get("sub_id") == sub_id):
+                        and st.session_state["analysis_confirmation"].get("sub_id") == sub_id
+                    ):
                         st.markdown("⏳")
                     else:
                         if st.button("▶️", key=f"analyze_{sub_id}", help="Analyze this submission"):
@@ -298,7 +302,7 @@ else:
                         analysis_response = api_call(
                             f"/hackathons/{selected_hack_id}/analyze",
                             method="POST",
-                            json_data={"submission_ids": [sub_id]}
+                            json_data={"submission_ids": [sub_id]},
                         )
 
                     if analysis_response:
@@ -327,8 +331,7 @@ else:
                 if st.button("✅ Confirm & Start All", type="primary", key="confirm_bulk_analysis"):
                     with st.spinner("🚀 Starting bulk analysis..."):
                         analysis_response = api_call(
-                            f"/hackathons/{selected_hack_id}/analyze",
-                            method="POST"
+                            f"/hackathons/{selected_hack_id}/analyze", method="POST"
                         )
 
                     if analysis_response:
@@ -354,8 +357,7 @@ else:
             # Get cost estimate
             with st.spinner("💰 Fetching cost estimate..."):
                 estimate_response = api_call(
-                    f"/hackathons/{selected_hack_id}/analyze/estimate",
-                    method="POST"
+                    f"/hackathons/{selected_hack_id}/analyze/estimate", method="POST"
                 )
 
             if estimate_response:

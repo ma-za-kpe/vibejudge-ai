@@ -162,14 +162,6 @@ class APIKey(VibeJudgeBase, TimestampMixin):
             raise ValueError("API key must match format: vj_(live|test)_[A-Za-z0-9+/]{32}")
         return v
 
-    @field_validator("expires_at")
-    @classmethod
-    def validate_expires_at(cls, v: datetime | None) -> datetime | None:
-        """Ensure expiration is in the future if set."""
-        if v is not None and v <= datetime.utcnow():
-            raise ValueError("expires_at must be in the future")
-        return v
-
     def to_response(self) -> APIKeyResponse:
         """Convert to response model (excludes secret key)."""
         return APIKeyResponse(
@@ -222,14 +214,15 @@ class APIKey(VibeJudgeBase, TimestampMixin):
         if self.hackathon_id:
             self.GSI2PK = f"HACKATHON#{self.hackathon_id}"
             self.GSI2SK = f"APIKEY#{self.api_key_id}"
+        else:
+            self.GSI2PK = ""
+            self.GSI2SK = ""
 
     def is_valid(self) -> bool:
         """Check if API key is currently valid."""
         if not self.active:
             return False
-        if self.expires_at and self.expires_at <= datetime.utcnow():
-            return False
-        return True
+        return not (self.expires_at and self.expires_at <= datetime.utcnow())
 
     def is_expired(self) -> bool:
         """Check if API key has expired."""

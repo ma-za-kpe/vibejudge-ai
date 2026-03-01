@@ -6,12 +6,7 @@ import pytest
 from pydantic import ValidationError
 
 from src.models.common import Severity
-from src.models.rate_limit import (
-    BudgetTracking,
-    RateLimitCounter,
-    SecurityEvent,
-    UsageRecord,
-)
+from src.models.rate_limit import BudgetTracking, RateLimitCounter, SecurityEvent, UsageRecord
 
 
 class TestRateLimitCounter:

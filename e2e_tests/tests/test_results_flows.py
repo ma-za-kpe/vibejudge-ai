@@ -15,9 +15,10 @@ Tests:
 - 6.11: Individual Scorecards Flow
 - 6.12: Back to Leaderboard Flow
 """
+
 import pytest
-from playwright.sync_api import Page
 from pages.results_page import ResultsPage
+from playwright.sync_api import Page
 
 
 @pytest.mark.smoke
@@ -26,7 +27,9 @@ def test_leaderboard_display_with_submissions(authenticated_page: Page, mock_api
     """Test Flow 6.1: Leaderboard Viewing Flow."""
     hack_id = "test_hack_001"
 
-    mock_api.mock_hackathons_list([{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}])
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}]
+    )
     mock_api.mock_leaderboard_with_submissions(hack_id, count=10)
 
     results = ResultsPage(authenticated_page)
@@ -53,7 +56,9 @@ def test_search_filtering(authenticated_page: Page, mock_api):
     """Test Flow 6.2: Search Filtering Flow."""
     hack_id = "test_hack_001"
 
-    mock_api.mock_hackathons_list([{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}])
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}]
+    )
     mock_api.mock_leaderboard_with_submissions(hack_id, count=50)
 
     results = ResultsPage(authenticated_page)
@@ -78,7 +83,9 @@ def test_sort_functionality(authenticated_page: Page, mock_api):
     """Test Flow 6.3: Sort Functionality Flow."""
     hack_id = "test_hack_001"
 
-    mock_api.mock_hackathons_list([{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}])
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}]
+    )
     mock_api.mock_leaderboard_with_submissions(hack_id, count=10)
 
     results = ResultsPage(authenticated_page)
@@ -103,7 +110,9 @@ def test_pagination_with_100_submissions(authenticated_page: Page, mock_api):
     """Test Flow 6.4-6.5: Pagination Flow and Edge Cases."""
     hack_id = "test_hack_001"
 
-    mock_api.mock_hackathons_list([{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}])
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}]
+    )
     mock_api.mock_leaderboard_with_submissions(hack_id, count=100)
 
     results = ResultsPage(authenticated_page)
@@ -147,7 +156,9 @@ def test_search_resets_pagination(authenticated_page: Page, mock_api):
     """Test Flow 6.5: Pagination Edge Case - Search resets to page 1."""
     hack_id = "test_hack_001"
 
-    mock_api.mock_hackathons_list([{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}])
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}]
+    )
     mock_api.mock_leaderboard_with_submissions(hack_id, count=100)
 
     results = ResultsPage(authenticated_page)
@@ -171,7 +182,9 @@ def test_team_detail_navigation_and_back(authenticated_page: Page, mock_api):
     hack_id = "test_hack_001"
     sub_id = "sub_001"
 
-    mock_api.mock_hackathons_list([{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}])
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}]
+    )
     mock_api.mock_leaderboard_with_submissions(hack_id, count=10)
     mock_api.mock_scorecard(hack_id, sub_id)
     mock_api.mock_individual_scorecards(hack_id, sub_id)
@@ -211,7 +224,9 @@ def test_scorecard_tabs_display(authenticated_page: Page, mock_api):
     hack_id = "test_hack_001"
     sub_id = "sub_001"
 
-    mock_api.mock_hackathons_list([{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}])
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}]
+    )
     mock_api.mock_leaderboard_with_submissions(hack_id, count=5)
     mock_api.mock_scorecard(hack_id, sub_id)
     mock_api.mock_individual_scorecards(hack_id, sub_id)
@@ -262,13 +277,14 @@ def test_no_submissions_message(authenticated_page: Page, mock_api):
     """Test empty state: No submissions analyzed."""
     hack_id = "test_hack_001"
 
-    mock_api.mock_hackathons_list([{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}])
-    mock_api.mock_get(f"**/hackathons/{hack_id}/leaderboard", status=200, body={
-        "hack_id": hack_id,
-        "total_submissions": 0,
-        "analyzed_count": 0,
-        "submissions": []
-    })
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}]
+    )
+    mock_api.mock_get(
+        f"**/hackathons/{hack_id}/leaderboard",
+        status=200,
+        body={"hack_id": hack_id, "total_submissions": 0, "analyzed_count": 0, "submissions": []},
+    )
 
     results = ResultsPage(authenticated_page)
     results.navigate()
@@ -288,13 +304,17 @@ def test_scorecard_not_found_error(authenticated_page: Page, mock_api):
     hack_id = "test_hack_001"
     sub_id = "sub_not_found"
 
-    mock_api.mock_hackathons_list([{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}])
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}]
+    )
     mock_api.mock_leaderboard_with_submissions(hack_id, count=5)
 
     # Mock 404 for scorecard
-    mock_api.mock_get(f"**/hackathons/{hack_id}/submissions/{sub_id}/scorecard", status=404, body={
-        "detail": "Scorecard not found"
-    })
+    mock_api.mock_get(
+        f"**/hackathons/{hack_id}/submissions/{sub_id}/scorecard",
+        status=404,
+        body={"detail": "Scorecard not found"},
+    )
 
     results = ResultsPage(authenticated_page)
     results.navigate()

@@ -1,9 +1,10 @@
 """Base page object with Streamlit-specific utilities."""
-from playwright.sync_api import Page, expect, Locator
-from typing import Optional
-import time
-import sys
+
 import os
+import sys
+import time
+
+from playwright.sync_api import Locator, Page, expect
 
 # Add parent dir to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
@@ -31,9 +32,7 @@ class BasePage:
         """Wait for Streamlit app to be fully loaded and interactive."""
         # Wait for main container
         self.page.wait_for_selector(
-            '[data-testid="stAppViewContainer"]',
-            timeout=timeout,
-            state="visible"
+            '[data-testid="stAppViewContainer"]', timeout=timeout, state="visible"
         )
 
         # Wait for script runner to finish
@@ -81,7 +80,9 @@ class BasePage:
             pass
 
         # Fallback: find any input near a label with this text
-        return self.page.locator(f'label:has-text("{label}") + div input, label:has-text("{label}") ~ input').first
+        return self.page.locator(
+            f'label:has-text("{label}") + div input, label:has-text("{label}") ~ input'
+        ).first
 
     def get_selectbox(self, label: str) -> Locator:
         """Find selectbox by label."""
@@ -113,7 +114,7 @@ class BasePage:
     # MESSAGE GETTERS
     # ========================================================================
 
-    def get_error_message(self) -> Optional[str]:
+    def get_error_message(self) -> str | None:
         """Get error message text if present."""
         try:
             alert = self.page.locator('[data-testid="stAlert"]').first
@@ -123,7 +124,7 @@ class BasePage:
             pass
         return None
 
-    def get_success_message(self) -> Optional[str]:
+    def get_success_message(self) -> str | None:
         """Get success message text if present."""
         try:
             success = self.page.locator('[data-testid="stSuccess"]').first
@@ -133,7 +134,7 @@ class BasePage:
             pass
         return None
 
-    def get_warning_message(self) -> Optional[str]:
+    def get_warning_message(self) -> str | None:
         """Get warning message text if present."""
         try:
             warning = self.page.locator('[data-testid="stWarning"]').first
@@ -143,7 +144,7 @@ class BasePage:
             pass
         return None
 
-    def get_info_message(self) -> Optional[str]:
+    def get_info_message(self) -> str | None:
         """Get info message text if present."""
         try:
             info = self.page.locator('[data-testid="stInfo"]').first
@@ -287,9 +288,9 @@ class BasePage:
 
     def debug_print_page_content(self):
         """Print page content for debugging (use sparingly)."""
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
         print("PAGE CONTENT DEBUG")
-        print("="*80)
+        print("=" * 80)
         print(f"URL: {self.page.url}")
         print(f"Title: {self.page.title()}")
         print("\nButtons:")
@@ -303,7 +304,7 @@ class BasePage:
             print(f"  ERROR: {error}")
         if warning := self.get_warning_message():
             print(f"  WARNING: {warning}")
-        print("="*80 + "\n")
+        print("=" * 80 + "\n")
 
     # ========================================================================
     # UTILITY METHODS

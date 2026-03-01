@@ -1,5 +1,5 @@
 """Submissions Management page object (for organizers)."""
-from playwright.sync_api import expect
+
 from pages.base_page import BasePage
 
 
@@ -52,7 +52,7 @@ class SubmissionsPage(BasePage):
         rows = self.page.locator('[data-testid="stDataFrame"] tbody tr').all()
         if row < len(rows):
             # Look for status column (usually has badge)
-            status_cell = rows[row].locator('td').nth(3)  # Adjust index based on table structure
+            status_cell = rows[row].locator("td").nth(3)  # Adjust index based on table structure
             return status_cell.inner_text().strip().lower()
         return ""
 
@@ -60,7 +60,7 @@ class SubmissionsPage(BasePage):
         """Get team name at specific row."""
         rows = self.page.locator('[data-testid="stDataFrame"] tbody tr').all()
         if row < len(rows):
-            team_cell = rows[row].locator('td').first
+            team_cell = rows[row].locator("td").first
             return team_cell.inner_text()
         return ""
 
@@ -140,11 +140,7 @@ class SubmissionsPage(BasePage):
 
     def sort_by(self, field: str):
         """Sort submissions."""
-        sort_map = {
-            "created_at": "Submission Date",
-            "team_name": "Team Name",
-            "status": "Status"
-        }
+        sort_map = {"created_at": "Submission Date", "team_name": "Team Name", "status": "Status"}
         option = sort_map.get(field, field)
         self.select_option("Sort by", option)
         self.wait_for_streamlit_ready()
@@ -182,8 +178,9 @@ class SubmissionsPage(BasePage):
         """Get number of selected submissions."""
         # Look for text like "3 submissions selected"
         import re
-        text = self.page.locator('text=/\\d+ submission.*selected/').first.inner_text()
-        match = re.search(r'(\d+)', text)
+
+        text = self.page.locator("text=/\\d+ submission.*selected/").first.inner_text()
+        match = re.search(r"(\d+)", text)
         if match:
             return int(match.group(1))
         return 0

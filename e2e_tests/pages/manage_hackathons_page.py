@@ -1,5 +1,5 @@
 """Manage Hackathons page object."""
-from playwright.sync_api import expect
+
 from pages.base_page import BasePage
 
 
@@ -26,7 +26,7 @@ class ManageHackathonsPage(BasePage):
         names = []
         for card in cards:
             # Extract name from expander header
-            header = card.locator('summary').inner_text()
+            header = card.locator("summary").inner_text()
             names.append(header)
         return names
 
@@ -37,7 +37,7 @@ class ManageHackathonsPage(BasePage):
     def expand_hackathon(self, name: str):
         """Expand hackathon details."""
         expander = self.page.locator(f'[data-testid="stExpander"]:has-text("{name}")').first
-        summary = expander.locator('summary')
+        summary = expander.locator("summary")
         summary.click()
         self.wait_for_streamlit_ready(timeout=2000)
 
@@ -49,7 +49,7 @@ class ManageHackathonsPage(BasePage):
         """Get status for specific hackathon."""
         self.expand_hackathon(name)
         # Look for status badge
-        status_elem = self.page.locator('text=/Status:\\s+(\\w+)/').first
+        status_elem = self.page.locator("text=/Status:\\s+(\\w+)/").first
         if status_elem.count() > 0:
             text = status_elem.inner_text()
             return text.split(":")[1].strip().lower()
@@ -114,7 +114,7 @@ class ManageHackathonsPage(BasePage):
             "name": "Name (A-Z)",
             "created_at": "Created Date",
             "start_date": "Start Date",
-            "submission_count": "Submissions"
+            "submission_count": "Submissions",
         }
         option = sort_map.get(field, field)
         self.select_option("Sort by", option)
@@ -147,8 +147,9 @@ class ManageHackathonsPage(BasePage):
     def get_current_page(self) -> int:
         """Get current page number."""
         import re
-        page_text = self.page.locator('text=/Page \\d+ of/').inner_text()
-        match = re.search(r'Page (\d+) of', page_text)
+
+        page_text = self.page.locator("text=/Page \\d+ of/").inner_text()
+        match = re.search(r"Page (\d+) of", page_text)
         if match:
             return int(match.group(1))
         return 1
@@ -156,8 +157,9 @@ class ManageHackathonsPage(BasePage):
     def get_total_pages(self) -> int:
         """Get total number of pages."""
         import re
-        page_text = self.page.locator('text=/Page \\d+ of \\d+/').inner_text()
-        match = re.search(r'of (\d+)', page_text)
+
+        page_text = self.page.locator("text=/Page \\d+ of \\d+/").inner_text()
+        match = re.search(r"of (\d+)", page_text)
         if match:
             return int(match.group(1))
         return 1

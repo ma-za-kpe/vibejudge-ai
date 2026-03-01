@@ -1,5 +1,5 @@
 """Settings page object."""
-from playwright.sync_api import expect
+
 from pages.base_page import BasePage
 
 
@@ -30,7 +30,7 @@ class SettingsPage(BasePage):
             "code_quality": "Bug Hunter Weight",
             "performance": "Performance Weight",
             "innovation": "Innovation Weight",
-            "ai_detection": "AI Detection Weight"
+            "ai_detection": "AI Detection Weight",
         }
         label = weight_map.get(dimension, dimension)
         input_elem = self.page.get_by_label(label)
@@ -42,7 +42,7 @@ class SettingsPage(BasePage):
             "code_quality": "Bug Hunter Weight",
             "performance": "Performance Weight",
             "innovation": "Innovation Weight",
-            "ai_detection": "AI Detection Weight"
+            "ai_detection": "AI Detection Weight",
         }
         label = weight_map.get(dimension, dimension)
         input_elem = self.page.get_by_label(label)
@@ -103,7 +103,7 @@ class SettingsPage(BasePage):
     def get_hackathon_status(self) -> str:
         """Get current hackathon status."""
         # Look for status badge or text
-        status_elem = self.page.locator('text=/Status:\\s+(\\w+)/').first
+        status_elem = self.page.locator("text=/Status:\\s+(\\w+)/").first
         if status_elem.count() > 0:
             text = status_elem.inner_text()
             return text.split(":")[1].strip().lower()
@@ -152,7 +152,7 @@ class SettingsPage(BasePage):
             "bug_hunter": "🐛 Bug Hunter",
             "performance": "⚡ Performance Analyzer",
             "innovation": "💡 Innovation Scorer",
-            "ai_detection": "🤖 AI Detection"
+            "ai_detection": "🤖 AI Detection",
         }
         label = agent_map.get(agent_name, agent_name)
         checkbox = self.page.get_by_label(label)
@@ -164,7 +164,7 @@ class SettingsPage(BasePage):
             "bug_hunter": "🐛 Bug Hunter",
             "performance": "⚡ Performance Analyzer",
             "innovation": "💡 Innovation Scorer",
-            "ai_detection": "🤖 AI Detection"
+            "ai_detection": "🤖 AI Detection",
         }
         label = agent_map.get(agent_name, agent_name)
         self.check_checkbox(label, enabled)

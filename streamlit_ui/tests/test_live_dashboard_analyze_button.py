@@ -1,7 +1,8 @@
 """Tests for Live Dashboard analyze button workflow."""
 
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 from streamlit.testing.v1 import AppTest
 
 
@@ -166,7 +167,9 @@ def test_confirmation_dialog_displays_submission_details(mock_api_responses):
         info_messages = [info.value for info in at.info]
         caption_messages = [cap.value for cap in at.caption]
         assert any("Team Alpha" in msg for msg in info_messages), "Should show team name"
-        assert any("SUB001" in msg for msg in caption_messages), "Should show submission ID in caption"
+        assert any("SUB001" in msg for msg in caption_messages), (
+            "Should show submission ID in caption"
+        )
 
 
 def test_confirm_analyze_triggers_api_call(mock_api_responses):
@@ -206,9 +209,7 @@ def test_confirm_analyze_triggers_api_call(mock_api_responses):
         at.run()
 
         # Click confirm button
-        confirm_button = next(
-            btn for btn in at.button if "Confirm & Analyze" in btn.label
-        )
+        confirm_button = next(btn for btn in at.button if "Confirm & Analyze" in btn.label)
         confirm_button.click().run()
 
         # Verify POST request was made with correct submission_ids
@@ -217,9 +218,9 @@ def test_confirm_analyze_triggers_api_call(mock_api_responses):
 
         # Check the request included submission_ids
         assert "json" in call_args.kwargs, "Should include JSON data"
-        assert call_args.kwargs["json"]["submission_ids"] == [
-            "SUB001"
-        ], "Should include the specific submission ID"
+        assert call_args.kwargs["json"]["submission_ids"] == ["SUB001"], (
+            "Should include the specific submission ID"
+        )
 
 
 def test_cancel_button_clears_confirmation_state(mock_api_responses):
@@ -257,7 +258,10 @@ def test_cancel_button_clears_confirmation_state(mock_api_responses):
         cancel_button.click().run()
 
         # Verify confirmation state is cleared
-        assert "analysis_confirmation" not in at.session_state or at.session_state["analysis_confirmation"] is None
+        assert (
+            "analysis_confirmation" not in at.session_state
+            or at.session_state["analysis_confirmation"] is None
+        )
 
 
 def test_analyze_button_shows_loading_state(mock_api_responses):
@@ -298,9 +302,7 @@ def test_analyze_button_shows_loading_state(mock_api_responses):
         assert "analyze_SUB001" not in button_keys, "SUB001 should show ⏳, not ▶️"
 
         # SUB003 should still have analyze button
-        assert (
-            "analyze_SUB003" in button_keys
-        ), "SUB003 should still show ▶️ button"
+        assert "analyze_SUB003" in button_keys, "SUB003 should still show ▶️ button"
 
 
 def test_successful_analysis_clears_confirmation_state(mock_api_responses):
@@ -340,9 +342,7 @@ def test_successful_analysis_clears_confirmation_state(mock_api_responses):
         at.run()
 
         # Click confirm button
-        confirm_button = next(
-            btn for btn in at.button if "Confirm & Analyze" in btn.label
-        )
+        confirm_button = next(btn for btn in at.button if "Confirm & Analyze" in btn.label)
         confirm_button.click().run()
 
         # Verify POST was called with correct payload

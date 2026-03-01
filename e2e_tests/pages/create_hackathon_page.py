@@ -1,7 +1,8 @@
 """Create Hackathon page object."""
-from playwright.sync_api import expect
-from pages.base_page import BasePage
+
 from datetime import datetime, timedelta
+
+from pages.base_page import BasePage
 
 
 class CreateHackathonPage(BasePage):
@@ -71,7 +72,7 @@ class CreateHackathonPage(BasePage):
         end_date: str = None,
         budget: float = None,
         agents: dict = None,
-        weights: dict = None
+        weights: dict = None,
     ) -> str:
         """
         Complete flow to create a hackathon.
@@ -109,8 +110,7 @@ class CreateHackathonPage(BasePage):
     def create_default_hackathon(self) -> str:
         """Create a hackathon with default settings."""
         return self.create_hackathon(
-            name="E2E Test Hackathon",
-            description="Automated end-to-end test hackathon"
+            name="E2E Test Hackathon", description="Automated end-to-end test hackathon"
         )
 
     # ========================================================================
@@ -120,11 +120,12 @@ class CreateHackathonPage(BasePage):
     def get_created_hack_id(self) -> str:
         """Extract hack_id from success message."""
         # Look for code block with hack_id
-        hack_id_element = self.page.locator('text=/Hackathon ID.*`(\\w+)`/').first
+        hack_id_element = self.page.locator("text=/Hackathon ID.*`(\\w+)`/").first
         text = hack_id_element.inner_text()
         # Extract hack_id from text
         import re
-        match = re.search(r'`(\w+)`', text)
+
+        match = re.search(r"`(\w+)`", text)
         if match:
             return match.group(1)
         return ""

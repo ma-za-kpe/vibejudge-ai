@@ -6,10 +6,7 @@ import pytest
 
 from src.analysis.strategy_detector import StrategyDetector
 from src.models.analysis import CommitInfo, RepoData, SourceFile
-from src.models.strategy import (
-    MaturityLevel,
-    TestStrategy,
-)
+from src.models.strategy import MaturityLevel, TestStrategy
 from src.models.submission import RepoMeta
 
 # ============================================================

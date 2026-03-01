@@ -55,6 +55,7 @@ def test_hackathon_dropdown_population(mock_get: MagicMock, authenticated_app: A
     The dashboard should display a hackathon selection dropdown populated
     from GET /hackathons endpoint.
     """
+
     # Mock API responses comprehensively
     def mock_get_side_effect(url: str, *args, **kwargs):
         mock_response = MagicMock()
@@ -73,20 +74,25 @@ def test_hackathon_dropdown_population(mock_get: MagicMock, authenticated_app: A
         elif "/analyze/status" in url:
             # No active job
             mock_response.status_code = 200
-            mock_response.json.return_value = {
-                "status": "not_started",
-                "job_id": None
-            }
+            mock_response.json.return_value = {"status": "not_started", "job_id": None}
         else:
             # Hackathons list response - MUST return dict with "hackathons" key
             mock_response.status_code = 200
             mock_response.json.return_value = {
                 "hackathons": [
-                    {"hack_id": "01HXXX111", "name": "Spring Hackathon 2025", "status": "configured"},
-                    {"hack_id": "01HXXX222", "name": "Summer Hackathon 2025", "status": "configured"},
+                    {
+                        "hack_id": "01HXXX111",
+                        "name": "Spring Hackathon 2025",
+                        "status": "configured",
+                    },
+                    {
+                        "hack_id": "01HXXX222",
+                        "name": "Summer Hackathon 2025",
+                        "status": "configured",
+                    },
                 ],
                 "next_cursor": None,
-                "has_more": False
+                "has_more": False,
             }
 
         return mock_response
@@ -150,18 +156,19 @@ def test_stats_display_after_hackathon_selection(
             }
         elif "/analyze/status" in url:
             # No active job
-            mock_response.json.return_value = {
-                "status": "not_started",
-                "job_id": None
-            }
+            mock_response.json.return_value = {"status": "not_started", "job_id": None}
         else:
             # Hackathons list response - MUST return dict with "hackathons" key
             mock_response.json.return_value = {
                 "hackathons": [
-                    {"hack_id": "01HXXX111", "name": "Spring Hackathon 2025", "status": "configured"}
+                    {
+                        "hack_id": "01HXXX111",
+                        "name": "Spring Hackathon 2025",
+                        "status": "configured",
+                    }
                 ],
                 "next_cursor": None,
-                "has_more": False
+                "has_more": False,
             }
 
         return mock_response
@@ -230,17 +237,14 @@ def test_analysis_cost_estimate_display(
                 "participant_count": 150,
             }
         elif "/analyze/status" in url:
-            mock_response.json.return_value = {
-                "status": "not_started",
-                "job_id": None
-            }
+            mock_response.json.return_value = {"status": "not_started", "job_id": None}
         else:
             mock_response.json.return_value = {
                 "hackathons": [
                     {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
                 ],
                 "next_cursor": None,
-                "has_more": False
+                "has_more": False,
             }
 
         return mock_response
@@ -253,13 +257,9 @@ def test_analysis_cost_estimate_display(
     mock_estimate_response.ok = True
     mock_estimate_response.json.return_value = {
         "estimate": {
-            "total_cost_usd": {
-                "expected": 1.25,
-                "min": 1.00,
-                "max": 1.50
-            },
+            "total_cost_usd": {"expected": 1.25, "min": 1.00, "max": 1.50},
             "submission_count": 50,
-            "per_submission_cost": 0.025
+            "per_submission_cost": 0.025,
         }
     }
     mock_post.return_value = mock_estimate_response
@@ -332,13 +332,9 @@ def test_analysis_confirmation_dialog(
     mock_estimate_response.ok = True
     mock_estimate_response.json.return_value = {
         "estimate": {
-            "total_cost_usd": {
-                "expected": 1.25,
-                "min": 1.00,
-                "max": 1.50
-            },
+            "total_cost_usd": {"expected": 1.25, "min": 1.00, "max": 1.50},
             "submission_count": 50,
-            "per_submission_cost": 0.025
+            "per_submission_cost": 0.025,
         }
     }
     mock_post.return_value = mock_estimate_response
@@ -407,22 +403,16 @@ def test_analysis_start_displays_job_id_and_cost(
         elif "/analyze/status" in url:
             # After analyze is called, return the job_id
             if analyze_called:
-                mock_response.json.return_value = {
-                    "status": "queued",
-                    "job_id": "01HYYY123456789"
-                }
+                mock_response.json.return_value = {"status": "queued", "job_id": "01HYYY123456789"}
             else:
-                mock_response.json.return_value = {
-                    "status": "not_started",
-                    "job_id": None
-                }
+                mock_response.json.return_value = {"status": "not_started", "job_id": None}
         else:
             mock_response.json.return_value = {
                 "hackathons": [
                     {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
                 ],
                 "next_cursor": None,
-                "has_more": False
+                "has_more": False,
             }
 
         return mock_response
@@ -439,13 +429,9 @@ def test_analysis_start_displays_job_id_and_cost(
             mock_response.status_code = 200
             mock_response.json.return_value = {
                 "estimate": {
-                    "total_cost_usd": {
-                        "expected": 1.25,
-                        "min": 1.00,
-                        "max": 1.50
-                    },
+                    "total_cost_usd": {"expected": 1.25, "min": 1.00, "max": 1.50},
                     "submission_count": 50,
-                    "per_submission_cost": 0.025
+                    "per_submission_cost": 0.025,
                 }
             }
         elif "/analyze" in url and "/estimate" not in url:
@@ -487,12 +473,18 @@ def test_analysis_start_displays_job_id_and_cost(
     at.run()
 
     # Verify analysis API was called
-    analyze_calls = [call for call in mock_post.call_args_list if "/analyze" in str(call.args[0]) and "/estimate" not in str(call.args[0])]
+    analyze_calls = [
+        call
+        for call in mock_post.call_args_list
+        if "/analyze" in str(call.args[0]) and "/estimate" not in str(call.args[0])
+    ]
     assert len(analyze_calls) > 0, "Analyze endpoint not called"
 
     # After rerun, the page should show "Job in progress" with job_id
     info_messages = [info.value for info in at.info]
-    job_id_displayed = any("01HYYY123456789" in msg or "in progress" in msg.lower() for msg in info_messages)
+    job_id_displayed = any(
+        "01HYYY123456789" in msg or "in progress" in msg.lower() for msg in info_messages
+    )
     assert job_id_displayed, f"Job ID not displayed in info messages: {info_messages}"
 
 
@@ -539,17 +531,14 @@ def test_analysis_progress_monitoring(
             }
         elif "/analyze/status" in url:
             # Return active job
-            mock_response.json.return_value = {
-                "status": "running",
-                "job_id": "01HYYY123456789"
-            }
+            mock_response.json.return_value = {"status": "running", "job_id": "01HYYY123456789"}
         else:
             mock_response.json.return_value = {
                 "hackathons": [
                     {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
                 ],
                 "next_cursor": None,
-                "has_more": False
+                "has_more": False,
             }
 
         return mock_response
@@ -561,7 +550,9 @@ def test_analysis_progress_monitoring(
 
     # Verify "Job in progress" message is displayed
     info_messages = [info.value for info in at.info]
-    job_in_progress = any("in progress" in msg.lower() or "01HYYY123456789" in msg for msg in info_messages)
+    job_in_progress = any(
+        "in progress" in msg.lower() or "01HYYY123456789" in msg for msg in info_messages
+    )
     assert job_in_progress, f"Job in progress message not found in: {info_messages}"
 
     # Verify progress metrics are displayed
@@ -574,10 +565,18 @@ def test_analysis_progress_monitoring(
     metric_values = [str(m.value) for m in at.metric]
 
     # Verify progress metrics are present
-    assert any("Completed" in label for label in metric_labels), f"Completed metric not found in: {metric_labels}"
-    assert any("Failed" in label for label in metric_labels), f"Failed metric not found in: {metric_labels}"
-    assert any("Total" in label for label in metric_labels), f"Total metric not found in: {metric_labels}"
-    assert any("Cost" in label for label in metric_labels), f"Cost metric not found in: {metric_labels}"
+    assert any("Completed" in label for label in metric_labels), (
+        f"Completed metric not found in: {metric_labels}"
+    )
+    assert any("Failed" in label for label in metric_labels), (
+        f"Failed metric not found in: {metric_labels}"
+    )
+    assert any("Total" in label for label in metric_labels), (
+        f"Total metric not found in: {metric_labels}"
+    )
+    assert any("Cost" in label for label in metric_labels), (
+        f"Cost metric not found in: {metric_labels}"
+    )
 
     # Verify metric values match mock data
     assert "68" in metric_values, f"Completed count 68 not found in: {metric_values}"
@@ -632,17 +631,14 @@ def test_analysis_failure_details_display(
             }
         elif "/analyze/status" in url:
             # Return active job
-            mock_response.json.return_value = {
-                "status": "running",
-                "job_id": "01HYYY123456789"
-            }
+            mock_response.json.return_value = {"status": "running", "job_id": "01HYYY123456789"}
         else:
             mock_response.json.return_value = {
                 "hackathons": [
                     {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
                 ],
                 "next_cursor": None,
-                "has_more": False
+                "has_more": False,
             }
 
         return mock_response
@@ -776,13 +772,9 @@ def test_analysis_conflict_error(
             mock_response.ok = True
             mock_response.json.return_value = {
                 "estimate": {
-                    "total_cost_usd": {
-                        "expected": 1.25,
-                        "min": 1.00,
-                        "max": 1.50
-                    },
+                    "total_cost_usd": {"expected": 1.25, "min": 1.00, "max": 1.50},
                     "submission_count": 50,
-                    "per_submission_cost": 0.025
+                    "per_submission_cost": 0.025,
                 }
             }
         elif "/analyze" in url:
@@ -869,17 +861,14 @@ def test_analysis_completion_success_message(
         elif "/analyze/status" in url:
             # Return running status so active_job_id is set and progress section is shown
             # Then /jobs/ endpoint will return completed status
-            mock_response.json.return_value = {
-                "status": "running",
-                "job_id": "01HYYY123456789"
-            }
+            mock_response.json.return_value = {"status": "running", "job_id": "01HYYY123456789"}
         else:
             mock_response.json.return_value = {
                 "hackathons": [
                     {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
                 ],
                 "next_cursor": None,
-                "has_more": False
+                "has_more": False,
             }
 
         return mock_response
@@ -912,11 +901,7 @@ def test_no_hackathons_warning(mock_get: MagicMock, authenticated_app: AppTest) 
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.ok = True
-    mock_response.json.return_value = {
-        "hackathons": [],
-        "next_cursor": None,
-        "has_more": False
-    }
+    mock_response.json.return_value = {"hackathons": [], "next_cursor": None, "has_more": False}
     mock_get.return_value = mock_response
 
     at = authenticated_app
@@ -993,17 +978,14 @@ def test_cancel_analysis_confirmation(
                 "participant_count": 150,
             }
         elif "/analyze/status" in url:
-            mock_response.json.return_value = {
-                "status": "not_started",
-                "job_id": None
-            }
+            mock_response.json.return_value = {"status": "not_started", "job_id": None}
         else:
             mock_response.json.return_value = {
                 "hackathons": [
                     {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
                 ],
                 "next_cursor": None,
-                "has_more": False
+                "has_more": False,
             }
 
         return mock_response
@@ -1016,13 +998,9 @@ def test_cancel_analysis_confirmation(
     mock_estimate_response.ok = True
     mock_estimate_response.json.return_value = {
         "estimate": {
-            "total_cost_usd": {
-                "expected": 1.25,
-                "min": 1.00,
-                "max": 1.50
-            },
+            "total_cost_usd": {"expected": 1.25, "min": 1.00, "max": 1.50},
             "submission_count": 50,
-            "per_submission_cost": 0.025
+            "per_submission_cost": 0.025,
         }
     }
     mock_post.return_value = mock_estimate_response

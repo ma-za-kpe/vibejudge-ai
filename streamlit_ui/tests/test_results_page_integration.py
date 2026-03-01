@@ -324,9 +324,9 @@ def test_team_detail_navigation(
                 "team_dynamics": {
                     "collaboration_quality": "excellent",
                     "role_distribution": "balanced",
-                    "communication_frequency": "high"
+                    "communication_frequency": "high",
                 },
-                "members": []
+                "members": [],
             }
         elif "/scorecard" in url:
             mock_response.json.return_value = mock_scorecard_data
@@ -338,7 +338,7 @@ def test_team_detail_navigation(
                     {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
                 ],
                 "next_cursor": None,
-                "has_more": False
+                "has_more": False,
             }
 
         return mock_response
@@ -361,7 +361,9 @@ def test_team_detail_navigation(
             view_button = button
             break
 
-    assert view_button is not None, f"View Details button not found. Available buttons: {[b.label for b in at.button]}"
+    assert view_button is not None, (
+        f"View Details button not found. Available buttons: {[b.label for b in at.button]}"
+    )
 
     # Click the button to navigate to team detail
     view_button.click()
@@ -408,9 +410,9 @@ def test_scorecard_display_completeness(
             mock_response.json.return_value = {
                 "team_dynamics": {
                     "collaboration_quality": "excellent",
-                    "role_distribution": "balanced"
+                    "role_distribution": "balanced",
                 },
-                "members": []
+                "members": [],
             }
         elif "/scorecard" in url:
             mock_response.json.return_value = mock_scorecard_data
@@ -422,7 +424,7 @@ def test_scorecard_display_completeness(
                     {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
                 ],
                 "next_cursor": None,
-                "has_more": False
+                "has_more": False,
             }
 
         return mock_response
@@ -511,7 +513,7 @@ def test_pagination_limit_50_submissions(mock_get: MagicMock, authenticated_app:
                     {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
                 ],
                 "next_cursor": None,
-                "has_more": False
+                "has_more": False,
             }
 
         return mock_response
@@ -562,10 +564,7 @@ def test_back_to_leaderboard_button(
         mock_response.ok = True
 
         if "/individual-scorecards" in url:
-            mock_response.json.return_value = {
-                "team_dynamics": {},
-                "members": []
-            }
+            mock_response.json.return_value = {"team_dynamics": {}, "members": []}
         elif "/scorecard" in url:
             mock_response.json.return_value = mock_scorecard_data
         else:
@@ -574,7 +573,7 @@ def test_back_to_leaderboard_button(
                     {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
                 ],
                 "next_cursor": None,
-                "has_more": False
+                "has_more": False,
             }
 
         return mock_response
@@ -639,7 +638,7 @@ def test_no_submissions_message(mock_get: MagicMock, authenticated_app: AppTest)
                     {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
                 ],
                 "next_cursor": None,
-                "has_more": False
+                "has_more": False,
             }
 
         return mock_response

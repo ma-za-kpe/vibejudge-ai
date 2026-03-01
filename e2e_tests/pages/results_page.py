@@ -1,7 +1,8 @@
 """Results page object - Leaderboard and team details."""
-from playwright.sync_api import expect
-from pages.base_page import BasePage
+
 import re
+
+from pages.base_page import BasePage
 
 
 class ResultsPage(BasePage):
@@ -66,7 +67,7 @@ class ResultsPage(BasePage):
         display_names = {
             "score": "Overall Score",
             "team_name": "Team Name",
-            "created_at": "Submission Date"
+            "created_at": "Submission Date",
         }
 
         self.select_option("Sort by", display_names.get(option, option))
@@ -84,7 +85,7 @@ class ResultsPage(BasePage):
     def get_team_name_at_rank(self, rank: int) -> str:
         """Get team name for specific rank."""
         # Find row with rank number
-        row = self.page.locator(f'text=/^{rank}$/')  # Exact match for rank
+        row = self.page.locator(f"text=/^{rank}$/")  # Exact match for rank
         # Get sibling cell with team name (next column)
         # This is tricky - might need to adjust based on actual DOM structure
         container = row.locator('xpath=ancestor::div[contains(@class, "row")]')
@@ -105,7 +106,9 @@ class ResultsPage(BasePage):
     def click_view_details_for_team(self, team_name: str):
         """Click View Details button for specific team."""
         # Find the row containing team name
-        row = self.page.locator(f'text="{team_name}"').locator('xpath=ancestor::div[@data-testid="column"]')
+        row = self.page.locator(f'text="{team_name}"').locator(
+            'xpath=ancestor::div[@data-testid="column"]'
+        )
         # Find View Details button in same row
         button = row.get_by_role("button", name="View Details")
         button.click()
@@ -117,16 +120,16 @@ class ResultsPage(BasePage):
 
     def get_current_page(self) -> int:
         """Get current page number."""
-        page_text = self.page.locator('text=/Page (\\d+) of/').inner_text()
-        match = re.search(r'Page (\d+) of', page_text)
+        page_text = self.page.locator("text=/Page (\\d+) of/").inner_text()
+        match = re.search(r"Page (\d+) of", page_text)
         if match:
             return int(match.group(1))
         return 1
 
     def get_total_pages(self) -> int:
         """Get total number of pages."""
-        page_text = self.page.locator('text=/Page \\d+ of (\\d+)/').inner_text()
-        match = re.search(r'of (\d+)', page_text)
+        page_text = self.page.locator("text=/Page \\d+ of (\\d+)/").inner_text()
+        match = re.search(r"of (\d+)", page_text)
         if match:
             return int(match.group(1))
         return 1
@@ -172,7 +175,7 @@ class ResultsPage(BasePage):
     def get_team_detail_name(self) -> str:
         """Get team name from detail view."""
         # Look for heading with team name
-        heading = self.page.locator('text=/📋 Scorecard:/')
+        heading = self.page.locator("text=/📋 Scorecard:/")
         text = heading.inner_text()
         return text.split(": ")[1]
 
@@ -219,7 +222,7 @@ class ResultsPage(BasePage):
         self.expand_agent_results(agent_name)
         # Get summary text from expander content
         expander = self.get_expander(agent_name)
-        return expander.locator('text=/Summary:?/').inner_text()
+        return expander.locator("text=/Summary:?/").inner_text()
 
     # ========================================================================
     # TEAM DETAIL - REPOSITORY TAB
@@ -245,7 +248,9 @@ class ResultsPage(BasePage):
     def get_member_count(self) -> int:
         """Get number of team members shown."""
         # Count expanders with actionable feedback
-        expanders = self.page.locator('[data-testid="stExpander"]:has-text("💡 Actionable Feedback")').all()
+        expanders = self.page.locator(
+            '[data-testid="stExpander"]:has-text("💡 Actionable Feedback")'
+        ).all()
         return len(expanders)
 
     # ========================================================================

@@ -374,7 +374,9 @@ if st.session_state["view_mode"] == "team_detail":
                     time_management = strategy_analysis.get("time_management", "N/A")
                     st.metric(
                         label="Time Management",
-                        value=time_management.title() if isinstance(time_management, str) else "N/A",
+                        value=time_management.title()
+                        if isinstance(time_management, str)
+                        else "N/A",
                         help="How well the team managed their time",
                     )
 
@@ -382,7 +384,9 @@ if st.session_state["view_mode"] == "team_detail":
                     risk_management = strategy_analysis.get("risk_management", "N/A")
                     st.metric(
                         label="Risk Management",
-                        value=risk_management.title() if isinstance(risk_management, str) else "N/A",
+                        value=risk_management.title()
+                        if isinstance(risk_management, str)
+                        else "N/A",
                         help="The team's approach to managing risks",
                     )
 

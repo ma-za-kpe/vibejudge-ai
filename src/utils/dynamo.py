@@ -861,6 +861,7 @@ class DynamoDBHelper:
         """
         try:
             from datetime import datetime
+            from decimal import Decimal
 
             update_parts = []
             expr_attr_values = {":updated_at": datetime.utcnow().isoformat()}
@@ -871,7 +872,10 @@ class DynamoDBHelper:
 
             if total_cost_usd is not None:
                 update_parts.append("total_cost_usd = :total_cost_usd")
-                expr_attr_values[":total_cost_usd"] = total_cost_usd
+                # Convert float to Decimal for DynamoDB
+                expr_attr_values[":total_cost_usd"] = (
+                    Decimal(str(total_cost_usd)) if isinstance(total_cost_usd, float) else total_cost_usd
+                )
 
             if last_used_at is not None:
                 update_parts.append("last_used_at = :last_used_at")

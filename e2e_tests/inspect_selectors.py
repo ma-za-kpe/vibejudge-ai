@@ -1,6 +1,6 @@
 """Quick script to inspect Streamlit selectors."""
+
 from playwright.sync_api import sync_playwright
-import sys
 
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=False)
@@ -26,7 +26,7 @@ with sync_playwright() as p:
 
     # Check for buttons
     print("\n2. Buttons:")
-    buttons = page.locator('button').all()
+    buttons = page.locator("button").all()
     for i, btn in enumerate(buttons[:10]):
         try:
             text = btn.inner_text()

@@ -23,10 +23,12 @@ Tests:
 - 4.9: Job Status Fetch Failure Flow
 - 4.10: Analysis Cancel Flow
 """
-import pytest
-from playwright.sync_api import Page
-from pages.live_dashboard_page import LiveDashboardPage
+
 import time
+
+import pytest
+from pages.live_dashboard_page import LiveDashboardPage
+from playwright.sync_api import Page
 
 
 @pytest.mark.critical
@@ -40,11 +42,9 @@ def test_complete_analysis_lifecycle_with_mock(authenticated_page: Page, mock_ap
     hack_id = "test_hack_001"
 
     # Mock all endpoints
-    mock_api.mock_hackathons_list([{
-        "hack_id": hack_id,
-        "name": "Test Hackathon",
-        "status": "configured"
-    }])
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}]
+    )
     mock_api.mock_hackathon_stats(hack_id)
     mock_api.mock_cost_estimate(hack_id, cost=15.75)
     mock_api.mock_start_analysis(hack_id, job_id="job_e2e_001", cost=15.75)
@@ -154,7 +154,9 @@ def test_budget_exceeded_during_estimate(authenticated_page: Page, mock_api):
     """Test Flow 4.3: Budget Exceeded Error during cost estimate (HTTP 402)."""
     hack_id = "test_hack_001"
 
-    mock_api.mock_hackathons_list([{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}])
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}]
+    )
     mock_api.mock_hackathon_stats(hack_id)
 
     # Mock 402 on estimate
@@ -182,7 +184,9 @@ def test_budget_exceeded_during_start(authenticated_page: Page, mock_api):
     """Test Flow 4.3: Budget Exceeded Error during analysis start (HTTP 402)."""
     hack_id = "test_hack_001"
 
-    mock_api.mock_hackathons_list([{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}])
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}]
+    )
     mock_api.mock_hackathon_stats(hack_id)
     mock_api.mock_cost_estimate(hack_id, cost=10.0)
 
@@ -210,7 +214,9 @@ def test_concurrent_analysis_conflict(authenticated_page: Page, mock_api):
     """Test Flow 4.4: Concurrent Analysis Conflict (HTTP 409)."""
     hack_id = "test_hack_001"
 
-    mock_api.mock_hackathons_list([{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}])
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}]
+    )
     mock_api.mock_hackathon_stats(hack_id)
     mock_api.mock_cost_estimate(hack_id, cost=10.0)
 
@@ -239,7 +245,9 @@ def test_analysis_progress_polling(authenticated_page: Page, mock_api):
     hack_id = "test_hack_001"
     job_id = "job_polling_001"
 
-    mock_api.mock_hackathons_list([{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}])
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}]
+    )
     mock_api.mock_hackathon_stats(hack_id)
 
     # Mock job already running
@@ -269,13 +277,18 @@ def test_manual_refresh(authenticated_page: Page, mock_api):
     """Test Flow 4.7: Manual Refresh Flow."""
     hack_id = "test_hack_001"
 
-    mock_api.mock_hackathons_list([{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}])
-    mock_api.mock_hackathon_stats(hack_id, stats={
-        "submission_count": 5,
-        "verified_count": 5,
-        "pending_count": 0,
-        "participant_count": 15
-    })
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}]
+    )
+    mock_api.mock_hackathon_stats(
+        hack_id,
+        stats={
+            "submission_count": 5,
+            "verified_count": 5,
+            "pending_count": 0,
+            "participant_count": 15,
+        },
+    )
 
     dashboard = LiveDashboardPage(authenticated_page)
     dashboard.navigate()
@@ -285,12 +298,15 @@ def test_manual_refresh(authenticated_page: Page, mock_api):
     assert initial_count == 5
 
     # Update mock to return different stats
-    mock_api.mock_hackathon_stats(hack_id, stats={
-        "submission_count": 10,
-        "verified_count": 9,
-        "pending_count": 1,
-        "participant_count": 30
-    })
+    mock_api.mock_hackathon_stats(
+        hack_id,
+        stats={
+            "submission_count": 10,
+            "verified_count": 9,
+            "pending_count": 1,
+            "participant_count": 30,
+        },
+    )
 
     # Manual refresh
     dashboard.manual_refresh()
@@ -306,24 +322,30 @@ def test_failed_submissions_error_details(authenticated_page: Page, mock_api):
     hack_id = "test_hack_001"
     job_id = "job_with_failures"
 
-    mock_api.mock_hackathons_list([{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}])
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}]
+    )
     mock_api.mock_hackathon_stats(hack_id)
 
     # Mock job with failures
     mock_api.mock_analysis_status(hack_id, job_id=job_id, status="running")
-    mock_api.mock_get(f"**/hackathons/{hack_id}/jobs/{job_id}", status=200, body={
-        "job_id": job_id,
-        "status": "running",
-        "progress_percent": 80.0,
-        "completed_submissions": 8,
-        "failed_submissions": 2,
-        "total_submissions": 10,
-        "current_cost_usd": 10.0,
-        "error_details": [
-            "Submission sub_003: Repository not accessible",
-            "Submission sub_007: Analysis timeout"
-        ]
-    })
+    mock_api.mock_get(
+        f"**/hackathons/{hack_id}/jobs/{job_id}",
+        status=200,
+        body={
+            "job_id": job_id,
+            "status": "running",
+            "progress_percent": 80.0,
+            "completed_submissions": 8,
+            "failed_submissions": 2,
+            "total_submissions": 10,
+            "current_cost_usd": 10.0,
+            "error_details": [
+                "Submission sub_003: Repository not accessible",
+                "Submission sub_007: Analysis timeout",
+            ],
+        },
+    )
 
     dashboard = LiveDashboardPage(authenticated_page)
     dashboard.navigate()
@@ -346,7 +368,9 @@ def test_analysis_completion_balloons(authenticated_page: Page, mock_api):
     hack_id = "test_hack_001"
     job_id = "job_complete"
 
-    mock_api.mock_hackathons_list([{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}])
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}]
+    )
     mock_api.mock_hackathon_stats(hack_id)
 
     # Mock completed job
@@ -372,7 +396,9 @@ def test_cancel_analysis_confirmation(authenticated_page: Page, mock_api):
     """Test Flow 4.10: Analysis Cancel Flow (STATE 3a)."""
     hack_id = "test_hack_001"
 
-    mock_api.mock_hackathons_list([{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}])
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "configured"}]
+    )
     mock_api.mock_hackathon_stats(hack_id)
     mock_api.mock_cost_estimate(hack_id, cost=20.50)
 

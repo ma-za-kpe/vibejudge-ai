@@ -1,4 +1,5 @@
 """Playwright E2E test configuration."""
+
 import os
 
 # Environment URLs

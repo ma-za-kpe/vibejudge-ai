@@ -10,11 +10,12 @@ Tests:
 - 2.6: Hackathon Search Flow
 - 2.7: Hackathon Pagination Flow
 """
+
 import pytest
-from playwright.sync_api import Page
 from pages.create_hackathon_page import CreateHackathonPage
 from pages.manage_hackathons_page import ManageHackathonsPage
 from pages.settings_page import SettingsPage
+from playwright.sync_api import Page
 
 
 @pytest.mark.critical
@@ -29,9 +30,7 @@ def test_hackathon_creation_flow(authenticated_page: Page, mock_api):
 
     # Fill form with valid data
     created_hack_id = create_page.create_hackathon(
-        name="E2E Test Hackathon",
-        description="Test hackathon for E2E testing",
-        budget=100.0
+        name="E2E Test Hackathon", description="Test hackathon for E2E testing", budget=100.0
     )
 
     # Verify creation
@@ -124,11 +123,9 @@ def test_hackathon_status_lifecycle_flow(authenticated_page: Page, mock_api):
     """Test Flow 2.5: Hackathon Status Lifecycle Flow (DRAFT → ACTIVE → PAUSED → ACTIVE → COMPLETED)."""
     hack_id = "test_hack_001"
 
-    mock_api.mock_hackathons_list([{
-        "hack_id": hack_id,
-        "name": "Test Hackathon",
-        "status": "draft"
-    }])
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "draft"}]
+    )
     mock_api.mock_hackathon_stats(hack_id)
 
     settings = SettingsPage(authenticated_page)

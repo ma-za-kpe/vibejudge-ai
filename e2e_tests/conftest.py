@@ -1,19 +1,21 @@
 """Pytest configuration and fixtures for E2E tests."""
-import pytest
-from playwright.sync_api import Page, Browser, BrowserContext, Playwright, sync_playwright
-from typing import Generator
+
 import os
 import sys
+from collections.abc import Generator
+
+import pytest
+from playwright.sync_api import Browser, BrowserContext, Page, Playwright, sync_playwright
 
 # Add e2e_tests to path for imports
 sys.path.insert(0, os.path.dirname(__file__))
 
-from playwright_config import BROWSER_CONFIG, DESKTOP_VIEWPORT, DEFAULT_TIMEOUT, TEST_API_KEY
-
+from playwright_config import BROWSER_CONFIG, DEFAULT_TIMEOUT, DESKTOP_VIEWPORT, TEST_API_KEY
 
 # ============================================================================
 # PYTEST CONFIGURATION
 # ============================================================================
+
 
 def pytest_configure(config):
     """Register custom markers."""
@@ -28,6 +30,7 @@ def pytest_configure(config):
 # ============================================================================
 # BROWSER FIXTURES
 # ============================================================================
+
 
 @pytest.fixture(scope="session")
 def playwright_instance() -> Generator[Playwright, None, None]:
@@ -72,6 +75,7 @@ def page(context: BrowserContext) -> Generator[Page, None, None]:
 # AUTHENTICATION FIXTURES
 # ============================================================================
 
+
 @pytest.fixture(scope="function")
 def authenticated_page(page: Page) -> Page:
     """Page with API key authentication already completed."""
@@ -91,6 +95,7 @@ def authenticated_context(browser: Browser) -> Generator[BrowserContext, None, N
     page = context.new_page()
 
     from pages.login_page import LoginPage
+
     login_page = LoginPage(page)
     login_page.navigate()
     login_page.login_with_api_key(TEST_API_KEY)
@@ -103,6 +108,7 @@ def authenticated_context(browser: Browser) -> Generator[BrowserContext, None, N
 # ============================================================================
 # API MOCK FIXTURES
 # ============================================================================
+
 
 @pytest.fixture(scope="function")
 def mock_api(context: BrowserContext):
@@ -124,6 +130,7 @@ def mock_backend_healthy(mock_api):
 # HACKATHON SETUP FIXTURES
 # ============================================================================
 
+
 @pytest.fixture(scope="function")
 def hackathon_setup(authenticated_page: Page):
     """Create a test hackathon for testing."""
@@ -136,14 +143,10 @@ def hackathon_setup(authenticated_page: Page):
         name="E2E Test Hackathon",
         description="Automated test hackathon for E2E testing",
         start_date="2025-03-01",
-        end_date="2025-03-31"
+        end_date="2025-03-31",
     )
 
-    return {
-        "hack_id": hack_id,
-        "name": "E2E Test Hackathon",
-        "page": authenticated_page
-    }
+    return {"hack_id": hack_id, "name": "E2E Test Hackathon", "page": authenticated_page}
 
 
 @pytest.fixture(scope="function")
@@ -161,13 +164,14 @@ def hackathon_with_submissions(hackathon_setup, mock_api):
 # SCREENSHOT & REPORTING FIXTURES
 # ============================================================================
 
+
 @pytest.fixture(scope="function", autouse=True)
 def screenshot_on_failure(request, page: Page):
     """Automatically take screenshot on test failure."""
     yield
 
     # Check if test failed (handle missing attribute gracefully)
-    if hasattr(request.node, 'rep_call') and request.node.rep_call.failed:
+    if hasattr(request.node, "rep_call") and request.node.rep_call.failed:
         screenshot_dir = "e2e_tests/visual_regression/failures"
         os.makedirs(screenshot_dir, exist_ok=True)
 
@@ -189,15 +193,17 @@ def pytest_runtest_makereport(item, call):
 # TEST DATA FIXTURES
 # ============================================================================
 
+
 @pytest.fixture(scope="session")
 def test_data_loader():
     """Load test data from JSON files."""
     import json
+
     from playwright_config import TEST_DATA_DIR
 
     def load(filename: str):
         path = os.path.join(TEST_DATA_DIR, filename)
-        with open(path, 'r') as f:
+        with open(path) as f:
             return json.load(f)
 
     return load

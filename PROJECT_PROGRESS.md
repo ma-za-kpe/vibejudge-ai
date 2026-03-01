@@ -126,7 +126,7 @@ Implemented `fetch_active_job()` function that queries backend API on every page
 @st.cache_data(ttl=10)
 def fetch_active_job(api_key: str, hack_id: str) -> str | None:
     """Check if there's an active analysis job for this hackathon.
-    
+
     Returns:
         job_id if active job exists (queued/running), None otherwise
     """

@@ -1,5 +1,5 @@
 """Intelligence Insights page object."""
-from playwright.sync_api import expect, Locator
+
 from pages.base_page import BasePage
 
 
@@ -75,7 +75,7 @@ class IntelligencePage(BasePage):
     def get_most_popular_language(self) -> str:
         """Get the most popular programming language."""
         # Look for text like "Python (45%)"
-        lang_element = self.page.locator('text=/^[A-Za-z+#]+\\s+\\(\\d+%\\)$/').first
+        lang_element = self.page.locator("text=/^[A-Za-z+#]+\\s+\\(\\d+%\\)$/").first
         if lang_element.count() > 0:
             text = lang_element.inner_text()
             return text.split("(")[0].strip()
@@ -84,10 +84,11 @@ class IntelligencePage(BasePage):
     def get_language_percentage(self, language: str) -> float:
         """Get percentage for specific language."""
         import re
-        lang_element = self.page.locator(f'text=/{language}\\s+\\((\\d+)%\\)/').first
+
+        lang_element = self.page.locator(f"text=/{language}\\s+\\((\\d+)%\\)/").first
         if lang_element.count() > 0:
             text = lang_element.inner_text()
-            match = re.search(r'\((\d+)%\)', text)
+            match = re.search(r"\((\d+)%\)", text)
             if match:
                 return float(match.group(1))
         return 0.0
@@ -125,7 +126,7 @@ class IntelligencePage(BasePage):
     def get_ai_policy_mode(self) -> str:
         """Get the hackathon's AI policy mode."""
         # Look for text like "Policy: AI Assisted"
-        policy_element = self.page.locator('text=/Policy:\\s+.+/').first
+        policy_element = self.page.locator("text=/Policy:\\s+.+/").first
         if policy_element.count() > 0:
             text = policy_element.inner_text()
             return text.split("Policy:")[1].strip()

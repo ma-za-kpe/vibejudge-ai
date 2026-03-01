@@ -107,115 +107,111 @@ def render_authentication_form() -> None:
     tab1, tab2 = st.tabs(["🔑 API Key Login", "📧 Email/Password Login"])
 
     # Tab 1: API Key Login
-    with tab1:
-        with st.form("api_key_login_form"):
-            st.markdown("### Login with API Key")
+    with tab1, st.form("api_key_login_form"):
+        st.markdown("### Login with API Key")
 
-            # API key input
-            api_key = st.text_input(
-                "API Key",
-                type="password",
-                placeholder="vj_live_xxxxxxxxxxxxx",
-                help="Your API key from registration or settings",
+        # API key input
+        api_key = st.text_input(
+            "API Key",
+            type="password",
+            placeholder="vj_live_xxxxxxxxxxxxx",
+            help="Your API key from registration or settings",
+        )
+
+        # Optional: Allow users to override API base URL (useful for development)
+        with st.expander("Advanced Settings"):
+            api_base_url = st.text_input(
+                "API Base URL",
+                value=st.session_state["api_base_url"],
+                placeholder="http://localhost:8000",
+                help="The base URL of the VibeJudge API backend",
             )
 
-            # Optional: Allow users to override API base URL (useful for development)
-            with st.expander("Advanced Settings"):
-                api_base_url = st.text_input(
-                    "API Base URL",
-                    value=st.session_state["api_base_url"],
-                    placeholder="http://localhost:8000",
-                    help="The base URL of the VibeJudge API backend",
-                )
+        # Login button
+        submit_button = st.form_submit_button(
+            "Login with API Key", type="primary", use_container_width=True
+        )
 
-            # Login button
-            submit_button = st.form_submit_button(
-                "Login with API Key", type="primary", use_container_width=True
-            )
+        # Handle form submission
+        if submit_button:
+            if not api_key:
+                st.error("Please enter your API key")
+            else:
+                # Show loading spinner while validating
+                with st.spinner("🔐 Validating API key..."):
+                    # Update API base URL if changed
+                    st.session_state["api_base_url"] = api_base_url.rstrip("/")
 
-            # Handle form submission
-            if submit_button:
-                if not api_key:
-                    st.error("Please enter your API key")
-                else:
-                    # Show loading spinner while validating
-                    with st.spinner("🔐 Validating API key..."):
-                        # Update API base URL if changed
-                        st.session_state["api_base_url"] = api_base_url.rstrip("/")
-
-                        # Validate API key
-                        if validate_api_key(api_key, st.session_state["api_base_url"]):
-                            # Store API key in session state
-                            st.session_state["api_key"] = api_key
-                            logger.info("User authenticated successfully with API key")
-                            st.success("✅ Authentication successful! Redirecting...")
-                            st.rerun()
-                        else:
-                            st.error(
-                                "❌ Invalid API key. Please check your credentials and try again."
-                            )
-                            logger.warning("Authentication failed: Invalid API key")
+                    # Validate API key
+                    if validate_api_key(api_key, st.session_state["api_base_url"]):
+                        # Store API key in session state
+                        st.session_state["api_key"] = api_key
+                        logger.info("User authenticated successfully with API key")
+                        st.success("✅ Authentication successful! Redirecting...")
+                        st.rerun()
+                    else:
+                        st.error("❌ Invalid API key. Please check your credentials and try again.")
+                        logger.warning("Authentication failed: Invalid API key")
 
     # Tab 2: Email/Password Login
-    with tab2:
-        with st.form("email_password_login_form"):
-            st.markdown("### Login with Email & Password")
+    with tab2, st.form("email_password_login_form"):
+        st.markdown("### Login with Email & Password")
 
-            # Email and password inputs
-            email = st.text_input(
-                "Email Address",
-                placeholder="organizer@example.com",
-                help="Your registered email address",
+        # Email and password inputs
+        email = st.text_input(
+            "Email Address",
+            placeholder="organizer@example.com",
+            help="Your registered email address",
+        )
+
+        password = st.text_input(
+            "Password",
+            type="password",
+            placeholder="Enter your password",
+            help="Your account password",
+        )
+
+        # Optional: Allow users to override API base URL (useful for development)
+        with st.expander("Advanced Settings"):
+            api_base_url_email = st.text_input(
+                "API Base URL",
+                value=st.session_state["api_base_url"],
+                placeholder="http://localhost:8000",
+                help="The base URL of the VibeJudge API backend",
+                key="api_base_url_email",
             )
 
-            password = st.text_input(
-                "Password",
-                type="password",
-                placeholder="Enter your password",
-                help="Your account password",
-            )
+        # Login button
+        submit_button_email = st.form_submit_button(
+            "Login with Email", type="primary", use_container_width=True
+        )
 
-            # Optional: Allow users to override API base URL (useful for development)
-            with st.expander("Advanced Settings"):
-                api_base_url_email = st.text_input(
-                    "API Base URL",
-                    value=st.session_state["api_base_url"],
-                    placeholder="http://localhost:8000",
-                    help="The base URL of the VibeJudge API backend",
-                    key="api_base_url_email",
-                )
+        # Handle form submission
+        if submit_button_email:
+            if not email or not password:
+                st.error("Please enter both email and password")
+            else:
+                # Show loading spinner while logging in
+                with st.spinner("🔐 Logging in..."):
+                    # Update API base URL if changed
+                    st.session_state["api_base_url"] = api_base_url_email.rstrip("/")
 
-            # Login button
-            submit_button_email = st.form_submit_button(
-                "Login with Email", type="primary", use_container_width=True
-            )
+                    # Login with email/password
+                    success, message, api_key = login_with_email_password(
+                        email, password, st.session_state["api_base_url"]
+                    )
 
-            # Handle form submission
-            if submit_button_email:
-                if not email or not password:
-                    st.error("Please enter both email and password")
-                else:
-                    # Show loading spinner while logging in
-                    with st.spinner("🔐 Logging in..."):
-                        # Update API base URL if changed
-                        st.session_state["api_base_url"] = api_base_url_email.rstrip("/")
-
-                        # Login with email/password
-                        success, message, api_key = login_with_email_password(
-                            email, password, st.session_state["api_base_url"]
+                    if success and api_key:
+                        # Store API key in session state
+                        st.session_state["api_key"] = api_key
+                        logger.info(f"User authenticated successfully with email: {email}")
+                        st.success(f"✅ {message}")
+                        st.info(
+                            "💡 Your new API key has been generated and stored in your session."
                         )
-
-                        if success and api_key:
-                            # Store API key in session state
-                            st.session_state["api_key"] = api_key
-                            logger.info(f"User authenticated successfully with email: {email}")
-                            st.success(f"✅ {message}")
-                            st.info(
-                                "💡 Your new API key has been generated and stored in your session."
-                            )
-                            st.rerun()
-                        else:
-                            st.error(f"❌ {message}")
+                        st.rerun()
+                    else:
+                        st.error(f"❌ {message}")
 
     # Links to registration
     st.markdown("---")

@@ -79,7 +79,7 @@ class TestCreateAPIKey:
         assert result.api_key.startswith("vj_test_")
         assert result.organizer_id == "org_123"
         assert result.tier == Tier.FREE
-        assert result.rate_limit_per_second == 2  # FREE tier default
+        assert result.rate_limit_per_second == 10  # FREE tier default
         assert result.daily_quota == 100  # FREE tier default
         assert result.budget_limit_usd == 10.0  # FREE tier default
         assert result.active is True

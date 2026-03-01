@@ -9,10 +9,11 @@ Tests:
 - 3.5: Bulk Submission Actions Flow
 - 3.6: Submission Export Flow
 """
+
 import pytest
-from playwright.sync_api import Page
-from pages.submit_page import SubmitPage
 from pages.submissions_page import SubmissionsPage
+from pages.submit_page import SubmitPage
+from playwright.sync_api import Page
 
 
 @pytest.mark.critical
@@ -21,16 +22,14 @@ def test_public_submission_flow(page: Page, mock_api):
     hack_id = "test_hack_001"
 
     # Mock hackathons list and submission creation
-    mock_api.mock_hackathons_list([{
-        "hack_id": hack_id,
-        "name": "Test Hackathon",
-        "status": "active"
-    }])
-    mock_api.mock_post(f"**/hackathons/{hack_id}/submissions", status=201, body={
-        "sub_id": "sub_001",
-        "team_name": "E2E Test Team",
-        "status": "pending"
-    })
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "active"}]
+    )
+    mock_api.mock_post(
+        f"**/hackathons/{hack_id}/submissions",
+        status=201,
+        body={"sub_id": "sub_001", "team_name": "E2E Test Team", "status": "pending"},
+    )
 
     submit_page = SubmitPage(page)
     submit_page.navigate()
@@ -68,11 +67,9 @@ def test_submission_validation_errors(page: Page, mock_api):
     """Test Flow 3.1: Submission form validation."""
     hack_id = "test_hack_001"
 
-    mock_api.mock_hackathons_list([{
-        "hack_id": hack_id,
-        "name": "Test Hackathon",
-        "status": "active"
-    }])
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "active"}]
+    )
 
     submit_page = SubmitPage(page)
     submit_page.navigate()
@@ -90,16 +87,16 @@ def test_duplicate_submission_error(page: Page, mock_api):
     """Test Flow 3.1: Duplicate submission error."""
     hack_id = "test_hack_001"
 
-    mock_api.mock_hackathons_list([{
-        "hack_id": hack_id,
-        "name": "Test Hackathon",
-        "status": "active"
-    }])
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "active"}]
+    )
 
     # Mock 409 conflict (duplicate submission)
-    mock_api.mock_post(f"**/hackathons/{hack_id}/submissions", status=409, body={
-        "detail": "Team has already submitted to this hackathon"
-    })
+    mock_api.mock_post(
+        f"**/hackathons/{hack_id}/submissions",
+        status=409,
+        body={"detail": "Team has already submitted to this hackathon"},
+    )
 
     submit_page = SubmitPage(page)
     submit_page.navigate()
@@ -121,29 +118,32 @@ def test_submission_verification_flow(authenticated_page: Page, mock_api):
     """Test Flow 3.2: Submission Verification Flow (organizer)."""
     hack_id = "test_hack_001"
 
-    mock_api.mock_hackathons_list([{
-        "hack_id": hack_id,
-        "name": "Test Hackathon",
-        "status": "active"
-    }])
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "active"}]
+    )
 
     # Mock submissions list with pending submission
-    mock_api.mock_get(f"**/hackathons/{hack_id}/submissions", status=200, body={
-        "submissions": [
-            {
-                "sub_id": "sub_001",
-                "team_name": "Team Alpha",
-                "status": "pending",
-                "created_at": "2025-03-01T10:00:00Z"
-            }
-        ]
-    })
+    mock_api.mock_get(
+        f"**/hackathons/{hack_id}/submissions",
+        status=200,
+        body={
+            "submissions": [
+                {
+                    "sub_id": "sub_001",
+                    "team_name": "Team Alpha",
+                    "status": "pending",
+                    "created_at": "2025-03-01T10:00:00Z",
+                }
+            ]
+        },
+    )
 
     # Mock verification endpoint
-    mock_api.mock_post(f"**/hackathons/{hack_id}/submissions/sub_001/verify", status=200, body={
-        "sub_id": "sub_001",
-        "status": "verified"
-    })
+    mock_api.mock_post(
+        f"**/hackathons/{hack_id}/submissions/sub_001/verify",
+        status=200,
+        body={"sub_id": "sub_001", "status": "verified"},
+    )
 
     submissions = SubmissionsPage(authenticated_page)
     submissions.navigate()
@@ -161,28 +161,31 @@ def test_submission_rejection_flow(authenticated_page: Page, mock_api):
     """Test Flow 3.3: Submission Rejection Flow."""
     hack_id = "test_hack_001"
 
-    mock_api.mock_hackathons_list([{
-        "hack_id": hack_id,
-        "name": "Test Hackathon",
-        "status": "active"
-    }])
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "active"}]
+    )
 
-    mock_api.mock_get(f"**/hackathons/{hack_id}/submissions", status=200, body={
-        "submissions": [
-            {
-                "sub_id": "sub_002",
-                "team_name": "Team Beta",
-                "status": "pending",
-                "created_at": "2025-03-01T11:00:00Z"
-            }
-        ]
-    })
+    mock_api.mock_get(
+        f"**/hackathons/{hack_id}/submissions",
+        status=200,
+        body={
+            "submissions": [
+                {
+                    "sub_id": "sub_002",
+                    "team_name": "Team Beta",
+                    "status": "pending",
+                    "created_at": "2025-03-01T11:00:00Z",
+                }
+            ]
+        },
+    )
 
     # Mock rejection endpoint
-    mock_api.mock_post(f"**/hackathons/{hack_id}/submissions/sub_002/reject", status=200, body={
-        "sub_id": "sub_002",
-        "status": "rejected"
-    })
+    mock_api.mock_post(
+        f"**/hackathons/{hack_id}/submissions/sub_002/reject",
+        status=200,
+        body={"sub_id": "sub_002", "status": "rejected"},
+    )
 
     submissions = SubmissionsPage(authenticated_page)
     submissions.navigate()
@@ -200,20 +203,22 @@ def test_submission_filtering_flow(authenticated_page: Page, mock_api):
     """Test Flow 3.4: Submission Filtering Flow."""
     hack_id = "test_hack_001"
 
-    mock_api.mock_hackathons_list([{
-        "hack_id": hack_id,
-        "name": "Test Hackathon",
-        "status": "active"
-    }])
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "active"}]
+    )
 
     # Mock mixed submissions
-    mock_api.mock_get(f"**/hackathons/{hack_id}/submissions", status=200, body={
-        "submissions": [
-            {"sub_id": "sub_001", "team_name": "Team 1", "status": "verified"},
-            {"sub_id": "sub_002", "team_name": "Team 2", "status": "pending"},
-            {"sub_id": "sub_003", "team_name": "Team 3", "status": "verified"},
-        ]
-    })
+    mock_api.mock_get(
+        f"**/hackathons/{hack_id}/submissions",
+        status=200,
+        body={
+            "submissions": [
+                {"sub_id": "sub_001", "team_name": "Team 1", "status": "verified"},
+                {"sub_id": "sub_002", "team_name": "Team 2", "status": "pending"},
+                {"sub_id": "sub_003", "team_name": "Team 3", "status": "verified"},
+            ]
+        },
+    )
 
     submissions = SubmissionsPage(authenticated_page)
     submissions.navigate()
@@ -236,24 +241,26 @@ def test_bulk_submission_actions_flow(authenticated_page: Page, mock_api):
     """Test Flow 3.5: Bulk Submission Actions Flow."""
     hack_id = "test_hack_001"
 
-    mock_api.mock_hackathons_list([{
-        "hack_id": hack_id,
-        "name": "Test Hackathon",
-        "status": "active"
-    }])
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "active"}]
+    )
 
-    mock_api.mock_get(f"**/hackathons/{hack_id}/submissions", status=200, body={
-        "submissions": [
-            {"sub_id": "sub_001", "team_name": "Team 1", "status": "pending"},
-            {"sub_id": "sub_002", "team_name": "Team 2", "status": "pending"},
-            {"sub_id": "sub_003", "team_name": "Team 3", "status": "pending"},
-        ]
-    })
+    mock_api.mock_get(
+        f"**/hackathons/{hack_id}/submissions",
+        status=200,
+        body={
+            "submissions": [
+                {"sub_id": "sub_001", "team_name": "Team 1", "status": "pending"},
+                {"sub_id": "sub_002", "team_name": "Team 2", "status": "pending"},
+                {"sub_id": "sub_003", "team_name": "Team 3", "status": "pending"},
+            ]
+        },
+    )
 
     # Mock bulk verify
-    mock_api.mock_post(f"**/hackathons/{hack_id}/submissions/bulk/verify", status=200, body={
-        "verified_count": 2
-    })
+    mock_api.mock_post(
+        f"**/hackathons/{hack_id}/submissions/bulk/verify", status=200, body={"verified_count": 2}
+    )
 
     submissions = SubmissionsPage(authenticated_page)
     submissions.navigate()
@@ -278,17 +285,19 @@ def test_submission_export_flow(authenticated_page: Page, mock_api):
     """Test Flow 3.6: Submission Export Flow."""
     hack_id = "test_hack_001"
 
-    mock_api.mock_hackathons_list([{
-        "hack_id": hack_id,
-        "name": "Test Hackathon",
-        "status": "active"
-    }])
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "active"}]
+    )
 
-    mock_api.mock_get(f"**/hackathons/{hack_id}/submissions", status=200, body={
-        "submissions": [
-            {"sub_id": "sub_001", "team_name": "Team 1", "status": "verified"},
-        ]
-    })
+    mock_api.mock_get(
+        f"**/hackathons/{hack_id}/submissions",
+        status=200,
+        body={
+            "submissions": [
+                {"sub_id": "sub_001", "team_name": "Team 1", "status": "verified"},
+            ]
+        },
+    )
 
     submissions = SubmissionsPage(authenticated_page)
     submissions.navigate()
@@ -306,15 +315,11 @@ def test_submissions_empty_state(authenticated_page: Page, mock_api):
     """Test empty state: No submissions."""
     hack_id = "test_hack_001"
 
-    mock_api.mock_hackathons_list([{
-        "hack_id": hack_id,
-        "name": "Test Hackathon",
-        "status": "active"
-    }])
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "active"}]
+    )
 
-    mock_api.mock_get(f"**/hackathons/{hack_id}/submissions", status=200, body={
-        "submissions": []
-    })
+    mock_api.mock_get(f"**/hackathons/{hack_id}/submissions", status=200, body={"submissions": []})
 
     submissions = SubmissionsPage(authenticated_page)
     submissions.navigate()

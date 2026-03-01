@@ -5,14 +5,14 @@ Demonstration of both testing approaches:
 
 Run this to see how both approaches work.
 """
+
 import pytest
 from playwright.sync_api import Page, expect
-from pages.login_page import LoginPage
-
 
 # ============================================================================
 # APPROACH 1: Live API - True End-to-End
 # ============================================================================
+
 
 @pytest.mark.live
 def test_live_api_app_loads(page: Page):
@@ -51,6 +51,7 @@ def test_live_api_navigation(page: Page):
 # APPROACH 2: Mocked API - Fast, Isolated
 # ============================================================================
 
+
 @pytest.mark.mocked
 def test_mocked_api_login(page: Page, mock_api):
     """Test with MOCKED backend - fast, isolated."""
@@ -69,10 +70,12 @@ def test_mocked_api_login(page: Page, mock_api):
 def test_mocked_api_hackathons_list(page: Page, mock_api):
     """Test hackathon list with MOCKED data."""
     # Mock hackathons endpoint
-    mock_api.mock_hackathons_list([
-        {"hack_id": "test_001", "name": "Mocked Hackathon 1", "status": "active"},
-        {"hack_id": "test_002", "name": "Mocked Hackathon 2", "status": "draft"},
-    ])
+    mock_api.mock_hackathons_list(
+        [
+            {"hack_id": "test_001", "name": "Mocked Hackathon 1", "status": "active"},
+            {"hack_id": "test_002", "name": "Mocked Hackathon 2", "status": "draft"},
+        ]
+    )
 
     page.goto("http://localhost:8501")
     page.wait_for_selector('[data-testid="stAppViewContainer"]', timeout=30000)
@@ -85,12 +88,13 @@ def test_mocked_api_hackathons_list(page: Page, mock_api):
 # SUMMARY TEST
 # ============================================================================
 
+
 @pytest.mark.summary
 def test_show_both_approaches(page: Page):
     """Summary showing both approaches are available."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("  PLAYWRIGHT TESTING - DUAL APPROACH DEMONSTRATION")
-    print("="*70)
+    print("=" * 70)
 
     print("\n✅ APPROACH 1: Live API (True E2E)")
     print("   - Tests against real backend")
@@ -114,7 +118,7 @@ def test_show_both_approaches(page: Page):
     print("   - Use Playwright for critical E2E flows")
     print("   - Use mocking for speed, live API for validation")
 
-    print("\n" + "="*70 + "\n")
+    print("\n" + "=" * 70 + "\n")
 
     # This test always passes - it's just a summary
     assert True

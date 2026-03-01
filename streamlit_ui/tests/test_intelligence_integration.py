@@ -48,6 +48,7 @@ def test_intelligence_page_displays_hackathon_dropdown(
     The dashboard should display a hackathon selection dropdown populated
     from GET /hackathons endpoint.
     """
+
     # Mock responses
     def mock_get_side_effect(url: str, *args, **kwargs):
         mock_response = MagicMock()

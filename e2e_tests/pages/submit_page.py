@@ -1,5 +1,5 @@
 """Public Submission page object (for participants)."""
-from playwright.sync_api import expect
+
 from pages.base_page import BasePage
 
 
@@ -39,7 +39,7 @@ class SubmitPage(BasePage):
         """Get list of available hackathons."""
         # Get all options from select box
         select = self.page.get_by_label("Select Hackathon")
-        options = select.locator('option').all()
+        options = select.locator("option").all()
         return [opt.inner_text() for opt in options if opt.inner_text()]
 
     # ========================================================================
@@ -98,9 +98,10 @@ class SubmitPage(BasePage):
     def get_submission_id(self) -> str:
         """Get submission ID from success message."""
         import re
+
         # Look for text like "Submission ID: sub_abc123"
-        text = self.page.locator('text=/Submission ID:\\s+(sub_\\w+)/').first.inner_text()
-        match = re.search(r'sub_\w+', text)
+        text = self.page.locator("text=/Submission ID:\\s+(sub_\\w+)/").first.inner_text()
+        match = re.search(r"sub_\w+", text)
         if match:
             return match.group(0)
         return ""
@@ -140,11 +141,11 @@ class SubmitPage(BasePage):
 
     def get_hackathon_name(self) -> str:
         """Get displayed hackathon name."""
-        return self.page.locator('h1, h2').first.inner_text()
+        return self.page.locator("h1, h2").first.inner_text()
 
     def get_hackathon_deadline(self) -> str:
         """Get submission deadline."""
-        deadline_elem = self.page.locator('text=/Deadline:\\s+.+/').first
+        deadline_elem = self.page.locator("text=/Deadline:\\s+.+/").first
         if deadline_elem.count() > 0:
             text = deadline_elem.inner_text()
             return text.split("Deadline:")[1].strip()

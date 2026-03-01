@@ -4,10 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from src.services.cost_estimation_service import (
-    LARGE_REPO_PREMIUM_USD,
-    CostEstimationService,
-)
+from src.services.cost_estimation_service import LARGE_REPO_PREMIUM_USD, CostEstimationService
 
 
 @pytest.fixture

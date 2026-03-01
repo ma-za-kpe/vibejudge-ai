@@ -1,7 +1,10 @@
 """API mocking utilities for isolated E2E tests."""
-from playwright.sync_api import BrowserContext, Route, Request
+
 import json
-from typing import Dict, Any, Callable
+from collections.abc import Callable
+from typing import Any
+
+from playwright.sync_api import BrowserContext, Request, Route
 
 
 class APIMock:
@@ -16,14 +19,13 @@ class APIMock:
     # GENERIC MOCKING
     # ========================================================================
 
-    def mock_get(self, url_pattern: str, status: int = 200, body: Dict[str, Any] = None):
+    def mock_get(self, url_pattern: str, status: int = 200, body: dict[str, Any] = None):
         """Mock GET request."""
+
         def handler(route: Route):
             if route.request.method == "GET":
                 route.fulfill(
-                    status=status,
-                    content_type="application/json",
-                    body=json.dumps(body or {})
+                    status=status, content_type="application/json", body=json.dumps(body or {})
                 )
             else:
                 route.continue_()
@@ -31,14 +33,13 @@ class APIMock:
         self.context.route(url_pattern, handler)
         self.routes[url_pattern] = handler
 
-    def mock_post(self, url_pattern: str, status: int = 200, body: Dict[str, Any] = None):
+    def mock_post(self, url_pattern: str, status: int = 200, body: dict[str, Any] = None):
         """Mock POST request."""
+
         def handler(route: Route):
             if route.request.method == "POST":
                 route.fulfill(
-                    status=status,
-                    content_type="application/json",
-                    body=json.dumps(body or {})
+                    status=status, content_type="application/json", body=json.dumps(body or {})
                 )
             else:
                 route.continue_()
@@ -48,6 +49,7 @@ class APIMock:
 
     def mock_delete(self, url_pattern: str, status: int = 204):
         """Mock DELETE request."""
+
         def handler(route: Route):
             if route.request.method == "DELETE":
                 route.fulfill(status=status)
@@ -56,14 +58,15 @@ class APIMock:
 
         self.context.route(url_pattern, handler)
 
-    def mock_with_callback(self, url_pattern: str, callback: Callable[[Request], Dict]):
+    def mock_with_callback(self, url_pattern: str, callback: Callable[[Request], dict]):
         """Mock with custom callback function."""
+
         def handler(route: Route):
             response = callback(route.request)
             route.fulfill(
                 status=response.get("status", 200),
                 content_type="application/json",
-                body=json.dumps(response.get("body", {}))
+                body=json.dumps(response.get("body", {})),
             )
 
         self.context.route(url_pattern, handler)
@@ -78,16 +81,15 @@ class APIMock:
 
     def mock_login_success(self, api_key: str = "vj_test_mock_key"):
         """Mock successful login."""
-        self.mock_post("**/organizers/login", status=200, body={
-            "api_key": api_key,
-            "message": "Login successful"
-        })
+        self.mock_post(
+            "**/organizers/login",
+            status=200,
+            body={"api_key": api_key, "message": "Login successful"},
+        )
 
     def mock_login_failure(self, status: int = 401, message: str = "Invalid credentials"):
         """Mock failed login."""
-        self.mock_post("**/organizers/login", status=status, body={
-            "detail": message
-        })
+        self.mock_post("**/organizers/login", status=status, body={"detail": message})
 
     # ========================================================================
     # HACKATHON MOCKS
@@ -102,15 +104,15 @@ class APIMock:
                     "name": "Test Hackathon",
                     "status": "configured",
                     "start_date": "2025-03-01T00:00:00Z",
-                    "end_date": "2025-03-31T23:59:59Z"
+                    "end_date": "2025-03-31T23:59:59Z",
                 }
             ]
 
-        self.mock_get("**/hackathons", status=200, body={
-            "hackathons": hackathons,
-            "next_cursor": None,
-            "has_more": False
-        })
+        self.mock_get(
+            "**/hackathons",
+            status=200,
+            body={"hackathons": hackathons, "next_cursor": None, "has_more": False},
+        )
 
     def mock_hackathon_stats(self, hack_id: str, stats: dict = None):
         """Mock hackathon stats endpoint."""
@@ -119,18 +121,18 @@ class APIMock:
                 "submission_count": 10,
                 "verified_count": 9,
                 "pending_count": 1,
-                "participant_count": 30
+                "participant_count": 30,
             }
 
         self.mock_get(f"**/hackathons/{hack_id}/stats", status=200, body=stats)
 
     def mock_create_hackathon(self, hack_id: str = "new_hack_123"):
         """Mock hackathon creation."""
-        self.mock_post("**/hackathons", status=201, body={
-            "hack_id": hack_id,
-            "name": "E2E Test Hackathon",
-            "status": "draft"
-        })
+        self.mock_post(
+            "**/hackathons",
+            status=201,
+            body={"hack_id": hack_id, "name": "E2E Test Hackathon", "status": "draft"},
+        )
 
     # ========================================================================
     # ANALYSIS LIFECYCLE MOCKS
@@ -138,24 +140,24 @@ class APIMock:
 
     def mock_cost_estimate(self, hack_id: str, cost: float = 12.45):
         """Mock cost estimate endpoint."""
-        self.mock_post(f"**/hackathons/{hack_id}/analyze/estimate", status=200, body={
-            "estimate": {
-                "total_cost_usd": {
-                    "min": cost * 0.8,
-                    "expected": cost,
-                    "max": cost * 1.2
-                },
-                "submission_count": 10
-            }
-        })
+        self.mock_post(
+            f"**/hackathons/{hack_id}/analyze/estimate",
+            status=200,
+            body={
+                "estimate": {
+                    "total_cost_usd": {"min": cost * 0.8, "expected": cost, "max": cost * 1.2},
+                    "submission_count": 10,
+                }
+            },
+        )
 
     def mock_start_analysis(self, hack_id: str, job_id: str = "job_001", cost: float = 12.45):
         """Mock analysis start endpoint."""
-        self.mock_post(f"**/hackathons/{hack_id}/analyze", status=202, body={
-            "job_id": job_id,
-            "estimated_cost_usd": cost,
-            "status": "queued"
-        })
+        self.mock_post(
+            f"**/hackathons/{hack_id}/analyze",
+            status=202,
+            body={"job_id": job_id, "estimated_cost_usd": cost, "status": "queued"},
+        )
 
     def mock_analysis_status(self, hack_id: str, job_id: str = None, status: str = "running"):
         """Mock analysis status check."""
@@ -166,7 +168,9 @@ class APIMock:
 
         self.mock_get(f"**/hackathons/{hack_id}/analyze/status", status=200, body=response_body)
 
-    def mock_job_status(self, hack_id: str, job_id: str, status: str = "running", progress: float = 50.0):
+    def mock_job_status(
+        self, hack_id: str, job_id: str, status: str = "running", progress: float = 50.0
+    ):
         """Mock job status endpoint."""
         body = {
             "job_id": job_id,
@@ -175,7 +179,7 @@ class APIMock:
             "completed_submissions": int(10 * progress / 100),
             "failed_submissions": 0,
             "total_submissions": 10,
-            "current_cost_usd": 12.45 * progress / 100
+            "current_cost_usd": 12.45 * progress / 100,
         }
 
         if status == "completed":
@@ -208,8 +212,8 @@ class APIMock:
                         "completed_submissions": 0,
                         "failed_submissions": 0,
                         "total_submissions": 10,
-                        "current_cost_usd": 0.0
-                    }
+                        "current_cost_usd": 0.0,
+                    },
                 }
             elif count <= 3:
                 # Next 2 calls: running
@@ -223,8 +227,8 @@ class APIMock:
                         "completed_submissions": int(10 * progress / 100),
                         "failed_submissions": 0,
                         "total_submissions": 10,
-                        "current_cost_usd": 12.45 * progress / 100
-                    }
+                        "current_cost_usd": 12.45 * progress / 100,
+                    },
                 }
             else:
                 # 4th+ call: completed
@@ -237,8 +241,8 @@ class APIMock:
                         "completed_submissions": 10,
                         "failed_submissions": 0,
                         "total_submissions": 10,
-                        "current_cost_usd": 12.45
-                    }
+                        "current_cost_usd": 12.45,
+                    },
                 }
 
         self.mock_with_callback(f"**/hackathons/{hack_id}/jobs/{job_id}", job_status_handler)
@@ -260,15 +264,19 @@ class APIMock:
         else:
             url = f"**/hackathons/{hack_id}/analyze"
 
-        self.mock_post(url, status=402, body={
-            "detail": "Budget limit exceeded: $100.00 limit, estimated cost $125.50"
-        })
+        self.mock_post(
+            url,
+            status=402,
+            body={"detail": "Budget limit exceeded: $100.00 limit, estimated cost $125.50"},
+        )
 
     def mock_analysis_conflict(self, hack_id: str):
         """Mock HTTP 409 conflict (analysis already running)."""
-        self.mock_post(f"**/hackathons/{hack_id}/analyze", status=409, body={
-            "detail": "Analysis already running for this hackathon"
-        })
+        self.mock_post(
+            f"**/hackathons/{hack_id}/analyze",
+            status=409,
+            body={"detail": "Analysis already running for this hackathon"},
+        )
 
     # ========================================================================
     # LEADERBOARD & RESULTS MOCKS
@@ -284,66 +292,78 @@ class APIMock:
                 "overall_score": 95.0 - i * 2.0,
                 "confidence": 0.95,
                 "recommendation": "must_interview" if i < 3 else "strong_consider",
-                "created_at": "2025-03-01T10:00:00Z"
+                "created_at": "2025-03-01T10:00:00Z",
             }
             for i in range(count)
         ]
 
-        self.mock_get(f"**/hackathons/{hack_id}/leaderboard", status=200, body={
-            "hack_id": hack_id,
-            "total_submissions": count,
-            "analyzed_count": count,
-            "submissions": submissions
-        })
+        self.mock_get(
+            f"**/hackathons/{hack_id}/leaderboard",
+            status=200,
+            body={
+                "hack_id": hack_id,
+                "total_submissions": count,
+                "analyzed_count": count,
+                "submissions": submissions,
+            },
+        )
 
     def mock_scorecard(self, hack_id: str, sub_id: str):
         """Mock scorecard endpoint."""
-        self.mock_get(f"**/hackathons/{hack_id}/submissions/{sub_id}/scorecard", status=200, body={
-            "sub_id": sub_id,
-            "team_name": "Team Awesome",
-            "overall_score": 92.5,
-            "confidence": 0.95,
-            "recommendation": "must_interview",
-            "dimension_scores": {
-                "code_quality": {"raw": 90.0, "weighted": 27.0, "weight": 0.3},
-                "innovation": {"raw": 95.0, "weighted": 28.5, "weight": 0.3},
-                "performance": {"raw": 92.0, "weighted": 27.6, "weight": 0.3},
-                "authenticity": {"raw": 90.0, "weighted": 9.0, "weight": 0.1}
+        self.mock_get(
+            f"**/hackathons/{hack_id}/submissions/{sub_id}/scorecard",
+            status=200,
+            body={
+                "sub_id": sub_id,
+                "team_name": "Team Awesome",
+                "overall_score": 92.5,
+                "confidence": 0.95,
+                "recommendation": "must_interview",
+                "dimension_scores": {
+                    "code_quality": {"raw": 90.0, "weighted": 27.0, "weight": 0.3},
+                    "innovation": {"raw": 95.0, "weighted": 28.5, "weight": 0.3},
+                    "performance": {"raw": 92.0, "weighted": 27.6, "weight": 0.3},
+                    "authenticity": {"raw": 90.0, "weighted": 9.0, "weight": 0.1},
+                },
+                "agent_results": {
+                    "bug_hunter": {
+                        "summary": "Excellent code quality",
+                        "strengths": ["Clean architecture"],
+                        "improvements": ["Add more tests"],
+                        "cost_usd": 0.002,
+                    }
+                },
+                "repo_meta": {
+                    "primary_language": "Python",
+                    "commit_count": 45,
+                    "contributor_count": 3,
+                    "has_tests": True,
+                    "has_ci": True,
+                },
+                "total_cost_usd": 0.023,
             },
-            "agent_results": {
-                "bug_hunter": {
-                    "summary": "Excellent code quality",
-                    "strengths": ["Clean architecture"],
-                    "improvements": ["Add more tests"],
-                    "cost_usd": 0.002
-                }
-            },
-            "repo_meta": {
-                "primary_language": "Python",
-                "commit_count": 45,
-                "contributor_count": 3,
-                "has_tests": True,
-                "has_ci": True
-            },
-            "total_cost_usd": 0.023
-        })
+        )
 
     def mock_individual_scorecards(self, hack_id: str, sub_id: str):
         """Mock individual scorecards endpoint."""
-        self.mock_get(f"**/hackathons/{hack_id}/submissions/{sub_id}/individual-scorecards", status=200, body={
-            "team_dynamics": {
-                "collaboration_quality": "excellent",
-                "role_distribution": "balanced"
+        self.mock_get(
+            f"**/hackathons/{hack_id}/submissions/{sub_id}/individual-scorecards",
+            status=200,
+            body={
+                "team_dynamics": {
+                    "collaboration_quality": "excellent",
+                    "role_distribution": "balanced",
+                },
+                "members": [
+                    {
+                        "member_name": "Alice",
+                        "commit_count": 45,
+                        "skill_assessment": "Senior developer",
+                        "actionable_feedback": "Great work!",
+                    }
+                ],
             },
-            "members": [
-                {
-                    "member_name": "Alice",
-                    "commit_count": 45,
-                    "skill_assessment": "Senior developer",
-                    "actionable_feedback": "Great work!"
-                }
-            ]
-        })
+        )
 
     # ========================================================================
     # UTILITIES

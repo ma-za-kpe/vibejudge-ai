@@ -2,6 +2,7 @@
 Simple E2E test to validate the infrastructure works with live API.
 No mocking - tests against real backend.
 """
+
 import pytest
 from playwright.sync_api import Page, expect
 
@@ -41,9 +42,11 @@ def test_navigation_to_pages(page: Page):
 
     for page_name in pages_to_test:
         # Find and click the link
-        link = sidebar.get_by_role("link", name=page_name).or_(
-            sidebar.get_by_text(page_name, exact=False)
-        ).first
+        link = (
+            sidebar.get_by_role("link", name=page_name)
+            .or_(sidebar.get_by_text(page_name, exact=False))
+            .first
+        )
 
         if link.count() > 0:
             link.click()

@@ -8,9 +8,10 @@ Tests:
 - 7.4: AI Usage Insights Flow
 - 7.5: Insights Filtering Flow
 """
+
 import pytest
-from playwright.sync_api import Page
 from pages.intelligence_page import IntelligencePage
+from playwright.sync_api import Page
 
 
 @pytest.mark.critical
@@ -18,35 +19,25 @@ def test_intelligence_page_display_flow(authenticated_page: Page, mock_api):
     """Test Flow 7.1: Intelligence Page Display Flow with all sections."""
     hack_id = "test_hack_001"
 
-    mock_api.mock_hackathons_list([{
-        "hack_id": hack_id,
-        "name": "Test Hackathon",
-        "status": "active"
-    }])
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "active"}]
+    )
 
     # Mock intelligence insights endpoint
-    mock_api.mock_get(f"**/hackathons/{hack_id}/intelligence", status=200, body={
-        "top_teams": [
-            {"rank": 1, "team_name": "Team Alpha", "score": 95.0},
-            {"rank": 2, "team_name": "Team Beta", "score": 92.5},
-            {"rank": 3, "team_name": "Team Gamma", "score": 90.0},
-        ],
-        "tech_stack": {
-            "Python": 45.0,
-            "JavaScript": 30.0,
-            "Go": 15.0,
-            "Rust": 10.0
+    mock_api.mock_get(
+        f"**/hackathons/{hack_id}/intelligence",
+        status=200,
+        body={
+            "top_teams": [
+                {"rank": 1, "team_name": "Team Alpha", "score": 95.0},
+                {"rank": 2, "team_name": "Team Beta", "score": 92.5},
+                {"rank": 3, "team_name": "Team Gamma", "score": 90.0},
+            ],
+            "tech_stack": {"Python": 45.0, "JavaScript": 30.0, "Go": 15.0, "Rust": 10.0},
+            "team_sizes": {"average": 3.5, "largest": 5, "smallest": 2},
+            "ai_usage": {"percentage": 35.0, "policy": "ai_assisted"},
         },
-        "team_sizes": {
-            "average": 3.5,
-            "largest": 5,
-            "smallest": 2
-        },
-        "ai_usage": {
-            "percentage": 35.0,
-            "policy": "ai_assisted"
-        }
-    })
+    )
 
     intelligence = IntelligencePage(authenticated_page)
     intelligence.navigate()
@@ -64,20 +55,15 @@ def test_tech_stack_analysis_flow(authenticated_page: Page, mock_api):
     """Test Flow 7.2: Tech Stack Analysis Flow."""
     hack_id = "test_hack_001"
 
-    mock_api.mock_hackathons_list([{
-        "hack_id": hack_id,
-        "name": "Test Hackathon",
-        "status": "active"
-    }])
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "active"}]
+    )
 
-    mock_api.mock_get(f"**/hackathons/{hack_id}/intelligence", status=200, body={
-        "tech_stack": {
-            "Python": 50.0,
-            "JavaScript": 30.0,
-            "TypeScript": 15.0,
-            "Go": 5.0
-        }
-    })
+    mock_api.mock_get(
+        f"**/hackathons/{hack_id}/intelligence",
+        status=200,
+        body={"tech_stack": {"Python": 50.0, "JavaScript": 30.0, "TypeScript": 15.0, "Go": 5.0}},
+    )
 
     intelligence = IntelligencePage(authenticated_page)
     intelligence.navigate()
@@ -97,25 +83,22 @@ def test_team_size_distribution_flow(authenticated_page: Page, mock_api):
     """Test Flow 7.3: Team Size Distribution Flow."""
     hack_id = "test_hack_001"
 
-    mock_api.mock_hackathons_list([{
-        "hack_id": hack_id,
-        "name": "Test Hackathon",
-        "status": "active"
-    }])
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "active"}]
+    )
 
-    mock_api.mock_get(f"**/hackathons/{hack_id}/intelligence", status=200, body={
-        "team_sizes": {
-            "average": 3.8,
-            "largest": 5,
-            "smallest": 2,
-            "distribution": {
-                "2": 10,
-                "3": 20,
-                "4": 15,
-                "5": 5
+    mock_api.mock_get(
+        f"**/hackathons/{hack_id}/intelligence",
+        status=200,
+        body={
+            "team_sizes": {
+                "average": 3.8,
+                "largest": 5,
+                "smallest": 2,
+                "distribution": {"2": 10, "3": 20, "4": 15, "5": 5},
             }
-        }
-    })
+        },
+    )
 
     intelligence = IntelligencePage(authenticated_page)
     intelligence.navigate()
@@ -137,20 +120,22 @@ def test_ai_usage_insights_flow(authenticated_page: Page, mock_api):
     """Test Flow 7.4: AI Usage Insights Flow."""
     hack_id = "test_hack_001"
 
-    mock_api.mock_hackathons_list([{
-        "hack_id": hack_id,
-        "name": "Test Hackathon",
-        "status": "active"
-    }])
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "active"}]
+    )
 
-    mock_api.mock_get(f"**/hackathons/{hack_id}/intelligence", status=200, body={
-        "ai_usage": {
-            "percentage": 42.5,
-            "policy": "ai_assisted",
-            "flagged_count": 17,
-            "total_analyzed": 40
-        }
-    })
+    mock_api.mock_get(
+        f"**/hackathons/{hack_id}/intelligence",
+        status=200,
+        body={
+            "ai_usage": {
+                "percentage": 42.5,
+                "policy": "ai_assisted",
+                "flagged_count": 17,
+                "total_analyzed": 40,
+            }
+        },
+    )
 
     intelligence = IntelligencePage(authenticated_page)
     intelligence.navigate()
@@ -170,19 +155,31 @@ def test_insights_filtering_flow(authenticated_page: Page, mock_api):
     """Test Flow 7.5: Insights Filtering Flow."""
     hack_id = "test_hack_001"
 
-    mock_api.mock_hackathons_list([{
-        "hack_id": hack_id,
-        "name": "Test Hackathon",
-        "status": "active"
-    }])
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "active"}]
+    )
 
-    mock_api.mock_get(f"**/hackathons/{hack_id}/intelligence", status=200, body={
-        "top_teams": [
-            {"rank": 1, "team_name": "Team A", "score": 95.0, "recommendation": "must_interview"},
-            {"rank": 2, "team_name": "Team B", "score": 85.0, "recommendation": "strong_consider"},
-            {"rank": 3, "team_name": "Team C", "score": 75.0, "recommendation": "consider"},
-        ]
-    })
+    mock_api.mock_get(
+        f"**/hackathons/{hack_id}/intelligence",
+        status=200,
+        body={
+            "top_teams": [
+                {
+                    "rank": 1,
+                    "team_name": "Team A",
+                    "score": 95.0,
+                    "recommendation": "must_interview",
+                },
+                {
+                    "rank": 2,
+                    "team_name": "Team B",
+                    "score": 85.0,
+                    "recommendation": "strong_consider",
+                },
+                {"rank": 3, "team_name": "Team C", "score": 75.0, "recommendation": "consider"},
+            ]
+        },
+    )
 
     intelligence = IntelligencePage(authenticated_page)
     intelligence.navigate()
@@ -201,15 +198,15 @@ def test_insights_export_flow(authenticated_page: Page, mock_api):
     """Test insights export functionality."""
     hack_id = "test_hack_001"
 
-    mock_api.mock_hackathons_list([{
-        "hack_id": hack_id,
-        "name": "Test Hackathon",
-        "status": "active"
-    }])
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "active"}]
+    )
 
-    mock_api.mock_get(f"**/hackathons/{hack_id}/intelligence", status=200, body={
-        "top_teams": [{"rank": 1, "team_name": "Team A", "score": 95.0}]
-    })
+    mock_api.mock_get(
+        f"**/hackathons/{hack_id}/intelligence",
+        status=200,
+        body={"top_teams": [{"rank": 1, "team_name": "Team A", "score": 95.0}]},
+    )
 
     intelligence = IntelligencePage(authenticated_page)
     intelligence.navigate()
@@ -226,19 +223,16 @@ def test_intelligence_empty_state(authenticated_page: Page, mock_api):
     """Test empty state: No data for insights."""
     hack_id = "test_hack_001"
 
-    mock_api.mock_hackathons_list([{
-        "hack_id": hack_id,
-        "name": "Test Hackathon",
-        "status": "draft"
-    }])
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "draft"}]
+    )
 
     # Mock 404 or empty response
-    mock_api.mock_get(f"**/hackathons/{hack_id}/intelligence", status=200, body={
-        "top_teams": [],
-        "tech_stack": {},
-        "team_sizes": None,
-        "ai_usage": None
-    })
+    mock_api.mock_get(
+        f"**/hackathons/{hack_id}/intelligence",
+        status=200,
+        body={"top_teams": [], "tech_stack": {}, "team_sizes": None, "ai_usage": None},
+    )
 
     intelligence = IntelligencePage(authenticated_page)
     intelligence.navigate()
@@ -253,17 +247,19 @@ def test_intelligence_insufficient_data(authenticated_page: Page, mock_api):
     """Test insufficient data warning (< 5 submissions)."""
     hack_id = "test_hack_001"
 
-    mock_api.mock_hackathons_list([{
-        "hack_id": hack_id,
-        "name": "Test Hackathon",
-        "status": "active"
-    }])
+    mock_api.mock_hackathons_list(
+        [{"hack_id": hack_id, "name": "Test Hackathon", "status": "active"}]
+    )
 
     # Mock response with warning
-    mock_api.mock_get(f"**/hackathons/{hack_id}/intelligence", status=200, body={
-        "warning": "Insufficient data for meaningful insights (minimum 5 submissions required)",
-        "top_teams": [{"rank": 1, "team_name": "Team A", "score": 90.0}]
-    })
+    mock_api.mock_get(
+        f"**/hackathons/{hack_id}/intelligence",
+        status=200,
+        body={
+            "warning": "Insufficient data for meaningful insights (minimum 5 submissions required)",
+            "top_teams": [{"rank": 1, "team_name": "Team A", "score": 90.0}],
+        },
+    )
 
     intelligence = IntelligencePage(authenticated_page)
     intelligence.navigate()
