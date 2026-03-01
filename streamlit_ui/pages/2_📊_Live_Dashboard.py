@@ -40,16 +40,17 @@ st.caption("💡 Click 'Refresh Now' at the bottom to update data")
 
 # Cached function to fetch hackathons list
 @st.cache_data(ttl=30)
-def fetch_hackathons(api_key: str) -> tuple[list[dict], str | None]:
+def fetch_hackathons(api_key: str, api_base_url: str) -> tuple[list[dict], str | None]:
     """Fetch list of hackathons from the backend.
 
     Args:
         api_key: The API key for authentication (used as cache key)
+        api_base_url: The API base URL (used as cache key)
 
     Returns:
         Tuple of (list of hackathon dictionaries, error message or None)
     """
-    client = APIClient(st.session_state["api_base_url"], api_key)
+    client = APIClient(api_base_url, api_key)
     try:
         response = client.get("/hackathons")
         # API returns {"hackathons": [...], "next_cursor": null, "has_more": false}
@@ -63,7 +64,7 @@ def fetch_hackathons(api_key: str) -> tuple[list[dict], str | None]:
 
 # Cached function to fetch hackathon stats
 @st.cache_data(ttl=30)
-def fetch_stats(api_key: str, hack_id: str) -> dict | None:
+def fetch_stats(api_key: str, api_base_url: str, hack_id: str) -> dict | None:
     """Fetch statistics for a specific hackathon.
 
     Args:
@@ -73,7 +74,7 @@ def fetch_stats(api_key: str, hack_id: str) -> dict | None:
     Returns:
         Dictionary containing stats or None if error occurred
     """
-    client = APIClient(st.session_state["api_base_url"], api_key)
+    client = APIClient(api_base_url, api_key)
     try:
         return client.get(f"/hackathons/{hack_id}/stats")
     except APIError as e:
@@ -84,7 +85,7 @@ def fetch_stats(api_key: str, hack_id: str) -> dict | None:
 
 # Fetch hackathons for dropdown
 with st.spinner("🔄 Loading hackathons..."):
-    hackathons, error = fetch_hackathons(st.session_state["api_key"])
+    hackathons, error = fetch_hackathons(st.session_state["api_key"], st.session_state["api_base_url"])
 
 # Display error if fetch failed
 if error:
@@ -128,7 +129,7 @@ st.subheader("📈 Statistics")
 
 
 with st.spinner("📊 Loading statistics..."):
-    stats = fetch_stats(st.session_state["api_key"], selected_hack_id)
+    stats = fetch_stats(st.session_state["api_key"], st.session_state["api_base_url"], selected_hack_id)
 
 
 if stats:
@@ -183,13 +184,13 @@ st.subheader("🚀 Analysis")
 
 # Fetch active analysis job from backend (source of truth)
 @st.cache_data(ttl=10)
-def fetch_active_job(api_key: str, hack_id: str) -> str | None:
+def fetch_active_job(api_key: str, api_base_url: str, hack_id: str) -> str | None:
     """Check if there's an active analysis job for this hackathon.
 
     Returns:
         job_id if active job exists (queued/running), None otherwise
     """
-    client = APIClient(st.session_state["api_base_url"], api_key)
+    client = APIClient(api_base_url, api_key)
     try:
         status = client.get(f"/hackathons/{hack_id}/analyze/status")
         if status.get("status") in ["queued", "running"]:
@@ -200,7 +201,7 @@ def fetch_active_job(api_key: str, hack_id: str) -> str | None:
 
 
 # Get active job from backend (not session state!)
-active_job_id = fetch_active_job(st.session_state["api_key"], selected_hack_id)
+active_job_id = fetch_active_job(st.session_state["api_key"], st.session_state["api_base_url"], selected_hack_id)
 
 # Initialize cost estimate in session state (ephemeral UI state only)
 if "cost_estimate" not in st.session_state:
