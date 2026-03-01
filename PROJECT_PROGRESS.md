@@ -28,7 +28,15 @@ VibeJudge AI is a production-ready automated hackathon judging platform that use
 - **API Documentation:** https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev/docs
 - **Dashboard UI:** http://vibejudge-alb-prod-1135403146.us-east-1.elb.amazonaws.com
 
-**Latest Deployment (March 1, 2026 - Session State Fix):**
+**Latest Deployment (March 1, 2026 - Test Fixes):**
+- ✅ Fixed APIKey model test failures (GSI2PK/GSI2SK empty string handling)
+- ✅ Removed expires_at validator from internal APIKey model
+- ✅ Updated tier defaults test assertions (FREE tier: 10 rps)
+- ✅ Simplified is_valid() method per ruff suggestion
+- ✅ All APIKey model and service tests passing
+- ✅ Commit: 87043b4
+
+**Previous Deployment (March 1, 2026 - Session State Fix):**
 - ✅ Fixed "Invalid API key" error after login
 - ✅ Removed streamlit-autorefresh component (loading errors)
 - ✅ Increased default timeout to 60s (Lambda cold starts)
