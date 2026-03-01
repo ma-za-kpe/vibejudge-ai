@@ -5,27 +5,12 @@ No authentication is required - this is a public-facing form.
 """
 
 import logging
+import os
 
+import requests
 import streamlit as st
-from components.api_client import APIClient
 
 logger = logging.getLogger(__name__)
-
-
-def _validate_github_url(url: str) -> bool:
-    """Validate GitHub repository URL format.
-
-    Args:
-        url: GitHub repository URL to validate
-
-    Returns:
-        True if URL matches expected format, False otherwise
-    """
-    import re
-
-    # Match: https://github.com/username/repository (with optional trailing slash)
-    pattern = r"^https://github\.com/[\w-]+/[\w.-]+/?$"
-    return bool(re.match(pattern, url))
 
 
 # Page configuration
@@ -36,22 +21,12 @@ st.title("Submit Your Project")
 st.markdown("Submit your team's GitHub repository to participate in the hackathon.")
 
 # Get API base URL from environment or session state
-import os
-
 api_base_url = os.getenv("API_BASE_URL", "http://localhost:8000")
 
-# Initialize API client without authentication (public endpoint)
-api_client = APIClient(api_base_url, api_key="")  # No API key needed for public submission
 
-
-# Cached function to fetch public hackathons (configured status only)
-@st.cache_data(ttl=60)
-def fetch_public_hackathons() -> list[dict]:
-    """Fetch list of active hackathons accepting submissions."""
-    import requests
-
+# Fetch available hackathons
+with st.spinner("Loading available hackathons..."):
     try:
-        # Use the new public endpoint - no authentication required
         response = requests.get(f"{api_base_url}/public/hackathons", timeout=10)
         if response.ok:
             data = response.json()
@@ -60,16 +35,11 @@ def fetch_public_hackathons() -> list[dict]:
                 hackathons = data.get("hackathons", [])
             else:
                 hackathons = data if isinstance(data, list) else []
-            return hackathons
-        return []
+        else:
+            hackathons = []
     except Exception as e:
         logger.error(f"Failed to fetch hackathons: {e}")
-        return []
-
-
-# Fetch available hackathons
-with st.spinner("Loading available hackathons..."):
-    hackathons = fetch_public_hackathons()
+        hackathons = []
 
 if not hackathons:
     st.warning("No hackathons are currently accepting submissions.")
@@ -174,9 +144,6 @@ with st.form("submission_form"):
             else:
                 try:
                     with st.spinner("Submitting your project..."):
-                        # Make direct POST request to PUBLIC endpoint (no authentication)
-                        import requests
-
                         response = requests.post(
                             f"{api_base_url}/public/hackathons/{selected_hack_id}/submissions",
                             json={
@@ -207,8 +174,6 @@ with st.form("submission_form"):
                                 """
                             )
 
-                            # Clear cache to refresh hackathon list
-                            st.cache_data.clear()
                         else:
                             error_detail = response.json().get("detail", "Unknown error")
                             st.error(f"Failed to submit: {error_detail}")

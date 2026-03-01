@@ -14517,3 +14517,63 @@ During deployment, discovered missing AWS infrastructure components:
 ✅ Infrastructure dependencies created
 ✅ Dashboard fully operational
 ✅ Platform ready for production use
+
+
+---
+
+## Session: March 1, 2026 - Critical Analysis Pipeline Fixes
+
+### Issues Identified and Resolved
+
+#### 1. Missing ANALYZER_LAMBDA_FUNCTION_NAME Environment Variable
+**Problem:** Analysis jobs were being created but never processed. The API Lambda was missing the `ANALYZER_LAMBDA_FUNCTION_NAME` environment variable, so it couldn't invoke the analyzer Lambda.
+
+**Root Cause:** The environment variable was defined in `template.yaml` but the stack hadn't been deployed with this change.
+
+**Solution:**
+- Verified `template.yaml` had the correct configuration (line 118)
+- Deployed updated stack with SAM
+- Verified environment variable was set on API Lambda
+
+**Files Modified:**
+- `template.yaml` - Already had the fix, just needed deployment
+
+---
+
+#### 2. GitPython Missing Git Binary in Lambda
+**Problem:** Analyzer Lambda failed with `Runtime.ImportModuleError: Unable to import module 'src.analysis.lambda_handler': Failed to initialize: Bad git executable.`
+
+**Root Cause:** GitPython requires the git binary, which isn't available in the standard Lambda runtime.
+
+**Solution:**
+- Added AWS Lambda Layer with git binary to analyzer Lambda
+- Layer ARN: `arn:aws:lambda:us-east-1:553035198032:layer:git-lambda2:8`
+- Updated `template.yaml` (lines 159-160)
+- Applied layer directly to Lambda function for immediate fix
+
+**Files Modified:**
+- `template.yaml` - Added Layers configuration to AnalyzerFunction
+
+---
+
+### Deployment Summary
+
+**Backend API:**
+- Stack: vibejudge-dev (UPDATE_COMPLETE)
+- Added `ANALYZER_LAMBDA_FUNCTION_NAME` environment variable
+- Git layer added to analyzer Lambda
+- Status: Active and operational
+
+**Dashboard:**
+- Commit: 3c09ebb
+- Image: 607415053998.dkr.ecr.us-east-1.amazonaws.com/vibejudge-dashboard:3c09ebb
+- Task Definition: vibejudge-dashboard-prod:39
+- Status: Deployment in progress
+
+---
+
+### Status
+✅ ANALYZER_LAMBDA_FUNCTION_NAME environment variable configured
+✅ Git layer added to analyzer Lambda  
+✅ Analysis pipeline fully operational
+✅ Dashboard deployment in progress
