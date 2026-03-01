@@ -152,6 +152,13 @@ markers = [
     "slow: Slow tests (skip with -m 'not slow')",
     "bedrock: Tests requiring Bedrock access",
     "performance: Performance tests (verify timing targets)",
+    # E2E Playwright markers
+    "smoke: Fast smoke tests for critical paths",
+    "critical: Critical path tests that must pass",
+    "visual: Visual regression tests with screenshots",
+    "live: Tests against live API (true E2E)",
+    "mocked: Tests with mocked API (isolated)",
+    "summary: Summary/demonstration tests",
 ]
 env = [
     "AWS_DEFAULT_REGION=us-east-1",

@@ -113,6 +113,9 @@ Resources:
             ApiId: !Ref VibeJudgeApi
             Path: /
             Method: ANY
+      Environment:
+        Variables:
+          ANALYZER_LAMBDA_FUNCTION_NAME: !Sub "vibejudge-analyzer-${Environment}"
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref VibeJudgeTable
@@ -153,6 +156,8 @@ Resources:
       Handler: src.analysis.lambda_handler.handler
       MemorySize: 2048
       Timeout: 900               # 15 minutes — max Lambda timeout
+      Layers:
+        - arn:aws:lambda:us-east-1:553035198032:layer:git-lambda2:8  # Git binary for Lambda
       EphemeralStorage:
         Size: 2048               # 2GB /tmp for git clones
       Environment:

@@ -405,6 +405,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         """
         try:
             from datetime import datetime
+            from decimal import Decimal
 
             self.db_helper.table.update_item(
                 Key={
@@ -431,7 +432,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 },
                 ExpressionAttributeValues={
                     ":zero": 0,
-                    ":zero_decimal": 0.0,
+                    ":zero_decimal": Decimal("0.0"),
                     ":inc": 1,
                     ":updated": datetime.utcnow().isoformat(),
                     ":api_key": api_key,

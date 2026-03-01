@@ -370,16 +370,24 @@ class BudgetMiddleware(BaseHTTPMiddleware):
                 budget_limit = self.max_cost_per_submission
 
             # Create budget tracking record
+            from decimal import Decimal
+
             budget_tracking = BudgetTracking(
                 entity_type=entity_type,
                 entity_id=entity_id,
                 budget_limit_usd=budget_limit,
-                current_spend_usd=0.0,
+                current_spend_usd=Decimal("0.0"),
             )
             budget_tracking.set_dynamodb_keys()
 
-            # Store in DynamoDB
-            self.db_helper.table.put_item(Item=budget_tracking.model_dump())
+            # Store in DynamoDB - convert all floats to Decimal
+            item_dict = budget_tracking.model_dump()
+            # Convert float fields to Decimal for DynamoDB
+            for key, value in item_dict.items():
+                if isinstance(value, float):
+                    item_dict[key] = Decimal(str(value))
+
+            self.db_helper.table.put_item(Item=item_dict)
 
             logger.info(
                 "budget_tracking_created",
@@ -539,6 +547,8 @@ class BudgetMiddleware(BaseHTTPMiddleware):
             cost: Cost to add
         """
         try:
+            from decimal import Decimal
+
             self.db_helper.table.update_item(
                 Key={
                     "PK": f"BUDGET#{entity_type}#{entity_id}",
@@ -546,8 +556,8 @@ class BudgetMiddleware(BaseHTTPMiddleware):
                 },
                 UpdateExpression="SET current_spend_usd = if_not_exists(current_spend_usd, :zero) + :cost, last_updated = :updated",
                 ExpressionAttributeValues={
-                    ":zero": 0.0,
-                    ":cost": cost,
+                    ":zero": Decimal("0.0"),
+                    ":cost": Decimal(str(cost)),
                     ":updated": datetime.utcnow().isoformat(),
                 },
             )

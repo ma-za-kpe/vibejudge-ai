@@ -1,18 +1,13 @@
 """Live Dashboard page for monitoring hackathon statistics in real-time.
 
-This page allows organizers to:
-- Select a hackathon from a dropdown
-- View submission statistics (submission_count, verified_count, pending_count, participant_count)
-- Monitor statistics with automatic refresh every 5 minutes (manual refresh available)
+Simplified version - backend is source of truth, no caching complexity.
 """
 
 import logging
-from datetime import datetime
 
+import requests
 import streamlit as st
-from components.api_client import APIClient, APIError, BudgetExceededError, ConflictError, ResourceNotFoundError
 from components.auth import is_authenticated
-from components.retry_helpers import retry_button
 
 logger = logging.getLogger(__name__)
 
@@ -28,414 +23,199 @@ if not is_authenticated():
     st.stop()
 
 
-# Initialize API client
-api_client = APIClient(st.session_state["api_base_url"], st.session_state["api_key"])
-
-
 # Page header
 st.title("📊 Live Dashboard")
 st.markdown("Monitor your hackathon submissions in real-time.")
-st.caption("💡 Click 'Refresh Now' at the bottom to update data")
 
 
-# Cached function to fetch hackathons list
-@st.cache_data(ttl=30)
-def fetch_hackathons(api_key: str, api_base_url: str) -> tuple[list[dict], str | None]:
-    """Fetch list of hackathons from the backend.
+# Helper function for API calls
+def api_call(endpoint: str, method: str = "GET", json_data: dict | None = None) -> dict | None:
+    """Make API call with error handling.
 
     Args:
-        api_key: The API key for authentication (used as cache key)
-        api_base_url: The API base URL (used as cache key)
+        endpoint: API endpoint path (e.g., "/hackathons")
+        method: HTTP method (GET, POST)
+        json_data: JSON payload for POST requests
 
     Returns:
-        Tuple of (list of hackathon dictionaries, error message or None)
+        Response JSON or None if error
     """
-    client = APIClient(api_base_url, api_key)
     try:
-        response = client.get("/hackathons")
-        # API returns {"hackathons": [...], "next_cursor": null, "has_more": false}
-        if isinstance(response, dict):
-            return response.get("hackathons", []), None
-        return (response if isinstance(response, list) else []), None
-    except APIError as e:
-        logger.error(f"Failed to fetch hackathons: {e}")
-        return [], str(e)
+        base_url = st.session_state["api_base_url"].rstrip("/")
+        headers = {"X-API-Key": st.session_state["api_key"]}
+        url = f"{base_url}{endpoint}"
 
+        if method == "GET":
+            response = requests.get(url, headers=headers, timeout=60)
+        else:
+            response = requests.post(url, headers=headers, json=json_data or {}, timeout=60)
 
-# Cached function to fetch hackathon stats
-@st.cache_data(ttl=30)
-def fetch_stats(api_key: str, api_base_url: str, hack_id: str) -> dict | None:
-    """Fetch statistics for a specific hackathon.
+        response.raise_for_status()
+        return response.json()
 
-    Args:
-        api_key: The API key for authentication (used as cache key)
-        hack_id: The hackathon ID
+    except requests.HTTPError as e:
+        status = e.response.status_code
 
-    Returns:
-        Dictionary containing stats or None if error occurred
-    """
-    client = APIClient(api_base_url, api_key)
-    try:
-        return client.get(f"/hackathons/{hack_id}/stats")
-    except APIError as e:
-        logger.error(f"Failed to fetch stats for {hack_id}: {e}")
-        st.error(f"❌ Failed to fetch statistics: {e}")
+        if status == 401:
+            st.error("❌ Invalid API key")
+        elif status == 402:
+            st.error("💰 Budget limit exceeded")
+        elif status == 404:
+            st.error("❌ Resource not found")
+        elif status == 409:
+            st.error("⚠️ Analysis already in progress")
+        else:
+            try:
+                error_detail = e.response.json().get("detail", str(e))
+            except:
+                error_detail = str(e)
+            st.error(f"❌ Error: {error_detail}")
+
+        logger.error(f"API error: {status} - {e}")
+        return None
+
+    except requests.Timeout:
+        st.error("⏱️ Request timed out. Please try again.")
+        return None
+
+    except Exception as e:
+        st.error(f"❌ Unexpected error: {e}")
+        logger.error(f"Unexpected error: {e}")
         return None
 
 
-# Fetch hackathons for dropdown
+# Fetch hackathons
 with st.spinner("🔄 Loading hackathons..."):
-    hackathons, error = fetch_hackathons(st.session_state["api_key"], st.session_state["api_base_url"])
+    hackathons_response = api_call("/hackathons")
 
-# Display error if fetch failed
-if error:
-    st.error(f"❌ Failed to fetch hackathons: {error}")
-    retry_button(lambda: st.cache_data.clear() or st.rerun(), "🔄 Retry Loading Hackathons")
+if not hackathons_response:
+    if st.button("🔄 Retry"):
+        st.rerun()
     st.stop()
 
-# Filter out DRAFT and ARCHIVED hackathons (only show CONFIGURED, ANALYZING, COMPLETED)
-active_hackathons = [
-    h for h in hackathons
-    if h.get("status") not in ["draft", "archived"]
-]
+hackathons = hackathons_response.get("hackathons", [])
 
-# Display hackathon selection dropdown
+# Filter active hackathons
+active_hackathons = [h for h in hackathons if h.get("status") not in ["draft", "archived"]]
+
 if not active_hackathons:
     st.warning("⚠️ No active hackathons found.")
     st.info("💡 Create a hackathon and activate it to start accepting submissions.")
     st.stop()
 
 
-# Create dropdown with hackathon names
+# Hackathon selection
 hackathon_options = {h["name"]: h["hack_id"] for h in active_hackathons}
 selected_name = st.selectbox(
     "Select Hackathon",
     options=list(hackathon_options.keys()),
     help="Choose a hackathon to view its statistics",
 )
-
-
-# Get selected hackathon ID
 selected_hack_id = hackathon_options[selected_name]
 
 
-# Store selected hackathon in session state
-st.session_state["selected_hackathon"] = selected_hack_id
-
-
-# Fetch and display stats
+# Statistics section
 st.markdown("---")
 st.subheader("📈 Statistics")
 
-
 with st.spinner("📊 Loading statistics..."):
-    stats = fetch_stats(st.session_state["api_key"], st.session_state["api_base_url"], selected_hack_id)
-
+    stats = api_call(f"/hackathons/{selected_hack_id}/stats")
 
 if stats:
-    # Display stats in columns
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-        st.metric(
-            label="Total Submissions",
-            value=stats.get("submission_count", 0),
-            help="Total number of submissions received",
-        )
+        st.metric("Total Submissions", stats.get("submission_count", 0))
 
     with col2:
-        st.metric(
-            label="Verified Submissions",
-            value=stats.get("verified_count", 0),
-            help="Number of submissions with valid repositories",
-        )
+        st.metric("Verified Submissions", stats.get("verified_count", 0))
 
     with col3:
-        st.metric(
-            label="Pending Submissions",
-            value=stats.get("pending_count", 0),
-            help="Number of submissions awaiting verification",
-        )
+        st.metric("Pending Submissions", stats.get("pending_count", 0))
 
     with col4:
-        st.metric(
-            label="Total Participants",
-            value=stats.get("participant_count", 0),
-            help="Total number of participants across all teams",
-        )
-
-    # Display additional info if available
-    if "analysis_status" in stats:
-        st.markdown("---")
-        st.info(f"**Analysis Status:** {stats['analysis_status']}")
-
-    if "last_updated" in stats:
-        from components.formatters import format_timestamp
-
-        st.caption(f"Last updated: {format_timestamp(stats['last_updated'])}")
-else:
-    st.error("❌ Failed to load statistics. Please try again.")
+        st.metric("Total Participants", stats.get("participant_count", 0))
 
 
-# Analysis triggering section
+# Analysis section
 st.markdown("---")
 st.subheader("🚀 Analysis")
 
+# Check for active job (backend is source of truth)
+job_status = api_call(f"/hackathons/{selected_hack_id}/analyze/status")
 
-# Fetch active analysis job from backend (source of truth)
-@st.cache_data(ttl=10)
-def fetch_active_job(api_key: str, api_base_url: str, hack_id: str) -> str | None:
-    """Check if there's an active analysis job for this hackathon.
+if job_status and job_status.get("status") in ["queued", "running"]:
+    # Show progress
+    st.info(f"📊 Analysis job in progress: {job_status.get('job_id')}")
 
-    Returns:
-        job_id if active job exists (queued/running), None otherwise
-    """
-    client = APIClient(api_base_url, api_key)
-    try:
-        status = client.get(f"/hackathons/{hack_id}/analyze/status")
-        if status.get("status") in ["queued", "running"]:
-            return status.get("job_id")
-    except Exception:
-        pass  # No active job or endpoint not found
-    return None
+    progress_data = job_status.get("progress", {})
+    progress_percent = progress_data.get("percent_complete", 0)
 
+    st.progress(progress_percent / 100.0)
+    st.caption(f"Progress: {progress_percent:.1f}%")
 
-# Get active job from backend (not session state!)
-active_job_id = fetch_active_job(st.session_state["api_key"], st.session_state["api_base_url"], selected_hack_id)
+    # Show metrics
+    col1, col2, col3 = st.columns(3)
 
-# Initialize cost estimate in session state (ephemeral UI state only)
-if "cost_estimate" not in st.session_state:
-    st.session_state["cost_estimate"] = None
+    with col1:
+        st.metric("Completed", progress_data.get("completed", 0))
 
-# Display info if active job exists
-if active_job_id:
-    st.info(f"📊 Analysis job in progress: {active_job_id}")
-    st.caption("Monitoring progress below...")
+    with col2:
+        st.metric("Failed", progress_data.get("failed", 0))
 
-# Start Analysis button - Only show if NO active job
-if active_job_id is None:
-    # Step 1: Fetch cost estimate
-    if st.session_state["cost_estimate"] is None:
-        if st.button(
-            "🚀 Start Analysis", help="Trigger analysis for all submissions in this hackathon"
-        ):
-            try:
-                # Fetch cost estimate (uses default 60s timeout for Lambda cold starts)
-                with st.spinner("💰 Fetching cost estimate..."):
-                    estimate_response = api_client.post(
-                        f"/hackathons/{selected_hack_id}/analyze/estimate", json={}
-                    )
+    with col3:
+        st.metric("Total", progress_data.get("total_submissions", 0))
 
-                # Parse nested cost estimate structure
-                estimate_detail = estimate_response.get("estimate", {})
-                total_cost_range = estimate_detail.get("total_cost_usd", {})
-                estimated_cost = total_cost_range.get("expected", 0.0)
+    if job_status.get("status") == "completed":
+        st.success("✅ Analysis completed!")
+        st.balloons()
 
-                # Store estimate in session state
-                st.session_state["cost_estimate"] = estimated_cost
-                st.rerun()
+else:
+    # No active job - show start button
+    if st.button("🚀 Start Analysis", help="Trigger analysis for all submissions"):
+        # Step 1: Get cost estimate
+        with st.spinner("💰 Fetching cost estimate..."):
+            estimate_response = api_call(
+                f"/hackathons/{selected_hack_id}/analyze/estimate",
+                method="POST"
+            )
 
-            except BudgetExceededError as e:
-                # Handle HTTP 402 during estimate
-                st.error(f"💰 {e}")
-                st.warning("Cannot estimate cost - budget limit would be exceeded.")
+        if estimate_response:
+            # Extract cost
+            estimate_detail = estimate_response.get("estimate", {})
+            total_cost_range = estimate_detail.get("total_cost_usd", {})
+            estimated_cost = total_cost_range.get("expected", 0.0)
 
-            except APIError as e:
-                # Handle errors during cost estimate
-                st.error(f"❌ Failed to fetch cost estimate: {e}")
-                logger.error(f"Failed to fetch cost estimate for {selected_hack_id}: {e}")
-
-    # Step 2: Display cost estimate and confirmation dialog
-    else:
-        estimated_cost = st.session_state["cost_estimate"]
-        if estimated_cost is not None:
+            # Show confirmation dialog
             st.info(f"💰 Estimated cost: ${estimated_cost:.2f}")
-        else:
-            st.warning("⚠️ Cost estimate unavailable")
-        st.warning("⚠️ This will start the analysis process. Do you want to continue?")
+            st.warning("⚠️ This will start the analysis process.")
 
-        col1, col2 = st.columns(2)
+            col1, col2 = st.columns(2)
 
-        with col1:
-            if st.button("✅ Confirm & Start", type="primary"):
-                try:
-                    # Send POST to start analysis
+            with col1:
+                if st.button("✅ Confirm & Start", type="primary"):
                     with st.spinner("🚀 Starting analysis..."):
-                        analysis_response = api_client.post(
-                            f"/hackathons/{selected_hack_id}/analyze", json={}
+                        analysis_response = api_call(
+                            f"/hackathons/{selected_hack_id}/analyze",
+                            method="POST"
                         )
 
-                    # Display job_id and estimated_cost_usd on success (HTTP 202)
-                    job_id = analysis_response.get("job_id")
-                    estimated_cost_usd = analysis_response.get("estimated_cost_usd", 0.0)
+                    if analysis_response:
+                        job_id = analysis_response.get("job_id")
+                        cost = analysis_response.get("estimated_cost_usd", 0.0)
 
-                    # Clear cost estimate (ephemeral UI state)
-                    st.session_state["cost_estimate"] = None
+                        st.success("✅ Analysis started!")
+                        st.info(f"**Job ID:** {job_id}")
+                        st.info(f"**Estimated Cost:** ${cost:.2f}")
+                        st.rerun()
 
-                    st.success("✅ Analysis started successfully!")
-                    st.info(f"**Job ID:** {job_id}")
-                    st.info(f"**Estimated Cost:** ${estimated_cost_usd:.2f}")
-
-                    # Clear cache to refresh stats
-                    st.cache_data.clear()
+            with col2:
+                if st.button("❌ Cancel"):
+                    st.info("Analysis cancelled.")
                     st.rerun()
 
-                except BudgetExceededError as e:
-                    # Handle HTTP 402 - Budget exceeded
-                    st.error(f"💰 {e}")
-                    st.warning("Please increase your budget limit or reduce the number of submissions.")
-                    # Clear cost estimate to allow retry
-                    st.session_state["cost_estimate"] = None
 
-                except ConflictError as e:
-                    # Handle HTTP 409 - Analysis already running
-                    st.error(f"⚠️ {e}")
-                    st.info(
-                        "Please wait for the current analysis to complete before starting a new one."
-                    )
-                    # Clear cost estimate
-                    st.session_state["cost_estimate"] = None
-
-                except APIError as e:
-                    # Handle other API errors
-                    st.error(f"❌ Failed to start analysis: {e}")
-                    logger.error(f"Failed to start analysis for {selected_hack_id}: {e}")
-                    # Clear cost estimate to allow retry
-                    st.session_state["cost_estimate"] = None
-
-        with col2:
-            if st.button("❌ Cancel"):
-                # Clear cost estimate and return to initial state
-                st.session_state["cost_estimate"] = None
-                st.info("Analysis cancelled.")
-                st.rerun()
-
-# Analysis progress monitoring section - Show if active job exists
-if active_job_id:
-    st.markdown("---")
-    st.subheader("📊 Analysis Progress")
-
-    try:
-        # Poll job status using active_job_id from backend
-        with st.spinner("📊 Fetching analysis progress..."):
-            job_status = api_client.get(
-                f"/hackathons/{selected_hack_id}/jobs/{active_job_id}"
-            )
-
-        # Extract job status fields
-        status = job_status.get("status", "unknown")
-        progress_percent = job_status.get("progress_percent", 0.0)
-        completed_submissions = job_status.get("completed_submissions", 0)
-        failed_submissions = job_status.get("failed_submissions", 0)
-        total_submissions = job_status.get("total_submissions", 0)
-        current_cost_usd = job_status.get("current_cost_usd", 0.0)
-        estimated_completion = job_status.get("estimated_completion")
-
-        # Display progress bar
-        st.progress(progress_percent / 100.0)
-        st.caption(f"Progress: {progress_percent:.1f}%")
-
-        # Display submission counts and cost in columns
-        col1, col2, col3, col4 = st.columns(4)
-
-        with col1:
-            st.metric(
-                label="Completed",
-                value=completed_submissions,
-                help="Number of submissions analyzed successfully",
-            )
-
-        with col2:
-            st.metric(
-                label="Failed",
-                value=failed_submissions,
-                delta=f"-{failed_submissions}" if failed_submissions > 0 else None,
-                delta_color="inverse",
-                help="Number of submissions that failed analysis",
-            )
-
-        with col3:
-            st.metric(
-                label="Total",
-                value=total_submissions,
-                help="Total number of submissions to analyze",
-            )
-
-        with col4:
-            from components.formatters import format_currency
-
-            st.metric(
-                label="Current Cost",
-                value=format_currency(current_cost_usd),
-                help="Cost incurred so far",
-            )
-
-        # Display estimated completion time
-        if estimated_completion:
-            from components.formatters import format_timestamp
-
-            st.info(f"⏱️ Estimated completion: {format_timestamp(estimated_completion)}")
-
-        # Check if analysis is completed
-        if status == "completed":
-            st.success("✅ Analysis completed successfully!")
-            st.balloons()
-
-            # Clear cache to refresh stats and job status
-            st.cache_data.clear()
-
-            # Display final summary
-            st.markdown("### 📋 Final Summary")
-            st.write(f"- **Total Analyzed:** {completed_submissions}/{total_submissions}")
-            st.write(f"- **Failed:** {failed_submissions}")
-            st.write(f"- **Total Cost:** {format_currency(current_cost_usd)}")
-
-        # Display error details if there are failures
-        elif failed_submissions > 0:
-            st.warning(f"⚠️ {failed_submissions} submission(s) failed during analysis")
-
-            # Check if error details are available in the response
-            if "error_details" in job_status:
-                with st.expander("View Error Details"):
-                    error_details = job_status["error_details"]
-                    if isinstance(error_details, list):
-                        for error in error_details:
-                            st.error(f"- {error}")
-                    else:
-                        st.error(str(error_details))
-
-        # Display status badge
-        if status == "running":
-            st.info("🔄 Analysis is currently running...")
-        elif status == "failed":
-            st.error("❌ Analysis job failed")
-            # Clear cache to allow retry
-            st.cache_data.clear()
-
-    except ResourceNotFoundError:
-        # Job no longer exists (completed, failed, or expired)
-        st.warning("⚠️ Analysis job not found. It may have completed or expired.")
-        st.info("💡 Refresh the page to see updated status.")
-        logger.info(f"Job {active_job_id} not found, clearing cache")
-        
-        # Clear cache to remove stale job ID
-        st.cache_data.clear()
-        
-        # Offer refresh button
-        if st.button("🔄 Refresh Page"):
-            st.rerun()
-            
-    except APIError as e:
-        st.error(f"❌ Failed to fetch job status: {e}")
-        logger.error(f"Failed to fetch job status for {active_job_id}: {e}")
-
-        # Offer retry button
-        if st.button("🔄 Retry Job Status"):
-            st.rerun()
-
-# Manual refresh button
+# Refresh button
 st.markdown("---")
-if st.button("🔄 Refresh Now"):
-    # Clear cache to force refresh
-    st.cache_data.clear()
+if st.button("🔄 Refresh Data"):
     st.rerun()

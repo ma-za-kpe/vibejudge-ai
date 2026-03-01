@@ -70,7 +70,18 @@ class BasePage:
 
     def get_text_input(self, label: str) -> Locator:
         """Find text input by label."""
-        return self.page.get_by_label(label, exact=False).first
+        # Streamlit creates input elements with labels
+        # First try to find by exact label match on input elements only
+        try:
+            # Try to find input with exact aria-label
+            input_elem = self.page.locator(f'input[aria-label="{label}"]')
+            if input_elem.count() > 0:
+                return input_elem.first
+        except:
+            pass
+
+        # Fallback: find any input near a label with this text
+        return self.page.locator(f'label:has-text("{label}") + div input, label:has-text("{label}") ~ input').first
 
     def get_selectbox(self, label: str) -> Locator:
         """Find selectbox by label."""

@@ -166,7 +166,8 @@ def screenshot_on_failure(request, page: Page):
     """Automatically take screenshot on test failure."""
     yield
 
-    if request.node.rep_call.failed:
+    # Check if test failed (handle missing attribute gracefully)
+    if hasattr(request.node, 'rep_call') and request.node.rep_call.failed:
         screenshot_dir = "e2e_tests/visual_regression/failures"
         os.makedirs(screenshot_dir, exist_ok=True)
 

@@ -102,7 +102,7 @@ class LoginPage(BasePage):
     def assert_on_login_page(self):
         """Assert we're on the login page."""
         self.assert_on_page("VibeJudge AI")
-        expect(self.page.get_by_text("Organizer Dashboard")).to_be_visible()
+        expect(self.page.get_by_role("heading", name="Organizer Dashboard")).to_be_visible()
 
     # ========================================================================
     # HELPERS
