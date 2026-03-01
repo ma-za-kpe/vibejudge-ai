@@ -31,10 +31,13 @@ VibeJudge AI automates hackathon judging using 4 specialized AI agents on Amazon
 ## 🏗️ Architecture
 
 - **API Lambda:** FastAPI + Mangum (1024MB, 30s timeout)
-- **Analyzer Lambda:** Batch processor (2048MB, 900s timeout, 2GB ephemeral)
+- **Analyzer Lambda:** Batch processor (2048MB, 900s timeout, 2GB ephemeral, git layer)
 - **Database:** Single-table DynamoDB (5 RCU/5 WCU provisioned)
 - **AI:** Amazon Bedrock Converse API (token tracking)
 - **Storage:** S3 for artifacts (optional)
+
+**Critical Dependencies:**
+- Git Lambda Layer (`arn:aws:lambda:us-east-1:553035198032:layer:git-lambda2:8`) - Required for GitPython to clone repositories in Lambda environment
 
 ## 🚀 Quick Start
 
