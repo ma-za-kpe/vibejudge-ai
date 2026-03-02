@@ -5,7 +5,7 @@
 set -e
 
 HACK_ID="01KJFQW23JKE473T0ZPSGSQ2J6"
-API_KEY="vj_live_SCoecIaoqCSnMkFUJ/6FJIdq+9zZ2jms"
+API_KEY="vj_live_SCoecIaoqCSnMkFUJ/6FJIdq+9zZ2jms"  # pragma: allowlist secret
 API_URL="https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev/api/v1"
 
 echo "======================================"

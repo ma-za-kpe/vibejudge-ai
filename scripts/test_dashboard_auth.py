@@ -3,7 +3,9 @@
 
 import requests
 
-API_KEY = "419a05e9dd8b005e567c02c6ad0333bc8bba8c50d3bdc06e21d98380301e53e6"
+API_KEY = (
+    "419a05e9dd8b005e567c02c6ad0333bc8bba8c50d3bdc06e21d98380301e53e6"  # pragma: allowlist secret
+)
 DASHBOARD_BASE = "https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev/api/v1"
 
 print("=" * 70)

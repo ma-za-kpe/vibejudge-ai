@@ -4,19 +4,19 @@
 from pathlib import Path
 
 # Valid test keys (base64 encoded, 32 chars)
-VALID_TEST_KEY = "vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB"
-VALID_LIVE_KEY = "vj_live_ggqT0GSEN6qrtVYph6hi5r0oPzxKvrI0"
+VALID_TEST_KEY = "vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB"  # pragma: allowlist secret
+VALID_LIVE_KEY = "vj_live_ggqT0GSEN6qrtVYph6hi5r0oPzxKvrI0"  # pragma: allowlist secret
 
 # Invalid patterns to replace
 INVALID_PATTERNS = [
-    r"vj_test_abc123def456ghi789jkl012mno34pqr",
-    r"vj_test_ABC123DEF456GHI789JKL012MNO34PQR",
-    r"vj_test_abcdefghijklmnopqrstuvwxyz1234",
-    r"vj_test_ABCDEFGHIJKLMNOPQRSTUVWXYZ1234AB",
-    r"vj_live_abc123def456ghi789jkl012mno34pqr",
-    r"vj_live_ABC123DEF456GHI789JKL012MNO34PQR",
-    r"vj_live_abcdefghijklmnopqrstuvwxyz1234ab",
-    r"vj_live_abcdefghijklmnopqrstuvwxyz123456",
+    r"vj_test_abc123def456ghi789jkl012mno34pqr",  # pragma: allowlist secret
+    r"vj_test_ABC123DEF456GHI789JKL012MNO34PQR",  # pragma: allowlist secret
+    r"vj_test_abcdefghijklmnopqrstuvwxyz1234",  # pragma: allowlist secret
+    r"vj_test_ABCDEFGHIJKLMNOPQRSTUVWXYZ1234AB",  # pragma: allowlist secret
+    r"vj_live_abc123def456ghi789jkl012mno34pqr",  # pragma: allowlist secret
+    r"vj_live_ABC123DEF456GHI789JKL012MNO34PQR",  # pragma: allowlist secret
+    r"vj_live_abcdefghijklmnopqrstuvwxyz1234ab",  # pragma: allowlist secret
+    r"vj_live_abcdefghijklmnopqrstuvwxyz123456",  # pragma: allowlist secret
 ]
 
 
@@ -27,11 +27,7 @@ def fix_file(filepath: Path) -> int:
     replacements = 0
 
     for pattern in INVALID_PATTERNS:
-        if pattern.startswith("vj_test"):
-            replacement = VALID_TEST_KEY
-        else:
-            replacement = VALID_LIVE_KEY
-
+        replacement = VALID_TEST_KEY if pattern.startswith("vj_test") else VALID_LIVE_KEY
         new_content = content.replace(pattern, replacement)
         if new_content != content:
             count = content.count(pattern)

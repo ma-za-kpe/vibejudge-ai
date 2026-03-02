@@ -66,6 +66,74 @@ API flow testing
 
 ---
 
+## Deployment Scripts
+
+### deploy.sh
+**Purpose:** Deploy the application to AWS using SAM  
+**Usage:**
+```bash
+./scripts/deploy.sh
+```
+
+---
+
+## E2E Test Scripts
+
+### run_e2e_tests.sh
+**Purpose:** Run end-to-end tests  
+**Usage:**
+```bash
+./scripts/run_e2e_tests.sh
+```
+
+### test_analyze_flow.sh
+**Purpose:** Test the complete analysis flow  
+**Usage:**
+```bash
+./scripts/test_analyze_flow.sh
+```
+
+### test_results_page_pipeline.sh
+**Purpose:** Test the results page pipeline  
+**Usage:**
+```bash
+./scripts/test_results_page_pipeline.sh
+```
+
+---
+
+## Dashboard Test Scripts
+
+### test_dashboard_api.py
+**Purpose:** Python-based dashboard API testing  
+**Usage:**
+```bash
+python scripts/test_dashboard_api.py
+```
+
+### test_dashboard_auth.py
+**Purpose:** Python-based dashboard authentication testing  
+**Usage:**
+```bash
+python scripts/test_dashboard_auth.py
+```
+
+### test_dashboard_auth.sh
+**Purpose:** Shell-based dashboard authentication testing  
+**Usage:**
+```bash
+./scripts/test_dashboard_auth.sh
+```
+
+### test_patch_endpoint.py
+**Purpose:** Test PATCH endpoint functionality  
+**Usage:**
+```bash
+python scripts/test_patch_endpoint.py
+```
+
+---
+
 ## Utility Scripts
 
 ### start_local.sh
@@ -73,6 +141,37 @@ Start local development server
 
 ### start_api_local.sh
 Start API locally with uvicorn
+
+### clear_and_test_e2e.py
+Clear test data and run E2E tests
+
+### verify_cost_reduction.py
+Verify cost reduction optimizations
+
+---
+
+## Code Quality Scripts
+
+### fix_mypy_errors.py
+**Purpose:** Automated mypy error fixing  
+**Usage:**
+```bash
+python scripts/fix_mypy_errors.py
+```
+
+### fix_remaining.sh
+**Purpose:** Fix remaining linting/type issues  
+**Usage:**
+```bash
+./scripts/fix_remaining.sh
+```
+
+### fix_test_keys.py
+**Purpose:** Fix test API key issues  
+**Usage:**
+```bash
+python scripts/fix_test_keys.py
+```
 
 ---
 

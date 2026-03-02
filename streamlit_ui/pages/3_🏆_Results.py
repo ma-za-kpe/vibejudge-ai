@@ -130,12 +130,19 @@ if st.session_state["view_mode"] == "team_detail":
             )
 
         with col2:
-            confidence = scorecard.get("confidence", 0)
-            st.metric(
-                label="Confidence",
-                value=f"{confidence:.0%}",
-                help="AI confidence in the evaluation",
-            )
+            confidence = scorecard.get("confidence")
+            if confidence is not None and confidence > 0:
+                st.metric(
+                    label="Confidence",
+                    value=f"{confidence:.0%}",
+                    help="AI confidence in the evaluation",
+                )
+            else:
+                st.metric(
+                    label="Confidence",
+                    value="N/A",
+                    help="Confidence score not available",
+                )
 
         with col3:
             recommendation = scorecard.get("recommendation", "N/A").replace("_", " ").title()
@@ -202,10 +209,11 @@ if st.session_state["view_mode"] == "team_detail":
         )
 
         # Display cost by agent (if available in future)
-        agent_scores_list = scorecard.get("agent_scores", [])
-        if agent_scores_list:
-            with st.expander("View Cost by Agent"):
-                st.caption("Cost breakdown by agent will be available soon.")
+        # Cost by agent feature removed - agent_scores not populated by backend yet
+        # agent_scores_list = scorecard.get("agent_scores", [])
+        # if agent_scores_list:
+        #     with st.expander("View Cost by Agent"):
+        #         # TODO: Implement agent cost breakdown display
 
         # Advanced details expander
         with st.expander("🔍 Advanced Details", expanded=False):
@@ -576,7 +584,13 @@ if st.session_state["view_mode"] == "team_detail":
                     st.markdown("---")
                     st.markdown("**👤 Individual Contributor Scorecards:**")
                     for scorecard_item in individual_scorecards[:10]:  # Limit to 10
-                        contributor_name = scorecard_item.get("name", "Unknown")
+                        # Try to get name, fallback to email, then "Unknown"
+                        contributor_name = (
+                            scorecard_item.get("name")
+                            or scorecard_item.get("email")
+                            or scorecard_item.get("contributor_email")
+                            or "Unknown"
+                        )
                         role = scorecard_item.get("role", "N/A")
                         commit_count = scorecard_item.get("commit_count", 0)
 
@@ -604,7 +618,21 @@ if st.session_state["view_mode"] == "team_detail":
                     st.markdown("**⚖️ Strategic Tradeoffs:**")
                     for tradeoff in tradeoffs:
                         if isinstance(tradeoff, dict):
-                            st.markdown(f"- {tradeoff.get('description', str(tradeoff))}")
+                            # Format tradeoff with available fields
+                            decision = tradeoff.get("decision", "")
+                            rationale = tradeoff.get("rationale", "")
+                            impact = tradeoff.get("impact_on_score", "")
+
+                            if decision:
+                                formatted = f"**{decision}**"
+                                if rationale:
+                                    formatted += f" - {rationale}"
+                                if impact:
+                                    formatted += f" _(Impact: {impact})_"
+                                st.markdown(f"- {formatted}")
+                            else:
+                                # Fallback if structure is different
+                                st.markdown(f"- {tradeoff.get('description', str(tradeoff))}")
                         else:
                             st.markdown(f"- {tradeoff}")
 

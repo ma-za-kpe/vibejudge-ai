@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Manual test for PATCH /api-keys endpoint."""
 
-from src.models.api_key import Tier
+from src.models.api_key import Tier, get_tier_defaults
 
 # Test data structure matches what PATCH endpoint expects
 update_payload = {
@@ -21,8 +21,6 @@ print(
 print()
 
 # Show what ENTERPRISE tier provides
-from src.models.api_key import get_tier_defaults
-
 enterprise_defaults = get_tier_defaults(Tier.ENTERPRISE)
 print("✅ ENTERPRISE tier defaults:")
 print(f"   daily_quota: {enterprise_defaults['daily_quota']}")

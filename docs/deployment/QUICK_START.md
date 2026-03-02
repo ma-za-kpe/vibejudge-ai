@@ -69,7 +69,7 @@ curl -X POST $API_URL/api/v1/organizers \
   }'
 
 # Save the API key from response!
-export API_KEY="vj_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+export API_KEY="vj_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"  # pragma: allowlist secret
 
 # 3. Create hackathon
 curl -X POST $API_URL/api/v1/hackathons \
