@@ -107,7 +107,7 @@ class APIKeyService:
             self.db.table.put_item(Item=serialized)
         except Exception as e:
             logger.error("api_key_creation_failed", api_key_id=api_key_id, error=str(e))
-            raise RuntimeError(f"Failed to create API key in database: {e}")
+            raise RuntimeError(f"Failed to create API key in database: {e}") from e
 
         logger.info(
             "api_key_created",
@@ -150,9 +150,8 @@ class APIKeyService:
                 "deprecated_at",
                 "last_used_at",
             ]:
-                if field in api_key_data and api_key_data[field]:
-                    if isinstance(api_key_data[field], str):
-                        api_key_data[field] = datetime.fromisoformat(api_key_data[field])
+                if field in api_key_data and api_key_data[field] and isinstance(api_key_data[field], str):
+                    api_key_data[field] = datetime.fromisoformat(api_key_data[field])
 
             api_key_obj = APIKey(**api_key_data)
 
@@ -364,7 +363,7 @@ class APIKeyService:
             self.db.table.put_item(Item=serialized)
         except Exception as e:
             logger.error("api_key_update_failed", api_key_id=api_key_id, error=str(e))
-            raise RuntimeError(f"Failed to update API key in database: {e}")
+            raise RuntimeError(f"Failed to update API key in database: {e}") from e
 
         logger.info(
             "api_key_updated",
