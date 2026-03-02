@@ -102,7 +102,7 @@ class TestAPIKeyCreateResponse:
     def test_create_response_includes_secret_key(self) -> None:
         """Test that APIKeyCreateResponse includes secret key."""
         response = APIKeyCreateResponse(
-            api_key="vj_test_abc123def456ghi789jkl012mno34pqr",
+            api_key="vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
             api_key_id="01HQ123456789",
             organizer_id="ORG#123",
             tier=Tier.FREE,
@@ -111,7 +111,7 @@ class TestAPIKeyCreateResponse:
             budget_limit_usd=10.0,
             active=True,
         )
-        assert response.api_key == "vj_test_abc123def456ghi789jkl012mno34pqr"
+        assert response.api_key == "vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB"
         assert response._warning == "Store your API key securely. It will not be shown again."
 
 
@@ -151,10 +151,10 @@ class TestAPIKey:
     def test_valid_api_key_format(self) -> None:
         """Test that valid API key formats are accepted."""
         valid_keys = [
-            "vj_live_abc123def456ghi789jkl012mno34pqr",
-            "vj_test_ABC123DEF456GHI789JKL012MNO34PQR",
-            "vj_live_abcdefghijklmnopqrstuvwxyz1234ab",
-            "vj_test_ABCDEFGHIJKLMNOPQRSTUVWXYZ1234AB",
+            "vj_live_ggqT0GSEN6qrtVYph6hi5r0oPzxKvrI0",
+            "vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
+            "vj_live_ggqT0GSEN6qrtVYph6hi5r0oPzxKvrI0",
+            "vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
             "vj_live_abc+def/ghi+jkl/mno+pqr/stu+vwxy",
         ]
         for key in valid_keys:
@@ -174,7 +174,7 @@ class TestAPIKey:
         invalid_keys = [
             "vj_prod_abc123def456ghi789jkl012mno345",  # Wrong env
             "vj_live_abc123",  # Too short
-            "vj_live_abc123def456ghi789jkl012mno34pqrextra",  # Too long
+            "vj_live_ggqT0GSEN6qrtVYph6hi5r0oPzxKvrI0extra",  # Too long
             "live_abc123def456ghi789jkl012mno345pqr",  # Missing prefix
             "vj_live_abc123def456ghi789jkl012mno34",  # 31 chars instead of 32
             "vj_live_abc123def456ghi789jkl012mno34@",  # Invalid char
@@ -196,7 +196,7 @@ class TestAPIKey:
         """Test DynamoDB key generation."""
         api_key = APIKey(
             api_key_id="01HQ123456789",
-            api_key="vj_test_abc123def456ghi789jkl012mno34pqr",
+            api_key="vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
             organizer_id="ORG#123",
             hackathon_id="HACK#456",
             tier=Tier.FREE,
@@ -217,7 +217,7 @@ class TestAPIKey:
         """Test DynamoDB key generation without hackathon_id."""
         api_key = APIKey(
             api_key_id="01HQ123456789",
-            api_key="vj_test_abc123def456ghi789jkl012mno34pqr",
+            api_key="vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
             organizer_id="ORG#123",
             tier=Tier.FREE,
             rate_limit_per_second=2,
@@ -235,7 +235,7 @@ class TestAPIKey:
         """Test is_valid() for active, non-expired key."""
         api_key = APIKey(
             api_key_id="01HQ123456789",
-            api_key="vj_test_abc123def456ghi789jkl012mno34pqr",
+            api_key="vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
             organizer_id="ORG#123",
             tier=Tier.FREE,
             rate_limit_per_second=2,
@@ -250,7 +250,7 @@ class TestAPIKey:
         """Test is_valid() for inactive key."""
         api_key = APIKey(
             api_key_id="01HQ123456789",
-            api_key="vj_test_abc123def456ghi789jkl012mno34pqr",
+            api_key="vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
             organizer_id="ORG#123",
             tier=Tier.FREE,
             rate_limit_per_second=2,
@@ -264,7 +264,7 @@ class TestAPIKey:
         """Test is_valid() for expired key."""
         api_key = APIKey(
             api_key_id="01HQ123456789",
-            api_key="vj_test_abc123def456ghi789jkl012mno34pqr",
+            api_key="vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
             organizer_id="ORG#123",
             tier=Tier.FREE,
             rate_limit_per_second=2,
@@ -280,7 +280,7 @@ class TestAPIKey:
         # Not expired
         api_key = APIKey(
             api_key_id="01HQ123456789",
-            api_key="vj_test_abc123def456ghi789jkl012mno34pqr",
+            api_key="vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
             organizer_id="ORG#123",
             tier=Tier.FREE,
             rate_limit_per_second=2,
@@ -302,7 +302,7 @@ class TestAPIKey:
         """Test conversion to APIKeyResponse."""
         api_key = APIKey(
             api_key_id="01HQ123456789",
-            api_key="vj_test_abc123def456ghi789jkl012mno34pqr",
+            api_key="vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
             organizer_id="ORG#123",
             tier=Tier.FREE,
             rate_limit_per_second=2,
@@ -320,7 +320,7 @@ class TestAPIKey:
         """Test conversion to APIKeyCreateResponse."""
         api_key = APIKey(
             api_key_id="01HQ123456789",
-            api_key="vj_test_abc123def456ghi789jkl012mno34pqr",
+            api_key="vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
             organizer_id="ORG#123",
             tier=Tier.FREE,
             rate_limit_per_second=2,
@@ -331,7 +331,7 @@ class TestAPIKey:
         response = api_key.to_create_response()
 
         assert isinstance(response, APIKeyCreateResponse)
-        assert response.api_key == "vj_test_abc123def456ghi789jkl012mno34pqr"
+        assert response.api_key == "vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB"
         assert response.api_key_id == "01HQ123456789"
 
 
@@ -376,9 +376,9 @@ class TestHelperFunctions:
     def test_validate_api_key_format_valid(self) -> None:
         """Test validate_api_key_format with valid keys."""
         valid_keys = [
-            "vj_live_abc123def456ghi789jkl012mno34pqr",
-            "vj_test_ABC123DEF456GHI789JKL012MNO34PQR",
-            "vj_live_abcdefghijklmnopqrstuvwxyz123456",
+            "vj_live_ggqT0GSEN6qrtVYph6hi5r0oPzxKvrI0",
+            "vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
+            "vj_live_ggqT0GSEN6qrtVYph6hi5r0oPzxKvrI0",
         ]
         for key in valid_keys:
             assert validate_api_key_format(key) is True
@@ -403,7 +403,7 @@ class TestAPIKeyValidation:
         with pytest.raises(ValidationError):
             APIKey(
                 api_key_id="01HQ123456789",
-                api_key="vj_test_abc123def456ghi789jkl012mno34pqr",
+                api_key="vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
                 organizer_id="ORG#123",
                 tier=Tier.FREE,
                 rate_limit_per_second=0,
@@ -416,7 +416,7 @@ class TestAPIKeyValidation:
         with pytest.raises(ValidationError):
             APIKey(
                 api_key_id="01HQ123456789",
-                api_key="vj_test_abc123def456ghi789jkl012mno34pqr",
+                api_key="vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
                 organizer_id="ORG#123",
                 tier=Tier.FREE,
                 rate_limit_per_second=2,
@@ -429,7 +429,7 @@ class TestAPIKeyValidation:
         # Valid: 0.0
         api_key = APIKey(
             api_key_id="01HQ123456789",
-            api_key="vj_test_abc123def456ghi789jkl012mno34pqr",
+            api_key="vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
             organizer_id="ORG#123",
             tier=Tier.FREE,
             rate_limit_per_second=2,
@@ -442,7 +442,7 @@ class TestAPIKeyValidation:
         with pytest.raises(ValidationError):
             APIKey(
                 api_key_id="01HQ123456789",
-                api_key="vj_test_abc123def456ghi789jkl012mno34pqr",
+                api_key="vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
                 organizer_id="ORG#123",
                 tier=Tier.FREE,
                 rate_limit_per_second=2,
@@ -455,7 +455,7 @@ class TestAPIKeyValidation:
         with pytest.raises(ValidationError):
             APIKey(
                 api_key_id="01HQ123456789",
-                api_key="vj_test_abc123def456ghi789jkl012mno34pqr",
+                api_key="vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
                 organizer_id="ORG#123",
                 tier=Tier.FREE,
                 rate_limit_per_second=2,
@@ -469,7 +469,7 @@ class TestAPIKeyValidation:
         with pytest.raises(ValidationError):
             APIKey(
                 api_key_id="01HQ123456789",
-                api_key="vj_test_abc123def456ghi789jkl012mno34pqr",
+                api_key="vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
                 organizer_id="ORG#123",
                 tier=Tier.FREE,
                 rate_limit_per_second=2,

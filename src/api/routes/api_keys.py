@@ -8,6 +8,7 @@ from src.models.api_key import (
     APIKeyCreateResponse,
     APIKeyListResponse,
     APIKeyResponse,
+    APIKeyUpdate,
 )
 from src.services.api_key_service import APIKeyService
 
@@ -160,6 +161,57 @@ async def rotate_api_key(
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to rotate API key: {str(e)}") from e
+
+
+@router.patch("/{key_id}", response_model=APIKeyResponse)
+async def update_api_key(
+    key_id: str,
+    data: APIKeyUpdate,
+    current_organizer: CurrentOrganizer,
+    db: DynamoDBHelperDep,
+) -> APIKeyResponse:
+    """Update API key tier and limits.
+
+    PATCH /api/v1/api-keys/{key_id}
+
+    Allows upgrading/downgrading tier or customizing rate limits, quotas, and budget.
+    If tier is changed, tier defaults are applied unless custom values are provided.
+
+    Requires X-API-Key header for authentication.
+    """
+    try:
+        service = get_api_key_service(db)
+
+        # Get existing key to verify ownership
+        existing_key = service.get_api_key_by_id(key_id)
+        if not existing_key:
+            raise HTTPException(status_code=404, detail="API key not found")
+
+        # Verify ownership
+        if existing_key.organizer_id != current_organizer["org_id"]:
+            raise HTTPException(
+                status_code=403,
+                detail="You do not have permission to update this API key",
+            )
+
+        # Update the key
+        updated_key = service.update_api_key(
+            api_key_id=key_id,
+            tier=data.tier,
+            rate_limit=data.rate_limit_per_second,
+            daily_quota=data.daily_quota,
+            budget_limit_usd=data.budget_limit_usd,
+            expires_at=data.expires_at,
+        )
+
+        return updated_key
+
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update API key: {str(e)}") from e
 
 
 @router.delete("/{key_id}", status_code=204)

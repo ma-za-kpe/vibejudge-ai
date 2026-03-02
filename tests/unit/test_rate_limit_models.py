@@ -17,12 +17,12 @@ class TestRateLimitCounter:
         window_start = int(datetime.utcnow().timestamp())
         counter = RateLimitCounter(
             counter_key=f"vj_test_abc#{window_start}",
-            api_key="vj_test_abc123def456ghi789jkl012mno34pqr",
+            api_key="vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
             window_start=window_start,
             request_count=5,
             ttl=window_start + 60,
         )
-        assert counter.api_key == "vj_test_abc123def456ghi789jkl012mno34pqr"
+        assert counter.api_key == "vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB"
         assert counter.window_start == window_start
         assert counter.request_count == 5
         assert counter.ttl == window_start + 60
@@ -34,7 +34,7 @@ class TestRateLimitCounter:
         # Valid TTL
         counter = RateLimitCounter(
             counter_key=f"vj_test_abc#{window_start}",
-            api_key="vj_test_abc123def456ghi789jkl012mno34pqr",
+            api_key="vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
             window_start=window_start,
             ttl=window_start + 60,
         )
@@ -44,7 +44,7 @@ class TestRateLimitCounter:
         with pytest.raises(ValidationError) as exc_info:
             RateLimitCounter(
                 counter_key=f"vj_test_abc#{window_start}",
-                api_key="vj_test_abc123def456ghi789jkl012mno34pqr",
+                api_key="vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
                 window_start=window_start,
                 ttl=window_start + 120,  # Wrong TTL
             )
@@ -57,7 +57,7 @@ class TestRateLimitCounter:
         # Valid: 0
         counter = RateLimitCounter(
             counter_key=f"vj_test_abc#{window_start}",
-            api_key="vj_test_abc123def456ghi789jkl012mno34pqr",
+            api_key="vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
             window_start=window_start,
             request_count=0,
             ttl=window_start + 60,
@@ -68,7 +68,7 @@ class TestRateLimitCounter:
         with pytest.raises(ValidationError):
             RateLimitCounter(
                 counter_key=f"vj_test_abc#{window_start}",
-                api_key="vj_test_abc123def456ghi789jkl012mno34pqr",
+                api_key="vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
                 window_start=window_start,
                 request_count=-1,
                 ttl=window_start + 60,
@@ -79,13 +79,13 @@ class TestRateLimitCounter:
         window_start = int(datetime.utcnow().timestamp())
         counter = RateLimitCounter(
             counter_key=f"vj_test_abc#{window_start}",
-            api_key="vj_test_abc123def456ghi789jkl012mno34pqr",
+            api_key="vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
             window_start=window_start,
             ttl=window_start + 60,
         )
         counter.set_dynamodb_keys()
 
-        assert f"RATELIMIT#vj_test_abc123def456ghi789jkl012mno34pqr#{window_start}" == counter.PK
+        assert f"RATELIMIT#vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB#{window_start}" == counter.PK
         assert counter.SK == "COUNTER"
 
 
@@ -96,7 +96,7 @@ class TestUsageRecord:
         """Test creating usage record with valid data."""
         record = UsageRecord(
             usage_id="01HQ123456789",
-            api_key="vj_test_abc123def456ghi789jkl012mno34pqr",
+            api_key="vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
             date="2024-01-15",
             request_count=100,
             successful_requests=95,
@@ -105,7 +105,7 @@ class TestUsageRecord:
             bedrock_cost_usd=2.30,
             lambda_cost_usd=0.20,
         )
-        assert record.api_key == "vj_test_abc123def456ghi789jkl012mno34pqr"
+        assert record.api_key == "vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB"
         assert record.date == "2024-01-15"
         assert record.request_count == 100
         assert record.successful_requests == 95
@@ -116,7 +116,7 @@ class TestUsageRecord:
         # Valid format
         record = UsageRecord(
             usage_id="01HQ123456789",
-            api_key="vj_test_abc123def456ghi789jkl012mno34pqr",
+            api_key="vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
             date="2024-01-15",
             request_count=10,
             successful_requests=10,
@@ -130,7 +130,7 @@ class TestUsageRecord:
             with pytest.raises(ValidationError) as exc_info:
                 UsageRecord(
                     usage_id="01HQ123456789",
-                    api_key="vj_test_abc123def456ghi789jkl012mno34pqr",
+                    api_key="vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
                     date=invalid_date,
                     request_count=10,
                     successful_requests=10,
@@ -143,7 +143,7 @@ class TestUsageRecord:
         # Valid: counts match
         record = UsageRecord(
             usage_id="01HQ123456789",
-            api_key="vj_test_abc123def456ghi789jkl012mno34pqr",
+            api_key="vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
             date="2024-01-15",
             request_count=100,
             successful_requests=95,
@@ -155,7 +155,7 @@ class TestUsageRecord:
         with pytest.raises(ValidationError) as exc_info:
             UsageRecord(
                 usage_id="01HQ123456789",
-                api_key="vj_test_abc123def456ghi789jkl012mno34pqr",
+                api_key="vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
                 date="2024-01-15",
                 request_count=100,
                 successful_requests=90,
@@ -170,7 +170,7 @@ class TestUsageRecord:
         # Valid: 0.0
         record = UsageRecord(
             usage_id="01HQ123456789",
-            api_key="vj_test_abc123def456ghi789jkl012mno34pqr",
+            api_key="vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
             date="2024-01-15",
             request_count=0,
             successful_requests=0,
@@ -185,7 +185,7 @@ class TestUsageRecord:
         with pytest.raises(ValidationError):
             UsageRecord(
                 usage_id="01HQ123456789",
-                api_key="vj_test_abc123def456ghi789jkl012mno34pqr",
+                api_key="vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
                 date="2024-01-15",
                 request_count=0,
                 successful_requests=0,
@@ -197,7 +197,7 @@ class TestUsageRecord:
         """Test DynamoDB key generation."""
         record = UsageRecord(
             usage_id="01HQ123456789",
-            api_key="vj_test_abc123def456ghi789jkl012mno34pqr",
+            api_key="vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
             date="2024-01-15",
             request_count=10,
             successful_requests=10,
@@ -205,16 +205,16 @@ class TestUsageRecord:
         )
         record.set_dynamodb_keys()
 
-        assert record.PK == "USAGE#vj_test_abc123def456ghi789jkl012mno34pqr#2024-01-15"
+        assert record.PK == "USAGE#vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB#2024-01-15"
         assert record.SK == "SUMMARY"
-        assert record.GSI1PK == "APIKEY#vj_test_abc123def456ghi789jkl012mno34pqr"
+        assert record.GSI1PK == "APIKEY#vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB"
         assert record.GSI1SK == "DATE#2024-01-15"
 
     def test_endpoints_used_default(self) -> None:
         """Test that endpoints_used defaults to empty dict."""
         record = UsageRecord(
             usage_id="01HQ123456789",
-            api_key="vj_test_abc123def456ghi789jkl012mno34pqr",
+            api_key="vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
             date="2024-01-15",
             request_count=0,
             successful_requests=0,

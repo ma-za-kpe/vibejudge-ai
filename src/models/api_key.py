@@ -70,6 +70,30 @@ class APIKeyCreate(VibeJudgeBase):
         return v
 
 
+class APIKeyUpdate(VibeJudgeBase):
+    """Request model for updating an existing API key."""
+
+    tier: Tier | None = Field(default=None, description="Update API key tier")
+    rate_limit_per_second: int | None = Field(
+        default=None, gt=0, description="Update rate limit (overrides tier default)"
+    )
+    daily_quota: int | None = Field(
+        default=None, gt=0, description="Update daily quota (overrides tier default)"
+    )
+    budget_limit_usd: float | None = Field(
+        default=None, ge=0, description="Update budget limit (overrides tier default)"
+    )
+    expires_at: datetime | None = Field(default=None, description="Update expiration timestamp")
+
+    @field_validator("expires_at")
+    @classmethod
+    def validate_expires_at(cls, v: datetime | None) -> datetime | None:
+        """Ensure expiration is in the future."""
+        if v is not None and v <= datetime.utcnow():
+            raise ValueError("expires_at must be in the future")
+        return v
+
+
 # ============================================================
 # RESPONSE MODELS
 # ============================================================

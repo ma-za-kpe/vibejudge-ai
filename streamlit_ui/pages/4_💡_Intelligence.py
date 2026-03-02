@@ -177,47 +177,72 @@ else:
         # Technology trends section
         st.markdown("### 📊 Technology Trends")
 
-        technology_trends = intelligence_data.get("technology_trends", [])
+        technology_trends_obj = intelligence_data.get("technology_trends", {})
 
-        if not technology_trends:
+        # Check if technology_trends is a valid dict with data
+        if (
+            not technology_trends_obj
+            or not isinstance(technology_trends_obj, dict)
+            or not technology_trends_obj.get("most_used", [])
+        ):
             st.info("📭 No technology trends data available yet.")
         else:
-            # Display technology trends chart
-            fig = create_technology_trends_chart(technology_trends)
-            st.plotly_chart(fig, use_container_width=True)
+            # Extract most_used from technology_trends object
+            # API returns: {"most_used": [["Python", 5], ["JavaScript", 3]], "emerging": [...], "popular_stacks": [...]}
+            most_used = technology_trends_obj.get("most_used", [])
 
-            # Display technology trends table
-            with st.expander("📋 View Detailed Technology Breakdown", expanded=False):
-                # Table header
-                header_col1, header_col2, header_col3 = st.columns([2, 2, 1])
-                with header_col1:
-                    st.markdown("**Technology**")
-                with header_col2:
-                    st.markdown("**Category**")
-                with header_col3:
-                    st.markdown("**Usage Count**")
+            # Convert tuples/lists to dict format expected by chart
+            technology_trends = [
+                {"technology": tech, "usage_count": count, "category": "language"}
+                for tech, count in most_used
+            ]
 
-                st.divider()
+            if not technology_trends:
+                st.info("📭 No technology trends data available yet.")
+            else:
+                # Display technology trends chart
+                fig = create_technology_trends_chart(technology_trends)
+                st.plotly_chart(fig, use_container_width=True)
 
-                # Display each technology
-                for trend in technology_trends:
-                    col1, col2, col3 = st.columns([2, 2, 1])
-
-                    with col1:
-                        technology = trend.get("technology", "Unknown")
-                        st.markdown(technology)
-
-                    with col2:
-                        category = trend.get("category", "N/A")
-                        st.markdown(category.title() if isinstance(category, str) else "N/A")
-
-                    with col3:
-                        usage_count = trend.get("usage_count", 0)
-                        st.markdown(str(usage_count))
+                # Display technology trends table
+                with st.expander("📋 View Detailed Technology Breakdown", expanded=False):
+                    # Table header
+                    header_col1, header_col2, header_col3 = st.columns([2, 2, 1])
+                    with header_col1:
+                        st.markdown("**Technology**")
+                    with header_col2:
+                        st.markdown("**Category**")
+                    with header_col3:
+                        st.markdown("**Usage Count**")
 
                     st.divider()
 
-                st.caption(f"Total technologies tracked: {len(technology_trends)}")
+                    # Display each technology
+                    for trend in technology_trends:
+                        col1, col2, col3 = st.columns([2, 2, 1])
+
+                        with col1:
+                            technology = trend.get("technology", "Unknown")
+                            st.markdown(technology)
+
+                        with col2:
+                            category = trend.get("category", "N/A")
+                            st.markdown(category.title() if isinstance(category, str) else "N/A")
+
+                        with col3:
+                            usage_count = trend.get("usage_count", 0)
+                            st.markdown(str(usage_count))
+
+                        st.divider()
+
+                    st.caption(f"Total technologies tracked: {len(technology_trends)}")
+
+                # Display emerging technologies if available
+                emerging = technology_trends_obj.get("emerging", [])
+                if emerging:
+                    st.markdown("### 🌟 Emerging Technologies")
+                    st.markdown(", ".join(emerging))
+                    st.caption("Technologies used by 2-5 teams")
 
     with tab3:
         # Sponsor API usage section

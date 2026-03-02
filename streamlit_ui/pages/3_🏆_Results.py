@@ -100,7 +100,7 @@ if st.session_state["view_mode"] == "team_detail":
 
     # Fetch scorecard data
     with st.spinner("📋 Loading scorecard..."):
-        scorecard = api_call(f"/hackathons/{hack_id}/submissions/{sub_id}/scorecard")
+        scorecard = api_call(f"/submissions/{sub_id}/scorecard")
 
     if not scorecard:
         if st.button("🔄 Retry", key="retry_scorecard"):
@@ -149,7 +149,7 @@ if st.session_state["view_mode"] == "team_detail":
         st.markdown("---")
         st.markdown("### 📊 Dimension Scores")
 
-        dimension_scores = scorecard.get("dimension_scores", {})
+        dimension_scores = scorecard.get("weighted_scores", {})
 
         if dimension_scores:
             # Create table header
@@ -201,54 +201,137 @@ if st.session_state["view_mode"] == "team_detail":
             help="Total cost for analyzing this submission",
         )
 
-        # Display cost by agent
-        agent_results = scorecard.get("agent_results", {})
-        if agent_results:
+        # Display cost by agent (if available in future)
+        agent_scores_list = scorecard.get("agent_scores", [])
+        if agent_scores_list:
             with st.expander("View Cost by Agent"):
-                for agent_name, result in agent_results.items():
-                    formatted_agent_name = agent_name.replace("_", " ").title()
-                    cost_usd = result.get("cost_usd", 0)
-                    st.caption(f"- {formatted_agent_name}: ${cost_usd:.4f}")
+                st.caption("Cost breakdown by agent will be available soon.")
+
+        # Advanced details expander
+        with st.expander("🔍 Advanced Details", expanded=False):
+            st.markdown("**Additional Metrics**")
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                # Rank
+                rank = scorecard.get("rank")
+                if rank:
+                    st.markdown(f"**Leaderboard Rank:** #{rank}")
+
+                # Total tokens
+                total_tokens = scorecard.get("total_tokens")
+                if total_tokens:
+                    st.markdown(f"**Total Tokens:** {total_tokens:,}")
+
+                # Analysis timestamp
+                analyzed_at = scorecard.get("analyzed_at")
+                if analyzed_at:
+                    st.markdown(f"**Analyzed At:** {analyzed_at}")
+
+            with col2:
+                # Analysis duration
+                analysis_duration_ms = scorecard.get("analysis_duration_ms")
+                if analysis_duration_ms:
+                    duration_sec = analysis_duration_ms / 1000
+                    st.markdown(f"**Analysis Duration:** {duration_sec:.2f}s")
 
     with tab2:
         # Agent results section
         st.markdown("### 🤖 Agent Analysis")
 
-        agent_results = scorecard.get("agent_results", {})
+        agent_scores = scorecard.get("agent_scores", [])
 
-        if agent_results:
-            for agent_name, result in agent_results.items():
+        if agent_scores:
+            for agent_result in agent_scores:
+                agent_name = agent_result.get("agent_name", "Unknown")
                 formatted_agent_name = agent_name.replace("_", " ").title()
 
                 with st.expander(f"**{formatted_agent_name}**", expanded=False):
+                    # Display overall score and confidence
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        agent_score = agent_result.get("overall_score", 0)
+                        st.metric("Score", f"{agent_score:.1f}/10")
+                    with col2:
+                        agent_confidence = agent_result.get("confidence", 0)
+                        st.metric("Confidence", f"{agent_confidence:.0%}")
+
+                    st.markdown("---")
+
                     # Summary
-                    summary = result.get("summary", "N/A")
+                    summary = agent_result.get("summary", "N/A")
                     st.markdown("**Summary:**")
                     st.markdown(summary)
 
                     st.markdown("")
 
-                    # Strengths
-                    strengths = result.get("strengths", [])
-                    if strengths:
-                        st.markdown("**✅ Strengths:**")
-                        for strength in strengths:
-                            st.markdown(f"- {strength}")
+                    # Sub-scores breakdown
+                    scores = agent_result.get("scores", {})
+                    if scores:
+                        st.markdown("**📊 Detailed Scores:**")
+                        for score_name, score_value in scores.items():
+                            formatted_name = score_name.replace("_", " ").title()
+                            if isinstance(score_value, (int, float)):
+                                st.caption(f"- {formatted_name}: {score_value:.1f}/10")
+                            else:
+                                st.caption(f"- {formatted_name}: {score_value}")
                         st.markdown("")
 
-                    # Improvements
-                    improvements = result.get("improvements", [])
-                    if improvements:
-                        st.markdown("**💡 Areas for Improvement:**")
-                        for improvement in improvements:
-                            st.markdown(f"- {improvement}")
+                    # Evidence/findings
+                    evidence = agent_result.get("evidence", [])
+                    if evidence:
+                        st.markdown("**🔍 Key Findings:**")
+                        for ev in evidence[:5]:  # Limit to top 5
+                            finding = ev.get("finding", "")
+                            file_path = ev.get("file", "")
+                            if finding:
+                                st.markdown(f"- {finding}")
+                                if file_path:
+                                    st.caption(f"  _File: {file_path}_")
+                        if len(evidence) > 5:
+                            st.caption(f"_...and {len(evidence) - 5} more findings_")
                         st.markdown("")
 
-                    # Cost
-                    cost_usd = result.get("cost_usd", 0)
-                    st.caption(f"Analysis cost: ${cost_usd:.4f}")
+            # Advanced details expander for Tab 2
+            with st.expander("🔍 Advanced Details", expanded=False):
+                st.markdown("**Additional Agent Data**")
+
+                # Check for additional fields that might not be displayed
+                additional_fields = [
+                    "ci_observations",
+                    "tech_stack_assessment",
+                    "innovation_highlights",
+                    "development_story",
+                    "hackathon_context_assessment",
+                    "commit_analysis",
+                    "ai_policy_observation",
+                ]
+
+                displayed_any = False
+                for agent_result in agent_scores:
+                    agent_name = agent_result.get("agent_name", "Unknown")
+                    formatted_agent_name = agent_name.replace("_", " ").title()
+
+                    agent_additional = {}
+                    for field in additional_fields:
+                        if field in agent_result and agent_result[field]:
+                            agent_additional[field] = agent_result[field]
+
+                    if agent_additional:
+                        displayed_any = True
+                        st.markdown(f"**{formatted_agent_name}:**")
+                        for field, value in agent_additional.items():
+                            formatted_field = field.replace("_", " ").title()
+                            if isinstance(value, (list, dict)):
+                                st.json(value)
+                            else:
+                                st.markdown(f"- **{formatted_field}:** {value}")
+
+                if not displayed_any:
+                    st.caption("No additional agent data available beyond what's displayed above.")
         else:
-            st.info("📭 No agent results available")
+            st.info("📭 No agent analysis available")
 
     with tab3:
         # Repository metadata section
@@ -296,141 +379,244 @@ if st.session_state["view_mode"] == "team_detail":
                     value=ci_status,
                     help="Whether the repository has CI/CD configured",
                 )
+
+            # Advanced details expander for Tab 3
+            with st.expander("🔍 Advanced Details", expanded=False):
+                st.markdown("**Additional Repository Data**")
+
+                col1, col2 = st.columns(2)
+
+                with col1:
+                    # Branch count
+                    branch_count = repo_meta.get("branch_count")
+                    if branch_count is not None:
+                        st.markdown(f"**Branches:** {branch_count}")
+
+                    # Total files
+                    total_files = repo_meta.get("total_files")
+                    if total_files is not None:
+                        st.markdown(f"**Total Files:** {total_files:,}")
+
+                    # Total lines
+                    total_lines = repo_meta.get("total_lines")
+                    if total_lines is not None:
+                        st.markdown(f"**Total Lines:** {total_lines:,}")
+
+                    # Has README
+                    has_readme = repo_meta.get("has_readme")
+                    if has_readme is not None:
+                        readme_status = "✅ Yes" if has_readme else "❌ No"
+                        st.markdown(f"**Has README:** {readme_status}")
+
+                    # Has Dockerfile
+                    has_dockerfile = repo_meta.get("has_dockerfile")
+                    if has_dockerfile is not None:
+                        docker_status = "✅ Yes" if has_dockerfile else "❌ No"
+                        st.markdown(f"**Has Dockerfile:** {docker_status}")
+
+                with col2:
+                    # First commit
+                    first_commit = repo_meta.get("first_commit_at")
+                    if first_commit:
+                        st.markdown(f"**First Commit:** {first_commit}")
+
+                    # Last commit
+                    last_commit = repo_meta.get("last_commit_at")
+                    if last_commit:
+                        st.markdown(f"**Last Commit:** {last_commit}")
+
+                    # Development duration
+                    dev_duration = repo_meta.get("development_duration_hours")
+                    if dev_duration:
+                        st.markdown(f"**Dev Duration:** {dev_duration:.1f} hours")
+
+                    # Workflow runs
+                    workflow_runs = repo_meta.get("workflow_run_count")
+                    if workflow_runs is not None:
+                        st.markdown(f"**Workflow Runs:** {workflow_runs}")
+
+                    # Workflow success rate
+                    workflow_success = repo_meta.get("workflow_success_rate")
+                    if workflow_success is not None:
+                        st.markdown(f"**CI Success Rate:** {workflow_success:.1%}")
+
+                # Languages breakdown
+                languages = repo_meta.get("languages")
+                if languages and isinstance(languages, dict):
+                    st.markdown("---")
+                    st.markdown("**Language Breakdown:**")
+                    for lang, percentage in languages.items():
+                        st.markdown(f"- {lang}: {percentage}%")
         else:
             st.info("📭 No repository metadata available")
 
     with tab4:
-        # Individual team member scorecard section
-        st.markdown("### 👥 Individual Team Member Analysis")
+        # Team dynamics and strategy section
+        st.markdown("### 👥 Team Dynamics & Strategy Analysis")
 
-        # Fetch individual scorecard data
-        with st.spinner("👥 Loading individual team member analysis..."):
-            individual_data = api_call(
-                f"/hackathons/{hack_id}/submissions/{sub_id}/individual-scorecards"
-            )
+        # Use team_dynamics and strategy_analysis from the main scorecard response
+        team_dynamics = scorecard.get("team_dynamics", {})
+        strategy_analysis = scorecard.get("strategy_analysis", {})
+        actionable_feedback = scorecard.get("actionable_feedback", [])
 
-        if not individual_data:
-            st.info(
-                "📭 Individual team member analysis is pending or unavailable. This data will be available after the analysis is complete."
-            )
-        else:
-            # Team dynamics section
-            team_dynamics = individual_data.get("team_dynamics", {})
+        if team_dynamics:
+            st.markdown("#### 🤝 Team Dynamics")
 
-            if team_dynamics:
-                st.markdown("#### 🤝 Team Dynamics")
+            # Display team dynamics metrics
+            col1, col2 = st.columns(2)
+            with col1:
+                team_grade = team_dynamics.get("team_dynamics_grade", "N/A")
+                st.metric("Team Dynamics Grade", team_grade if team_grade else "N/A")
+            with col2:
+                commit_quality = team_dynamics.get("commit_message_quality", 0)
+                # Convert to float if it's a string
+                if isinstance(commit_quality, str):
+                    try:
+                        commit_quality = float(commit_quality)
+                    except (ValueError, TypeError):
+                        commit_quality = None
 
-                col1, col2, col3 = st.columns(3)
+                if commit_quality is not None and commit_quality != 0:
+                    st.metric("Commit Message Quality", f"{commit_quality:.1f}/10")
+                else:
+                    st.metric("Commit Message Quality", "N/A")
 
-                with col1:
-                    collaboration_quality = team_dynamics.get("collaboration_quality", "N/A")
-                    st.metric(
-                        label="Collaboration Quality",
-                        value=collaboration_quality.title()
-                        if isinstance(collaboration_quality, str)
-                        else "N/A",
-                        help="Assessment of how well the team worked together",
-                    )
+            # Red flags
+            red_flags = team_dynamics.get("red_flags", [])
+            if red_flags:
+                st.markdown("**⚠️ Red Flags:**")
+                for flag in red_flags:
+                    flag_type = flag.get("type", "Unknown") if isinstance(flag, dict) else str(flag)
+                    st.warning(f"- {flag_type}")
 
-                with col2:
-                    role_distribution = team_dynamics.get("role_distribution", "N/A")
-                    st.metric(
-                        label="Role Distribution",
-                        value=role_distribution.title()
-                        if isinstance(role_distribution, str)
-                        else "N/A",
-                        help="How roles were distributed among team members",
-                    )
+            st.markdown("---")
 
-                with col3:
-                    communication_patterns = team_dynamics.get("communication_patterns", "N/A")
-                    st.metric(
-                        label="Communication Patterns",
-                        value=communication_patterns.title()
-                        if isinstance(communication_patterns, str)
-                        else "N/A",
-                        help="Quality and frequency of team communication",
-                    )
+        if strategy_analysis:
+            st.markdown("#### 🎯 Strategy Analysis")
 
-            # Strategy analysis section
-            strategy_analysis = individual_data.get("strategy_analysis", {})
+            col1, col2 = st.columns(2)
+            with col1:
+                test_strategy = strategy_analysis.get("test_strategy", "N/A")
+                st.metric("Test Strategy", test_strategy if test_strategy else "N/A")
+            with col2:
+                maturity = strategy_analysis.get("maturity_level", "N/A")
+                st.metric("Maturity Level", maturity if maturity else "N/A")
 
-            if strategy_analysis:
-                st.markdown("#### 🎯 Strategy Analysis")
+            # Strategic context
+            context = strategy_analysis.get("strategic_context", "")
+            if context:
+                st.markdown("**Strategic Context:**")
+                st.info(context)
 
-                col1, col2, col3 = st.columns(3)
+            st.markdown("---")
 
-                with col1:
-                    development_approach = strategy_analysis.get("development_approach", "N/A")
-                    st.metric(
-                        label="Development Approach",
-                        value=development_approach.title()
-                        if isinstance(development_approach, str)
-                        else "N/A",
-                        help="The team's approach to development",
-                    )
+        if actionable_feedback:
+            st.markdown("#### 💡 Actionable Feedback")
+            for idx, feedback_item in enumerate(actionable_feedback[:5], 1):  # Limit to top 5
+                if isinstance(feedback_item, dict):
+                    finding = feedback_item.get("finding", "General")
+                    business_impact = feedback_item.get("business_impact", "")
+                    acknowledgment = feedback_item.get("acknowledgment", "")
+                    priority = feedback_item.get("priority", 3)  # Default to medium (3)
 
-                with col2:
-                    time_management = strategy_analysis.get("time_management", "N/A")
-                    st.metric(
-                        label="Time Management",
-                        value=time_management.title()
-                        if isinstance(time_management, str)
-                        else "N/A",
-                        help="How well the team managed their time",
-                    )
+                    # Map priority number (1-5) to emoji: 1-2=high, 3=medium, 4-5=low
+                    if priority <= 2:
+                        priority_emoji = "🔴"
+                        priority_label = "High"
+                    elif priority == 3:
+                        priority_emoji = "🟡"
+                        priority_label = "Medium"
+                    else:
+                        priority_emoji = "🟢"
+                        priority_label = "Low"
 
-                with col3:
-                    risk_management = strategy_analysis.get("risk_management", "N/A")
-                    st.metric(
-                        label="Risk Management",
-                        value=risk_management.title()
-                        if isinstance(risk_management, str)
-                        else "N/A",
-                        help="The team's approach to managing risks",
-                    )
+                    with st.expander(f"{priority_emoji} {finding}", expanded=False):
+                        # Show acknowledgment if available
+                        if acknowledgment and acknowledgment != "N/A - This is a strength":
+                            st.success(f"**✅ {acknowledgment}**")
+                            st.markdown("")
 
-            # Contributors section
-            contributors = individual_data.get("contributors", [])
+                        # Show business impact/suggestion
+                        if business_impact:
+                            st.markdown(business_impact)
+                            st.markdown("")
 
-            if contributors:
-                st.markdown("#### 👤 Individual Contributors")
+                        # Show code example if available
+                        code_example = feedback_item.get("code_example", None)
+                        if code_example and code_example is not None:
+                            if isinstance(code_example, dict):
+                                code_text = code_example.get("code", "")
+                                language = code_example.get("language", "python")
+                                if code_text:
+                                    st.markdown("**Example:**")
+                                    st.code(code_text, language=language)
+                            elif isinstance(code_example, str):
+                                st.markdown("**Example:**")
+                                st.code(code_example, language="python")
 
-                # Display each contributor
-                for contributor in contributors:
-                    member_name = contributor.get("member_name", "Unknown")
-                    commit_count = contributor.get("commit_count", 0)
-                    skill_assessment = contributor.get("skill_assessment", "N/A")
-                    actionable_feedback = contributor.get("actionable_feedback", "")
+            if len(actionable_feedback) > 5:
+                st.caption(f"_...and {len(actionable_feedback) - 5} more feedback items_")
 
-                    with st.expander(f"**{member_name}**", expanded=False):
-                        # Contributor metrics
-                        col1, col2 = st.columns(2)
+        # Advanced details expander for Tab 4
+        if team_dynamics or strategy_analysis:
+            with st.expander("🔍 Advanced Details", expanded=False):
+                st.markdown("**Additional Team & Strategy Data**")
 
-                        with col1:
-                            st.metric(
-                                label="Commits",
-                                value=commit_count,
-                                help="Number of commits by this contributor",
-                            )
+                # Individual scorecards (per-contributor analysis)
+                individual_scorecards = team_dynamics.get("individual_scorecards", [])
+                if individual_scorecards:
+                    st.markdown("---")
+                    st.markdown("**👤 Individual Contributor Scorecards:**")
+                    for scorecard_item in individual_scorecards[:10]:  # Limit to 10
+                        contributor_name = scorecard_item.get("name", "Unknown")
+                        role = scorecard_item.get("role", "N/A")
+                        commit_count = scorecard_item.get("commit_count", 0)
 
-                        with col2:
-                            st.metric(
-                                label="Skill Assessment",
-                                value=skill_assessment.title()
-                                if isinstance(skill_assessment, str)
-                                else "N/A",
-                                help="Assessed skill level of this contributor",
-                            )
+                        st.markdown(f"**{contributor_name}** ({role}) - {commit_count} commits")
 
-                        # Actionable feedback
-                        if actionable_feedback:
-                            st.markdown("**💡 Actionable Feedback:**")
-                            st.markdown(actionable_feedback)
+                    if len(individual_scorecards) > 10:
+                        st.caption(f"_...and {len(individual_scorecards) - 10} more contributors_")
+
+                # Collaboration metrics
+                collaboration_metrics = team_dynamics.get("collaboration_metrics", {})
+                if collaboration_metrics and isinstance(collaboration_metrics, dict):
+                    st.markdown("---")
+                    st.markdown("**🤝 Collaboration Metrics:**")
+                    for metric_name, metric_value in collaboration_metrics.items():
+                        formatted_name = metric_name.replace("_", " ").title()
+                        if isinstance(metric_value, (int, float)):
+                            st.markdown(f"- {formatted_name}: {metric_value:.2f}")
                         else:
-                            st.info("No actionable feedback available for this contributor.")
-            else:
-                st.info("📭 No individual contributor data available")
+                            st.markdown(f"- {formatted_name}: {metric_value}")
+
+                # Strategic tradeoffs
+                tradeoffs = strategy_analysis.get("tradeoffs", [])
+                if tradeoffs:
+                    st.markdown("---")
+                    st.markdown("**⚖️ Strategic Tradeoffs:**")
+                    for tradeoff in tradeoffs:
+                        if isinstance(tradeoff, dict):
+                            st.markdown(f"- {tradeoff.get('description', str(tradeoff))}")
+                        else:
+                            st.markdown(f"- {tradeoff}")
+
+                # Strategy recommendations
+                recommendations = strategy_analysis.get("recommendations", [])
+                if recommendations:
+                    st.markdown("---")
+                    st.markdown("**💡 Strategy Recommendations:**")
+                    for rec in recommendations[:5]:  # Limit to 5
+                        if isinstance(rec, dict):
+                            st.markdown(f"- {rec.get('recommendation', str(rec))}")
+                        else:
+                            st.markdown(f"- {rec}")
+                    if len(recommendations) > 5:
+                        st.caption(f"_...and {len(recommendations) - 5} more recommendations_")
+
+        if not team_dynamics and not strategy_analysis and not actionable_feedback:
+            st.info(
+                "📭 Team dynamics and strategy analysis are not yet available for this submission."
+            )
 
     st.stop()
 
@@ -483,8 +669,9 @@ if not leaderboard_data:
     st.stop()
 
 # Display summary statistics
-total_submissions = leaderboard_data.get("total_submissions", 0)
-analyzed_count = leaderboard_data.get("analyzed_count", 0)
+hackathon_info = leaderboard_data.get("hackathon", {})
+total_submissions = hackathon_info.get("submission_count", 0)
+analyzed_count = hackathon_info.get("analyzed_count", 0)
 
 st.subheader("📊 Summary")
 
@@ -508,7 +695,7 @@ with col2:
 st.markdown("---")
 st.subheader("🏅 Leaderboard")
 
-submissions = leaderboard_data.get("submissions", [])
+submissions = leaderboard_data.get("leaderboard", [])
 
 if not submissions:
     st.info("📭 No submissions have been analyzed yet.")

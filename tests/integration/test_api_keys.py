@@ -9,7 +9,7 @@ Tests the following endpoints:
 """
 
 from datetime import datetime, timedelta
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -40,28 +40,44 @@ def mock_aws_credentials(monkeypatch):
 @pytest.fixture
 def mock_services(mock_aws_credentials):
     """Mock all service dependencies."""
-    with (
-        patch("src.api.dependencies.get_organizer_service") as mock_org_service,
-        patch("src.api.routes.api_keys.get_api_key_service") as mock_api_key_service,
-    ):
-        # Mock organizer service for auth
-        org_service = MagicMock()
-        org_service.verify_api_key.return_value = "org_123"
-        org_service.get_organizer.return_value = MagicMock(
-            org_id="org_123",
-            email="test@example.com",
-            model_dump=lambda: {"org_id": "org_123", "email": "test@example.com"},
-        )
-        mock_org_service.return_value = org_service
+    from src.api.dependencies import get_organizer_service, verify_api_key
+    from src.api.main import app
+    from src.api.routes.api_keys import get_api_key_service
 
-        # Mock API key service
-        api_key_service = MagicMock()
-        mock_api_key_service.return_value = api_key_service
+    # Remove middleware for testing
+    app.user_middleware.clear()
 
-        yield {
-            "organizer": org_service,
-            "api_key": api_key_service,
-        }
+    # Create mock services
+    org_service = MagicMock()
+    org_service.get_organizer.return_value = MagicMock(
+        org_id="org_123",
+        email="test@example.com",
+        model_dump=lambda: {"org_id": "org_123", "email": "test@example.com"},
+    )
+
+    api_key_service = MagicMock()
+
+    # Override dependencies (no parameters - FastAPI will inject them)
+    async def mock_verify_api_key():
+        return "org_123"
+
+    def mock_get_organizer_service():
+        return org_service
+
+    def mock_get_api_key_service():
+        return api_key_service
+
+    app.dependency_overrides[verify_api_key] = mock_verify_api_key
+    app.dependency_overrides[get_organizer_service] = mock_get_organizer_service
+    app.dependency_overrides[get_api_key_service] = mock_get_api_key_service
+
+    yield {
+        "organizer": org_service,
+        "api_key": api_key_service,
+    }
+
+    # Clean up overrides
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture
@@ -70,7 +86,7 @@ def sample_api_key():
     now = datetime.utcnow()
     return APIKey(
         api_key_id="key_123",
-        api_key="vj_live_abcdefghijklmnopqrstuvwxyz123456",
+        api_key="vj_live_ggqT0GSEN6qrtVYph6hi5r0oPzxKvrI0",
         organizer_id="org_123",
         hackathon_id=None,
         tier=Tier.FREE,
@@ -88,8 +104,8 @@ def sample_api_key():
 
 
 @pytest.fixture
-def client():
-    """FastAPI test client."""
+def client(mock_services):
+    """FastAPI test client with mocked dependencies."""
     return TestClient(app)
 
 
@@ -108,7 +124,7 @@ def test_create_api_key_success(client, mock_services, sample_api_key):
     response = client.post(
         "/api/v1/api-keys",
         json={
-            "tier": "FREE",
+            "tier": "free",
             "hackathon_id": None,
             "expires_at": None,
         },
@@ -119,9 +135,9 @@ def test_create_api_key_success(client, mock_services, sample_api_key):
     assert response.status_code == 201
     data = response.json()
     assert data["api_key_id"] == "key_123"
-    assert data["api_key"] == "vj_live_abcdefghijklmnopqrstuvwxyz123456"
+    assert data["api_key"] == "vj_live_ggqT0GSEN6qrtVYph6hi5r0oPzxKvrI0"
     assert data["organizer_id"] == "org_123"
-    assert data["tier"] == "FREE"
+    assert data["tier"] == "free"
     assert data["rate_limit_per_second"] == 2
     assert data["daily_quota"] == 100
     assert data["budget_limit_usd"] == 10.0

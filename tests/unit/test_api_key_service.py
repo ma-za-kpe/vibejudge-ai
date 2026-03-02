@@ -155,27 +155,25 @@ class TestValidateAPIKey:
     def test_validate_api_key_success(self, api_key_service, mock_db):
         """Test successful API key validation."""
         now = datetime.utcnow()
-        mock_db.table.scan.return_value = {
-            "Items": [
-                {
-                    "api_key_id": "key_123",
-                    "api_key": "vj_test_abcdefghijklmnopqrstuvwxyz12",
-                    "organizer_id": "org_123",
-                    "tier": "free",
-                    "rate_limit_per_second": 2,
-                    "daily_quota": 100,
-                    "budget_limit_usd": 10.0,
-                    "active": True,
-                    "created_at": now,
-                    "updated_at": now,
-                    "deprecated": False,
-                    "total_requests": 0,
-                    "total_cost_usd": 0.0,
-                }
-            ]
+        # Mock the get_api_key_by_secret helper method
+        mock_db.get_api_key_by_secret.return_value = {
+            "api_key_id": "key_123",
+            "api_key": "vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
+            "organizer_id": "org_123",
+            "tier": "free",
+            "rate_limit_per_second": 10,
+            "daily_quota": 100,
+            "budget_limit_usd": 10.0,
+            "active": True,
+            "created_at": now,
+            "updated_at": now,
+            "deprecated": False,
+            "total_requests": 0,
+            "total_cost_usd": 0.0,
+            "entity_type": "API_KEY",
         }
 
-        result = api_key_service.validate_api_key("vj_test_abcdefghijklmnopqrstuvwxyz12")
+        result = api_key_service.validate_api_key("vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB")
 
         assert result is not None
         assert result.api_key_id == "key_123"
@@ -196,10 +194,10 @@ class TestValidateAPIKey:
             "Items": [
                 {
                     "api_key_id": "key_inactive",
-                    "api_key": "vj_test_inactivekey1234567890abcd",
+                    "api_key": "vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
                     "organizer_id": "org_123",
                     "tier": "free",
-                    "rate_limit_per_second": 2,
+                    "rate_limit_per_second": 10,
                     "daily_quota": 100,
                     "budget_limit_usd": 10.0,
                     "active": False,  # Inactive
@@ -208,11 +206,12 @@ class TestValidateAPIKey:
                     "deprecated": False,
                     "total_requests": 0,
                     "total_cost_usd": 0.0,
+                    "entity_type": "API_KEY",
                 }
             ]
         }
 
-        result = api_key_service.validate_api_key("vj_test_inactivekey1234567890abcd")
+        result = api_key_service.validate_api_key("vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB")
 
         assert result is None
 
@@ -224,10 +223,10 @@ class TestValidateAPIKey:
             "Items": [
                 {
                     "api_key_id": "key_expired",
-                    "api_key": "vj_test_expiredkey1234567890abcd",
+                    "api_key": "vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
                     "organizer_id": "org_123",
                     "tier": "free",
-                    "rate_limit_per_second": 2,
+                    "rate_limit_per_second": 10,
                     "daily_quota": 100,
                     "budget_limit_usd": 10.0,
                     "active": True,
@@ -237,11 +236,12 @@ class TestValidateAPIKey:
                     "deprecated": False,
                     "total_requests": 0,
                     "total_cost_usd": 0.0,
+                    "entity_type": "API_KEY",
                 }
             ]
         }
 
-        result = api_key_service.validate_api_key("vj_test_expiredkey1234567890abcd")
+        result = api_key_service.validate_api_key("vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB")
 
         assert result is None
 
@@ -259,7 +259,7 @@ class TestRotateAPIKey:
         mock_db.table.get_item.return_value = {
             "Item": {
                 "api_key_id": "old_key_id",
-                "api_key": "vj_test_oldkey1234567890abcdefgh",
+                "api_key": "vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
                 "organizer_id": "org_123",
                 "hackathon_id": "hack_123",
                 "tier": "pro",
@@ -339,10 +339,10 @@ class TestListAPIKeys:
             "Items": [
                 {
                     "api_key_id": "key_1",
-                    "api_key": "vj_test_key1234567890abcdefghijk",
+                    "api_key": "vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
                     "organizer_id": "org_123",
                     "tier": "free",
-                    "rate_limit_per_second": 2,
+                    "rate_limit_per_second": 10,
                     "daily_quota": 100,
                     "budget_limit_usd": 10.0,
                     "active": True,
@@ -354,7 +354,7 @@ class TestListAPIKeys:
                 },
                 {
                     "api_key_id": "key_2",
-                    "api_key": "vj_test_key2345678901bcdefghijkl",
+                    "api_key": "vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
                     "organizer_id": "org_123",
                     "tier": "pro",
                     "rate_limit_per_second": 10,
@@ -405,7 +405,7 @@ class TestGetAPIKeyByID:
         mock_db.table.get_item.return_value = {
             "Item": {
                 "api_key_id": "key_123",
-                "api_key": "vj_test_key123456789abcdefghijkl",
+                "api_key": "vj_test_c0U6nxxUVPWjjw+c0yIqEsCwFuJ6H2wB",
                 "organizer_id": "org_123",
                 "tier": "starter",
                 "rate_limit_per_second": 5,
@@ -452,7 +452,7 @@ class TestHelperFunctions:
 
         limits = get_default_limits_for_tier(Tier.FREE)
 
-        assert limits["rate_limit_per_second"] == 2
+        assert limits["rate_limit_per_second"] == 10
         assert limits["daily_quota"] == 100
         assert limits["budget_limit_usd"] == 10.0
 
@@ -462,6 +462,6 @@ class TestHelperFunctions:
 
         limits = get_default_limits_for_tier(Tier.ENTERPRISE)
 
-        assert limits["rate_limit_per_second"] == 50
+        assert limits["rate_limit_per_second"] == 100
         assert limits["daily_quota"] == 999999
         assert limits["budget_limit_usd"] == 10000.0

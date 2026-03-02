@@ -113,7 +113,7 @@ class APIKeyService:
             "api_key_created",
             api_key_id=api_key_id,
             organizer_id=organizer_id,
-            tier=tier.value,
+            tier=tier.value if isinstance(tier, Tier) else tier,
             hackathon_id=hackathon_id,
         )
 
@@ -290,6 +290,91 @@ class APIKeyService:
         except Exception as e:
             logger.error("api_key_revocation_failed", api_key_id=api_key_id, error=str(e))
             return False
+
+    def update_api_key(
+        self,
+        api_key_id: str,
+        tier: Tier | None = None,
+        rate_limit: int | None = None,
+        daily_quota: int | None = None,
+        budget_limit_usd: float | None = None,
+        expires_at: datetime | None = None,
+    ) -> APIKeyResponse:
+        """Update an existing API key's tier and limits.
+
+        Args:
+            api_key_id: API key ID to update
+            tier: New tier (updates defaults if other params not provided)
+            rate_limit: New rate limit (overrides tier default)
+            daily_quota: New daily quota (overrides tier default)
+            budget_limit_usd: New budget limit (overrides tier default)
+            expires_at: New expiration timestamp
+
+        Returns:
+            Updated API key response
+
+        Raises:
+            ValueError: If API key not found
+            RuntimeError: If database update fails
+        """
+        # Get existing key
+        response = self.db.table.get_item(Key={"PK": f"APIKEY#{api_key_id}", "SK": "METADATA"})
+
+        if "Item" not in response:
+            raise ValueError(f"API key {api_key_id} not found")
+
+        # Deserialize existing key
+        api_key_data = self.db._deserialize_item(response["Item"])
+        api_key = APIKey(**api_key_data)
+
+        # Apply tier change and get new defaults if tier changed
+        if tier is not None and tier != api_key.tier:
+            api_key.tier = tier
+            tier_defaults = get_tier_defaults(tier)
+
+            # Apply tier defaults only if custom values not provided
+            if rate_limit is None:
+                api_key.rate_limit_per_second = tier_defaults["rate_limit_per_second"]
+            if daily_quota is None:
+                api_key.daily_quota = tier_defaults["daily_quota"]
+            if budget_limit_usd is None:
+                api_key.budget_limit_usd = tier_defaults["budget_limit_usd"]
+
+        # Apply custom overrides
+        if rate_limit is not None:
+            api_key.rate_limit_per_second = rate_limit
+        if daily_quota is not None:
+            api_key.daily_quota = daily_quota
+        if budget_limit_usd is not None:
+            api_key.budget_limit_usd = budget_limit_usd
+        if expires_at is not None:
+            api_key.expires_at = expires_at
+
+        # Update timestamp
+        api_key.updated_at = datetime.utcnow()
+
+        # Update DynamoDB keys (in case tier changed)
+        api_key.set_dynamodb_keys()
+
+        # Save to database
+        api_key_dict = api_key.model_dump(exclude_none=True)
+        serialized = self.db._serialize_item(api_key_dict)
+
+        try:
+            self.db.table.put_item(Item=serialized)
+        except Exception as e:
+            logger.error("api_key_update_failed", api_key_id=api_key_id, error=str(e))
+            raise RuntimeError(f"Failed to update API key in database: {e}")
+
+        logger.info(
+            "api_key_updated",
+            api_key_id=api_key_id,
+            tier=api_key.tier.value if tier else None,
+            rate_limit=rate_limit,
+            daily_quota=daily_quota,
+        )
+
+        return api_key.to_response()
 
     def list_api_keys(self, organizer_id: str) -> APIKeyListResponse:
         """List all API keys for an organizer.
