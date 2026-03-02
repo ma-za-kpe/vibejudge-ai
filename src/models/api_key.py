@@ -239,8 +239,9 @@ class APIKey(VibeJudgeBase, TimestampMixin):
             self.GSI2PK = f"HACKATHON#{self.hackathon_id}"
             self.GSI2SK = f"APIKEY#{self.api_key_id}"
         else:
-            self.GSI2PK = ""
-            self.GSI2SK = ""
+            # Must be None, not empty string, to avoid GSI validation errors
+            self.GSI2PK = None
+            self.GSI2SK = None
 
     def is_valid(self) -> bool:
         """Check if API key is currently valid."""

@@ -319,9 +319,8 @@ class BudgetMiddleware(BaseHTTPMiddleware):
 
             # Convert datetime strings back to datetime objects
             for field in ["created_at", "updated_at"]:
-                if field in item and item[field]:
-                    if isinstance(item[field], str):
-                        item[field] = datetime.fromisoformat(item[field])
+                if field in item and item[field] and isinstance(item[field], str):
+                    item[field] = datetime.fromisoformat(item[field])
 
             return BudgetTracking(**item)
 

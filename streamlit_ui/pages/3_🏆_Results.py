@@ -62,7 +62,7 @@ def api_call(endpoint: str) -> dict | None:
         else:
             try:
                 error_detail = e.response.json().get("detail", str(e))
-            except:
+            except Exception:
                 error_detail = str(e)
             st.error(f"❌ {error_detail}")
 
@@ -486,8 +486,11 @@ if st.session_state["view_mode"] == "team_detail":
             if red_flags:
                 st.markdown("**⚠️ Red Flags:**")
                 for flag in red_flags:
-                    flag_type = flag.get("type", "Unknown") if isinstance(flag, dict) else str(flag)
-                    st.warning(f"- {flag_type}")
+                    # Use description for more informative display
+                    description = (
+                        flag.get("description", "Unknown") if isinstance(flag, dict) else str(flag)
+                    )
+                    st.warning(f"- {description}")
 
             st.markdown("---")
 
@@ -512,12 +515,17 @@ if st.session_state["view_mode"] == "team_detail":
 
         if actionable_feedback:
             st.markdown("#### 💡 Actionable Feedback")
-            for idx, feedback_item in enumerate(actionable_feedback[:5], 1):  # Limit to top 5
+            for _idx, feedback_item in enumerate(actionable_feedback[:5], 1):  # Limit to top 5
                 if isinstance(feedback_item, dict):
                     finding = feedback_item.get("finding", "General")
                     business_impact = feedback_item.get("business_impact", "")
                     acknowledgment = feedback_item.get("acknowledgment", "")
-                    priority = feedback_item.get("priority", 3)  # Default to medium (3)
+                    priority_raw = feedback_item.get("priority", 3)
+                    # Ensure priority is an integer
+                    try:
+                        priority = int(priority_raw) if priority_raw is not None else 3
+                    except (ValueError, TypeError):
+                        priority = 3  # Default to medium
 
                     # Map priority number (1-5) to emoji: 1-2=high, 3=medium, 4-5=low
                     if priority <= 2:

@@ -229,7 +229,7 @@ class TestAPIKey:
         assert api_key.PK == "APIKEY#01HQ123456789"
         assert api_key.SK == "METADATA"
         assert api_key.GSI1PK == "ORG#ORG#123"
-        assert api_key.GSI2PK == ""  # Not set without hackathon_id
+        assert api_key.GSI2PK is None  # Not set without hackathon_id
 
     def test_is_valid_active_key(self) -> None:
         """Test is_valid() for active, non-expired key."""

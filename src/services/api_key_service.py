@@ -150,7 +150,11 @@ class APIKeyService:
                 "deprecated_at",
                 "last_used_at",
             ]:
-                if field in api_key_data and api_key_data[field] and isinstance(api_key_data[field], str):
+                if (
+                    field in api_key_data
+                    and api_key_data[field]
+                    and isinstance(api_key_data[field], str)
+                ):
                     api_key_data[field] = datetime.fromisoformat(api_key_data[field])
 
             api_key_obj = APIKey(**api_key_data)
@@ -322,8 +326,8 @@ class APIKeyService:
         if "Item" not in response:
             raise ValueError(f"API key {api_key_id} not found")
 
-        # Deserialize existing key
-        api_key_data = self.db._deserialize_item(response["Item"])
+        # boto3 resource API already returns deserialized items
+        api_key_data = response["Item"]
         api_key = APIKey(**api_key_data)
 
         # Apply tier change and get new defaults if tier changed
@@ -368,7 +372,7 @@ class APIKeyService:
         logger.info(
             "api_key_updated",
             api_key_id=api_key_id,
-            tier=api_key.tier.value if tier else None,
+            tier=api_key.tier.value if isinstance(api_key.tier, Tier) else api_key.tier,
             rate_limit=rate_limit,
             daily_quota=daily_quota,
         )

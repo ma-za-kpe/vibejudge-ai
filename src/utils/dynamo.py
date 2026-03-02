@@ -874,7 +874,9 @@ class DynamoDBHelper:
                 update_parts.append("total_cost_usd = :total_cost_usd")
                 # Convert float to Decimal for DynamoDB
                 expr_attr_values[":total_cost_usd"] = (
-                    Decimal(str(total_cost_usd)) if isinstance(total_cost_usd, float) else total_cost_usd
+                    Decimal(str(total_cost_usd))
+                    if isinstance(total_cost_usd, float)
+                    else total_cost_usd
                 )
 
             if last_used_at is not None:

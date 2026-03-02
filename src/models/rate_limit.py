@@ -88,8 +88,8 @@ class UsageRecord(VibeJudgeBase, TimestampMixin):
         # Then validate it's a real date
         try:
             datetime.strptime(v, "%Y-%m-%d")
-        except ValueError:
-            raise ValueError("date must be in YYYY-MM-DD format")
+        except ValueError as e:
+            raise ValueError("date must be in YYYY-MM-DD format") from e
         return v
 
     @model_validator(mode="after")

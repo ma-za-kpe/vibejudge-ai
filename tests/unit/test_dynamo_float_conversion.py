@@ -19,7 +19,7 @@ class TestFloatConversion:
     @pytest.fixture
     def mock_table(self):
         """Mock DynamoDB table."""
-        with patch('boto3.resource') as mock_resource:
+        with patch("boto3.resource") as mock_resource:
             mock_table = Mock()
             mock_resource.return_value.Table.return_value = mock_table
             yield mock_table
@@ -208,7 +208,9 @@ class TestFloatConversion:
         assert isinstance(expr_values[":overall_score"], Decimal)
         assert isinstance(expr_values[":total_cost_usd"], Decimal)
         assert isinstance(expr_values[":weighted_scores"]["innovation"]["raw"], Decimal)
-        assert isinstance(expr_values[":agent_scores"]["innovation_agent"]["overall_score"], Decimal)
+        assert isinstance(
+            expr_values[":agent_scores"]["innovation_agent"]["overall_score"], Decimal
+        )
         assert isinstance(expr_values[":agent_scores"]["innovation_agent"]["confidence"], Decimal)
         assert isinstance(expr_values[":repo_meta"]["development_duration_hours"], Decimal)
 
@@ -222,25 +224,32 @@ class TestErrorScenarios:
     @pytest.fixture
     def mock_table(self):
         """Mock DynamoDB table that rejects floats like real DynamoDB."""
+
         def raise_on_float(*args, **kwargs):
             """Simulate boto3 behavior when encountering float."""
             expr_values = kwargs.get("ExpressionAttributeValues", {})
-            for key, value in expr_values.items():
+            for _key, value in expr_values.items():
                 if isinstance(value, float):
-                    raise TypeError(f"Float types are not supported. Use Decimal types instead. Got {value}")
+                    raise TypeError(
+                        f"Float types are not supported. Use Decimal types instead. Got {value}"
+                    )
                 # Check nested dicts
                 if isinstance(value, dict):
-                    for k, v in value.items():
+                    for _k, v in value.items():
                         if isinstance(v, float):
-                            raise TypeError(f"Float types are not supported. Use Decimal types instead. Got {v}")
+                            raise TypeError(
+                                f"Float types are not supported. Use Decimal types instead. Got {v}"
+                            )
             # Also check put_item
             item = kwargs.get("Item", {})
-            for key, value in item.items():
+            for _key, value in item.items():
                 if isinstance(value, float):
-                    raise TypeError(f"Float types are not supported. Use Decimal types instead. Got {value}")
+                    raise TypeError(
+                        f"Float types are not supported. Use Decimal types instead. Got {value}"
+                    )
             return MagicMock()
 
-        with patch('boto3.resource') as mock_resource:
+        with patch("boto3.resource") as mock_resource:
             mock_table = Mock()
             mock_table.update_item.side_effect = raise_on_float
             mock_table.put_item.side_effect = raise_on_float

@@ -217,9 +217,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                     "deprecated_at",
                     "last_used_at",
                 ]:
-                    if field in api_key_data and api_key_data[field]:
-                        if isinstance(api_key_data[field], str):
-                            api_key_data[field] = datetime.fromisoformat(api_key_data[field])
+                    if (
+                        field in api_key_data
+                        and api_key_data[field]
+                        and isinstance(api_key_data[field], str)
+                    ):
+                        api_key_data[field] = datetime.fromisoformat(api_key_data[field])
 
                 # Create APIKey model instance
                 api_key_obj = APIKey(**api_key_data)

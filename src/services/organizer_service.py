@@ -110,7 +110,7 @@ class OrganizerService:
             # Rollback: Delete organizer if API key creation fails
             self.db.table.delete_item(Key={"PK": f"ORG#{org_id}", "SK": "PROFILE"})
             logger.error("api_key_creation_failed_rollback", org_id=org_id, error=str(e))
-            raise RuntimeError(f"Failed to create API key: {e}")
+            raise RuntimeError(f"Failed to create API key: {e}") from e
 
     def get_organizer(self, org_id: str) -> OrganizerResponse | None:
         """Get organizer by ID.
@@ -214,7 +214,7 @@ class OrganizerService:
 
         except Exception as e:
             logger.error("api_key_regeneration_failed", org_id=org_id, error=str(e))
-            raise RuntimeError(f"Failed to regenerate API key: {e}")
+            raise RuntimeError(f"Failed to regenerate API key: {e}") from e
 
     def increment_hackathon_count(self, org_id: str) -> bool:
         """Increment hackathon count for organizer.
