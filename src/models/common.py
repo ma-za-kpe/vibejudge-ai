@@ -52,7 +52,8 @@ class AIPolicyMode(StrEnum):
 
 class Tier(StrEnum):
     FREE = "free"
-    PREMIUM = "premium"
+    STARTER = "starter"
+    PRO = "pro"
     ENTERPRISE = "enterprise"
 
 

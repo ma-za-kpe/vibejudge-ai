@@ -90,13 +90,13 @@ class APIClient:
         timeout: Default timeout in seconds for all requests
     """
 
-    def __init__(self, base_url: str, api_key: str, timeout: int = 10) -> None:
+    def __init__(self, base_url: str, api_key: str, timeout: int = 60) -> None:
         """Initialize the API client.
 
         Args:
             base_url: The base URL of the FastAPI backend (e.g., "http://localhost:8000")
             api_key: The API key for authentication
-            timeout: Default timeout in seconds for all requests (default: 10)
+            timeout: Default timeout in seconds for all requests (default: 60)
         """
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
@@ -263,4 +263,38 @@ class APIClient:
         except requests.ConnectionError as err:
             message = "Service unavailable. Cannot connect to server."
             logger.error(f"Connection error for POST {url}: {message}")
+            raise ServiceUnavailableError(message) from err
+
+    def delete(self, endpoint: str) -> bool:
+        """Send a DELETE request to the backend API.
+
+        Args:
+            endpoint: The API endpoint (e.g., "/hackathons/123")
+
+        Returns:
+            True if deletion was successful (HTTP 204)
+
+        Raises:
+            ConnectionTimeoutError: When connection times out
+            ServiceUnavailableError: When connection fails
+            APIError: For HTTP errors (mapped to specific exception types)
+        """
+        url = f"{self.base_url}{endpoint}"
+        logger.debug(f"DELETE {url}")
+
+        try:
+            response = self.session.delete(url, timeout=self.timeout)
+
+            # Check for HTTP errors and handle them
+            if not response.ok:
+                self.handle_error(response)
+
+            return response.status_code == 204
+        except requests.Timeout as err:
+            message = "Connection timeout. Please check your network."
+            logger.error(f"Timeout error for DELETE {url}: {message}")
+            raise ConnectionTimeoutError(message) from err
+        except requests.ConnectionError as err:
+            message = "Service unavailable. Cannot connect to server."
+            logger.error(f"Connection error for DELETE {url}: {message}")
             raise ServiceUnavailableError(message) from err

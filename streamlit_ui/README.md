@@ -18,8 +18,8 @@ The Streamlit Organizer Dashboard provides a visual interface to the VibeJudge F
 ### Prerequisites
 
 - Python 3.12+
-- VibeJudge FastAPI backend running (default: http://localhost:8000)
-- Valid API key from the backend
+- VibeJudge FastAPI backend running OR access to production deployment
+- No API key needed - register directly through the dashboard!
 
 ### Installation
 
@@ -31,7 +31,11 @@ cd streamlit_ui
 pip install -r requirements.txt
 
 # (Optional) Set API URL if not using default
+# For local development
 export API_BASE_URL=http://localhost:8000
+
+# For production backend
+export API_BASE_URL=https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev
 
 # Run the dashboard
 streamlit run app.py
@@ -41,12 +45,13 @@ The dashboard will open in your browser at http://localhost:8501
 
 ### First-Time Setup
 
-1. **Get your API key**: Contact your VibeJudge administrator or generate one via the backend API
-2. **Log in**: Enter your API key on the authentication page
-3. **Create a hackathon**: Navigate to "Create Hackathon" and fill out the form
-4. **Monitor submissions**: Use the "Live Dashboard" to track submissions in real-time
-5. **Trigger analysis**: Click "Start Analysis" when ready to evaluate submissions
-6. **View results**: Check the "Results" page for leaderboards and detailed scorecards
+1. **Register**: Click "Create an account" on the homepage or go to the Register page
+2. **Save your API key**: Your API key will be displayed once after registration - save it!
+3. **Login**: Use your API key or email/password to authenticate
+4. **Create a hackathon**: Navigate to "Create Hackathon" and fill out the form
+5. **Monitor submissions**: Use the "Live Dashboard" to track submissions in real-time
+6. **Trigger analysis**: Click "Start Analysis" when ready to evaluate submissions
+7. **View results**: Check the "Results" page for leaderboards and detailed scorecards
 
 ## Architecture
 
@@ -78,6 +83,27 @@ The dashboard will open in your browser at http://localhost:8501
                    │  (VibeJudge API)  │
                    └───────────────────┘
 ```
+
+### URL Construction Standard
+
+The dashboard uses the following URL pattern:
+
+**Base URL:**
+- Local: `http://localhost:8000`
+- Production: `https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev`
+
+**Endpoint Paths:**
+- Registration: `/organizers`
+- Login: `/organizers/login`
+- Profile: `/organizers/me`
+- API Keys: `/api-keys`
+- Hackathons: `/hackathons`
+- Submissions: `/submissions`
+- Public endpoints: `/public/hackathons`
+
+**Note:** Auth validation uses `/api/v1/hackathons` for backwards compatibility.
+
+**Base URL does NOT include `/api/v1` prefix** - endpoints are added directly to the base URL.
 
 ### Directory Structure
 
@@ -189,6 +215,31 @@ st.session_state = {
     "selected_hackathon": str,   # Currently selected hack_id
     "analysis_job_id": str,      # Active analysis job ID
     "last_refresh": datetime,    # Last auto-refresh timestamp
+}
+```
+
+## Live Deployment
+
+### Production Endpoints
+
+**Backend API:**
+https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev
+
+**Frontend Dashboard:**
+http://vibejudge-alb-prod-1135403146.us-east-1.elb.amazonaws.com
+
+### Environment Configuration
+
+Set the `API_BASE_URL` environment variable to point to the backend:
+
+```bash
+# Docker deployment
+docker run -e API_BASE_URL=https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev vibejudge-dashboard
+
+# ECS task definition
+{
+  "name": "API_BASE_URL",
+  "value": "https://2nu0j4n648.execute-api.us-east-1.amazonaws.com/dev"
 }
 ```
 

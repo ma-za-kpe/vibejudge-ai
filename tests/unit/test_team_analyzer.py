@@ -7,11 +7,7 @@ import pytest
 from src.analysis.team_analyzer import TeamAnalyzer
 from src.models.analysis import CommitInfo, RepoData, SourceFile
 from src.models.submission import RepoMeta
-from src.models.team_dynamics import (
-    ContributorRole,
-    ExpertiseArea,
-    RedFlagSeverity,
-)
+from src.models.team_dynamics import ContributorRole, ExpertiseArea, RedFlagSeverity
 
 # ============================================================
 # FIXTURES

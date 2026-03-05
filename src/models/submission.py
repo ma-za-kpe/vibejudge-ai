@@ -87,6 +87,7 @@ class SubmissionResponse(VibeJudgeBase, TimestampMixin):
     analysis_duration_ms: int | None = None
     analyzed_at: datetime | None = None
     disqualification_reason: str | None = None
+    error_message: str | None = None
 
 
 class SubmissionListItem(VibeJudgeBase):
@@ -100,6 +101,8 @@ class SubmissionListItem(VibeJudgeBase):
     rank: int | None = None
     total_cost_usd: float | None = None
     created_at: datetime
+    error_message: str | None = None
+    disqualification_reason: str | None = None
 
 
 class SubmissionListResponse(VibeJudgeBase):

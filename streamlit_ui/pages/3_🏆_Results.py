@@ -1,18 +1,13 @@
 """Results page for viewing hackathon leaderboard and submission rankings.
 
-This page allows organizers to:
-- Select a hackathon from a dropdown
-- View leaderboard with ranked submissions
-- See summary statistics (total_submissions, analyzed_count)
-- View detailed submission information
+Simplified version - backend is source of truth, no caching complexity.
 """
 
 import logging
 
+import requests
 import streamlit as st
-from components.api_client import APIClient, APIError
 from components.auth import is_authenticated
-from components.retry_helpers import retry_button
 
 logger = logging.getLogger(__name__)
 
@@ -28,10 +23,6 @@ if not is_authenticated():
     st.stop()
 
 
-# Initialize API client
-api_client = APIClient(st.session_state["api_base_url"], st.session_state["api_key"])
-
-
 # Page header
 st.title("🏆 Results")
 st.markdown("View ranked submissions and leaderboard for your hackathon.")
@@ -42,47 +33,49 @@ if "view_mode" not in st.session_state:
     st.session_state["view_mode"] = "leaderboard"
 
 
-# Cached function to fetch hackathons list
-@st.cache_data(ttl=30)
-def fetch_hackathons(api_key: str) -> list[dict]:
-    """Fetch list of hackathons from the backend.
+# Helper function for API calls
+def api_call(endpoint: str) -> dict | None:
+    """Make API call with error handling.
 
     Args:
-        api_key: The API key for authentication (used as cache key)
+        endpoint: API endpoint path (e.g., "/hackathons")
 
     Returns:
-        List of hackathon dictionaries
+        Response JSON or None if error
     """
-    client = APIClient(st.session_state["api_base_url"], api_key)
     try:
-        response = client.get("/hackathons")
-        return response if isinstance(response, list) else []
-    except APIError as e:
-        logger.error(f"Failed to fetch hackathons: {e}")
-        st.error(f"❌ Failed to fetch hackathons: {e}")
-        retry_button(lambda: st.cache_data.clear() or st.rerun(), "🔄 Retry Loading Hackathons")
-        return []
+        base_url = st.session_state["api_base_url"].rstrip("/")
+        headers = {"X-API-Key": st.session_state["api_key"]}
+        url = f"{base_url}{endpoint}"
 
+        response = requests.get(url, headers=headers, timeout=60)
+        response.raise_for_status()
+        return response.json()
 
-# Cached function to fetch leaderboard
-@st.cache_data(ttl=30)
-def fetch_leaderboard(api_key: str, hack_id: str) -> dict | None:
-    """Fetch leaderboard for a specific hackathon.
+    except requests.HTTPError as e:
+        status = e.response.status_code
 
-    Args:
-        api_key: The API key for authentication (used as cache key)
-        hack_id: The hackathon ID
+        if status == 401:
+            st.error("❌ Invalid API key")
+        elif status == 404:
+            st.error("❌ Resource not found")
+        else:
+            try:
+                error_detail = e.response.json().get("detail", str(e))
+            except Exception:
+                error_detail = str(e)
+            st.error(f"❌ {error_detail}")
 
-    Returns:
-        Dictionary containing leaderboard data or None if error occurred
-    """
-    client = APIClient(st.session_state["api_base_url"], api_key)
-    try:
-        return client.get(f"/hackathons/{hack_id}/leaderboard")
-    except APIError as e:
-        logger.error(f"Failed to fetch leaderboard for {hack_id}: {e}")
-        st.error(f"❌ Failed to fetch leaderboard: {e}")
-        retry_button(lambda: st.cache_data.clear() or st.rerun(), "🔄 Retry Loading Leaderboard")
+        logger.error(f"API error: {status} - {e}")
+        return None
+
+    except requests.Timeout:
+        st.error("⏱️ Request timed out. Please try again.")
+        return None
+
+    except Exception as e:
+        st.error(f"❌ Unexpected error: {e}")
+        logger.error(f"Unexpected error: {e}")
         return None
 
 
@@ -105,34 +98,13 @@ if st.session_state["view_mode"] == "team_detail":
         st.error("❌ No hackathon selected")
         st.stop()
 
-    # Cached function to fetch scorecard
-    @st.cache_data(ttl=30)
-    def fetch_scorecard(api_key: str, hack_id: str, sub_id: str) -> dict | None:
-        """Fetch scorecard for a specific submission.
-
-        Args:
-            api_key: The API key for authentication (used as cache key)
-            hack_id: The hackathon ID
-            sub_id: The submission ID
-
-        Returns:
-            Dictionary containing scorecard data or None if error occurred
-        """
-        client = APIClient(st.session_state["api_base_url"], api_key)
-        try:
-            return client.get(f"/hackathons/{hack_id}/submissions/{sub_id}/scorecard")
-        except APIError as e:
-            logger.error(f"Failed to fetch scorecard for {sub_id}: {e}")
-            st.error(f"❌ Failed to fetch scorecard: {e}")
-            retry_button(lambda: st.cache_data.clear() or st.rerun(), "🔄 Retry Loading Scorecard")
-            return None
-
     # Fetch scorecard data
     with st.spinner("📋 Loading scorecard..."):
-        scorecard = fetch_scorecard(st.session_state["api_key"], hack_id, sub_id)
+        scorecard = api_call(f"/submissions/{sub_id}/scorecard")
 
     if not scorecard:
-        st.error("❌ Failed to load scorecard. Please try again.")
+        if st.button("🔄 Retry", key="retry_scorecard"):
+            st.rerun()
         st.stop()
 
     # Display team detail scorecard
@@ -158,12 +130,19 @@ if st.session_state["view_mode"] == "team_detail":
             )
 
         with col2:
-            confidence = scorecard.get("confidence", 0)
-            st.metric(
-                label="Confidence",
-                value=f"{confidence:.0%}",
-                help="AI confidence in the evaluation",
-            )
+            confidence = scorecard.get("confidence")
+            if confidence is not None and confidence > 0:
+                st.metric(
+                    label="Confidence",
+                    value=f"{confidence:.0%}",
+                    help="AI confidence in the evaluation",
+                )
+            else:
+                st.metric(
+                    label="Confidence",
+                    value="N/A",
+                    help="Confidence score not available",
+                )
 
         with col3:
             recommendation = scorecard.get("recommendation", "N/A").replace("_", " ").title()
@@ -177,7 +156,7 @@ if st.session_state["view_mode"] == "team_detail":
         st.markdown("---")
         st.markdown("### 📊 Dimension Scores")
 
-        dimension_scores = scorecard.get("dimension_scores", {})
+        dimension_scores = scorecard.get("weighted_scores", {})
 
         if dimension_scores:
             # Create table header
@@ -198,7 +177,6 @@ if st.session_state["view_mode"] == "team_detail":
                 col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
 
                 with col1:
-                    # Format dimension name (e.g., "code_quality" -> "Code Quality")
                     formatted_name = dimension_name.replace("_", " ").title()
                     st.markdown(formatted_name)
 
@@ -230,55 +208,138 @@ if st.session_state["view_mode"] == "team_detail":
             help="Total cost for analyzing this submission",
         )
 
-        # Display cost by agent
-        agent_results = scorecard.get("agent_results", {})
-        if agent_results:
-            with st.expander("View Cost by Agent"):
-                for agent_name, result in agent_results.items():
-                    formatted_agent_name = agent_name.replace("_", " ").title()
-                    cost_usd = result.get("cost_usd", 0)
-                    st.caption(f"- {formatted_agent_name}: ${cost_usd:.4f}")
+        # Display cost by agent (if available in future)
+        # Cost by agent feature removed - agent_scores not populated by backend yet
+        # agent_scores_list = scorecard.get("agent_scores", [])
+        # if agent_scores_list:
+        #     with st.expander("View Cost by Agent"):
+        #         # TODO: Implement agent cost breakdown display
+
+        # Advanced details expander
+        with st.expander("🔍 Advanced Details", expanded=False):
+            st.markdown("**Additional Metrics**")
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                # Rank
+                rank = scorecard.get("rank")
+                if rank:
+                    st.markdown(f"**Leaderboard Rank:** #{rank}")
+
+                # Total tokens
+                total_tokens = scorecard.get("total_tokens")
+                if total_tokens:
+                    st.markdown(f"**Total Tokens:** {total_tokens:,}")
+
+                # Analysis timestamp
+                analyzed_at = scorecard.get("analyzed_at")
+                if analyzed_at:
+                    st.markdown(f"**Analyzed At:** {analyzed_at}")
+
+            with col2:
+                # Analysis duration
+                analysis_duration_ms = scorecard.get("analysis_duration_ms")
+                if analysis_duration_ms:
+                    duration_sec = analysis_duration_ms / 1000
+                    st.markdown(f"**Analysis Duration:** {duration_sec:.2f}s")
 
     with tab2:
         # Agent results section
         st.markdown("### 🤖 Agent Analysis")
 
-        agent_results = scorecard.get("agent_results", {})
+        agent_scores = scorecard.get("agent_scores", [])
 
-        if agent_results:
-            for agent_name, result in agent_results.items():
-                # Format agent name (e.g., "bug_hunter" -> "Bug Hunter")
+        if agent_scores:
+            for agent_result in agent_scores:
+                agent_name = agent_result.get("agent_name", "Unknown")
                 formatted_agent_name = agent_name.replace("_", " ").title()
 
                 with st.expander(f"**{formatted_agent_name}**", expanded=False):
+                    # Display overall score and confidence
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        agent_score = agent_result.get("overall_score", 0)
+                        st.metric("Score", f"{agent_score:.1f}/10")
+                    with col2:
+                        agent_confidence = agent_result.get("confidence", 0)
+                        st.metric("Confidence", f"{agent_confidence:.0%}")
+
+                    st.markdown("---")
+
                     # Summary
-                    summary = result.get("summary", "N/A")
+                    summary = agent_result.get("summary", "N/A")
                     st.markdown("**Summary:**")
                     st.markdown(summary)
 
                     st.markdown("")
 
-                    # Strengths
-                    strengths = result.get("strengths", [])
-                    if strengths:
-                        st.markdown("**✅ Strengths:**")
-                        for strength in strengths:
-                            st.markdown(f"- {strength}")
+                    # Sub-scores breakdown
+                    scores = agent_result.get("scores", {})
+                    if scores:
+                        st.markdown("**📊 Detailed Scores:**")
+                        for score_name, score_value in scores.items():
+                            formatted_name = score_name.replace("_", " ").title()
+                            if isinstance(score_value, (int, float)):
+                                st.caption(f"- {formatted_name}: {score_value:.1f}/10")
+                            else:
+                                st.caption(f"- {formatted_name}: {score_value}")
                         st.markdown("")
 
-                    # Improvements
-                    improvements = result.get("improvements", [])
-                    if improvements:
-                        st.markdown("**💡 Areas for Improvement:**")
-                        for improvement in improvements:
-                            st.markdown(f"- {improvement}")
+                    # Evidence/findings
+                    evidence = agent_result.get("evidence", [])
+                    if evidence:
+                        st.markdown("**🔍 Key Findings:**")
+                        for ev in evidence[:5]:  # Limit to top 5
+                            finding = ev.get("finding", "")
+                            file_path = ev.get("file", "")
+                            if finding:
+                                st.markdown(f"- {finding}")
+                                if file_path:
+                                    st.caption(f"  _File: {file_path}_")
+                        if len(evidence) > 5:
+                            st.caption(f"_...and {len(evidence) - 5} more findings_")
                         st.markdown("")
 
-                    # Cost
-                    cost_usd = result.get("cost_usd", 0)
-                    st.caption(f"Analysis cost: ${cost_usd:.4f}")
+            # Advanced details expander for Tab 2
+            with st.expander("🔍 Advanced Details", expanded=False):
+                st.markdown("**Additional Agent Data**")
+
+                # Check for additional fields that might not be displayed
+                additional_fields = [
+                    "ci_observations",
+                    "tech_stack_assessment",
+                    "innovation_highlights",
+                    "development_story",
+                    "hackathon_context_assessment",
+                    "commit_analysis",
+                    "ai_policy_observation",
+                ]
+
+                displayed_any = False
+                for agent_result in agent_scores:
+                    agent_name = agent_result.get("agent_name", "Unknown")
+                    formatted_agent_name = agent_name.replace("_", " ").title()
+
+                    agent_additional = {}
+                    for field in additional_fields:
+                        if field in agent_result and agent_result[field]:
+                            agent_additional[field] = agent_result[field]
+
+                    if agent_additional:
+                        displayed_any = True
+                        st.markdown(f"**{formatted_agent_name}:**")
+                        for field, value in agent_additional.items():
+                            formatted_field = field.replace("_", " ").title()
+                            if isinstance(value, (list, dict)):
+                                st.json(value)
+                            else:
+                                st.markdown(f"- **{formatted_field}:** {value}")
+
+                if not displayed_any:
+                    st.caption("No additional agent data available beyond what's displayed above.")
         else:
-            st.info("📭 No agent results available")
+            st.info("📭 No agent analysis available")
 
     with tab3:
         # Repository metadata section
@@ -326,190 +387,307 @@ if st.session_state["view_mode"] == "team_detail":
                     value=ci_status,
                     help="Whether the repository has CI/CD configured",
                 )
+
+            # Advanced details expander for Tab 3
+            with st.expander("🔍 Advanced Details", expanded=False):
+                st.markdown("**Additional Repository Data**")
+
+                col1, col2 = st.columns(2)
+
+                with col1:
+                    # Branch count
+                    branch_count = repo_meta.get("branch_count")
+                    if branch_count is not None:
+                        st.markdown(f"**Branches:** {branch_count}")
+
+                    # Total files
+                    total_files = repo_meta.get("total_files")
+                    if total_files is not None:
+                        st.markdown(f"**Total Files:** {total_files:,}")
+
+                    # Total lines
+                    total_lines = repo_meta.get("total_lines")
+                    if total_lines is not None:
+                        st.markdown(f"**Total Lines:** {total_lines:,}")
+
+                    # Has README
+                    has_readme = repo_meta.get("has_readme")
+                    if has_readme is not None:
+                        readme_status = "✅ Yes" if has_readme else "❌ No"
+                        st.markdown(f"**Has README:** {readme_status}")
+
+                    # Has Dockerfile
+                    has_dockerfile = repo_meta.get("has_dockerfile")
+                    if has_dockerfile is not None:
+                        docker_status = "✅ Yes" if has_dockerfile else "❌ No"
+                        st.markdown(f"**Has Dockerfile:** {docker_status}")
+
+                with col2:
+                    # First commit
+                    first_commit = repo_meta.get("first_commit_at")
+                    if first_commit:
+                        st.markdown(f"**First Commit:** {first_commit}")
+
+                    # Last commit
+                    last_commit = repo_meta.get("last_commit_at")
+                    if last_commit:
+                        st.markdown(f"**Last Commit:** {last_commit}")
+
+                    # Development duration
+                    dev_duration = repo_meta.get("development_duration_hours")
+                    if dev_duration:
+                        st.markdown(f"**Dev Duration:** {dev_duration:.1f} hours")
+
+                    # Workflow runs
+                    workflow_runs = repo_meta.get("workflow_run_count")
+                    if workflow_runs is not None:
+                        st.markdown(f"**Workflow Runs:** {workflow_runs}")
+
+                    # Workflow success rate
+                    workflow_success = repo_meta.get("workflow_success_rate")
+                    if workflow_success is not None:
+                        st.markdown(f"**CI Success Rate:** {workflow_success:.1%}")
+
+                # Languages breakdown
+                languages = repo_meta.get("languages")
+                if languages and isinstance(languages, dict):
+                    st.markdown("---")
+                    st.markdown("**Language Breakdown:**")
+                    for lang, percentage in languages.items():
+                        st.markdown(f"- {lang}: {percentage}%")
         else:
             st.info("📭 No repository metadata available")
 
     with tab4:
-        # Individual team member scorecard section
-        st.markdown("### 👥 Individual Team Member Analysis")
+        # Team dynamics and strategy section
+        st.markdown("### 👥 Team Dynamics & Strategy Analysis")
 
-        # Cached function to fetch individual scorecards
-        @st.cache_data(ttl=30)
-        def fetch_individual_scorecards(api_key: str, hack_id: str, sub_id: str) -> dict | None:
-            """Fetch individual scorecards for a specific submission.
-
-            Args:
-                api_key: The API key for authentication (used as cache key)
-                hack_id: The hackathon ID
-                sub_id: The submission ID
-
-            Returns:
-                Dictionary containing individual scorecard data or None if error occurred
-            """
-            client = APIClient(st.session_state["api_base_url"], api_key)
-            try:
-                return client.get(
-                    f"/hackathons/{hack_id}/submissions/{sub_id}/individual-scorecards"
-                )
-            except APIError as e:
-                logger.error(f"Failed to fetch individual scorecards for {sub_id}: {e}")
-                # Return None to indicate data is unavailable (not an error to display)
-                return None
-
-        # Fetch individual scorecard data
-        with st.spinner("👥 Loading individual team member analysis..."):
-            individual_data = fetch_individual_scorecards(
-                st.session_state["api_key"], hack_id, sub_id
-            )
-
-        if not individual_data:
-            st.info(
-                "📭 Individual team member analysis is pending or unavailable. This data will be available after the analysis is complete."
-            )
-        else:
-            # Team dynamics section
-            team_dynamics = individual_data.get("team_dynamics", {})
+        # Use team_dynamics and strategy_analysis from the main scorecard response
+        team_dynamics = scorecard.get("team_dynamics", {})
+        strategy_analysis = scorecard.get("strategy_analysis", {})
+        actionable_feedback = scorecard.get("actionable_feedback", [])
 
         if team_dynamics:
             st.markdown("#### 🤝 Team Dynamics")
 
-            col1, col2, col3 = st.columns(3)
-
+            # Display team dynamics metrics
+            col1, col2 = st.columns(2)
             with col1:
-                collaboration_quality = team_dynamics.get("collaboration_quality", "N/A")
-                st.metric(
-                    label="Collaboration Quality",
-                    value=collaboration_quality.title()
-                    if isinstance(collaboration_quality, str)
-                    else "N/A",
-                    help="Assessment of how well the team worked together",
-                )
-
+                team_grade = team_dynamics.get("team_dynamics_grade", "N/A")
+                st.metric("Team Dynamics Grade", team_grade if team_grade else "N/A")
             with col2:
-                role_distribution = team_dynamics.get("role_distribution", "N/A")
-                st.metric(
-                    label="Role Distribution",
-                    value=role_distribution.title()
-                    if isinstance(role_distribution, str)
-                    else "N/A",
-                    help="How roles were distributed among team members",
-                )
+                commit_quality = team_dynamics.get("commit_message_quality", 0)
+                # Convert to float if it's a string
+                if isinstance(commit_quality, str):
+                    try:
+                        commit_quality = float(commit_quality)
+                    except (ValueError, TypeError):
+                        commit_quality = None
 
-            with col3:
-                communication_patterns = team_dynamics.get("communication_patterns", "N/A")
-                st.metric(
-                    label="Communication Patterns",
-                    value=communication_patterns.title()
-                    if isinstance(communication_patterns, str)
-                    else "N/A",
-                    help="Quality and frequency of team communication",
-                )
+                if commit_quality is not None and commit_quality != 0:
+                    st.metric("Commit Message Quality", f"{commit_quality:.1f}/10")
+                else:
+                    st.metric("Commit Message Quality", "N/A")
 
-        # Strategy analysis section
-        strategy_analysis = individual_data.get("strategy_analysis", {})
+            # Red flags
+            red_flags = team_dynamics.get("red_flags", [])
+            if red_flags:
+                st.markdown("**⚠️ Red Flags:**")
+                for flag in red_flags:
+                    # Use description for more informative display
+                    description = (
+                        flag.get("description", "Unknown") if isinstance(flag, dict) else str(flag)
+                    )
+                    st.warning(f"- {description}")
+
+            st.markdown("---")
 
         if strategy_analysis:
             st.markdown("#### 🎯 Strategy Analysis")
 
-            col1, col2, col3 = st.columns(3)
-
+            col1, col2 = st.columns(2)
             with col1:
-                development_approach = strategy_analysis.get("development_approach", "N/A")
-                st.metric(
-                    label="Development Approach",
-                    value=development_approach.title()
-                    if isinstance(development_approach, str)
-                    else "N/A",
-                    help="The team's approach to development",
-                )
-
+                test_strategy = strategy_analysis.get("test_strategy", "N/A")
+                st.metric("Test Strategy", test_strategy if test_strategy else "N/A")
             with col2:
-                time_management = strategy_analysis.get("time_management", "N/A")
-                st.metric(
-                    label="Time Management",
-                    value=time_management.title() if isinstance(time_management, str) else "N/A",
-                    help="How well the team managed their time",
-                )
+                maturity = strategy_analysis.get("maturity_level", "N/A")
+                st.metric("Maturity Level", maturity if maturity else "N/A")
 
-            with col3:
-                risk_management = strategy_analysis.get("risk_management", "N/A")
-                st.metric(
-                    label="Risk Management",
-                    value=risk_management.title() if isinstance(risk_management, str) else "N/A",
-                    help="The team's approach to managing risks",
-                )
+            # Strategic context
+            context = strategy_analysis.get("strategic_context", "")
+            if context:
+                st.markdown("**Strategic Context:**")
+                st.info(context)
 
-        # Contributors section
-        contributors = individual_data.get("contributors", [])
+            st.markdown("---")
 
-        if contributors:
-            st.markdown("#### 👤 Individual Contributors")
+        if actionable_feedback:
+            st.markdown("#### 💡 Actionable Feedback")
+            for _idx, feedback_item in enumerate(actionable_feedback[:5], 1):  # Limit to top 5
+                if isinstance(feedback_item, dict):
+                    finding = feedback_item.get("finding", "General")
+                    business_impact = feedback_item.get("business_impact", "")
+                    acknowledgment = feedback_item.get("acknowledgment", "")
+                    priority_raw = feedback_item.get("priority", 3)
+                    # Ensure priority is an integer
+                    try:
+                        priority = int(priority_raw) if priority_raw is not None else 3
+                    except (ValueError, TypeError):
+                        priority = 3  # Default to medium
 
-            # Display each contributor
-            for contributor in contributors:
-                member_name = contributor.get("member_name", "Unknown")
-                commit_count = contributor.get("commit_count", 0)
-                skill_assessment = contributor.get("skill_assessment", "N/A")
-                actionable_feedback = contributor.get("actionable_feedback", "")
-
-                with st.expander(f"**{member_name}**", expanded=False):
-                    # Contributor metrics
-                    col1, col2 = st.columns(2)
-
-                    with col1:
-                        st.metric(
-                            label="Commits",
-                            value=commit_count,
-                            help="Number of commits by this contributor",
-                        )
-
-                    with col2:
-                        st.metric(
-                            label="Skill Assessment",
-                            value=skill_assessment.title()
-                            if isinstance(skill_assessment, str)
-                            else "N/A",
-                            help="Assessed skill level of this contributor",
-                        )
-
-                    # Actionable feedback
-                    if actionable_feedback:
-                        st.markdown("**💡 Actionable Feedback:**")
-                        st.markdown(actionable_feedback)
+                    # Map priority number (1-5) to emoji: 1-2=high, 3=medium, 4-5=low
+                    if priority <= 2:
+                        priority_emoji = "🔴"
+                        priority_label = "High"
+                    elif priority == 3:
+                        priority_emoji = "🟡"
+                        priority_label = "Medium"
                     else:
-                        st.info("No actionable feedback available for this contributor.")
-        else:
-            st.info("📭 No individual contributor data available")
+                        priority_emoji = "🟢"
+                        priority_label = "Low"
+
+                    with st.expander(f"{priority_emoji} {finding}", expanded=False):
+                        # Show acknowledgment if available
+                        if acknowledgment and acknowledgment != "N/A - This is a strength":
+                            st.success(f"**✅ {acknowledgment}**")
+                            st.markdown("")
+
+                        # Show business impact/suggestion
+                        if business_impact:
+                            st.markdown(business_impact)
+                            st.markdown("")
+
+                        # Show code example if available
+                        code_example = feedback_item.get("code_example", None)
+                        if code_example and code_example is not None:
+                            if isinstance(code_example, dict):
+                                code_text = code_example.get("code", "")
+                                language = code_example.get("language", "python")
+                                if code_text:
+                                    st.markdown("**Example:**")
+                                    st.code(code_text, language=language)
+                            elif isinstance(code_example, str):
+                                st.markdown("**Example:**")
+                                st.code(code_example, language="python")
+
+            if len(actionable_feedback) > 5:
+                st.caption(f"_...and {len(actionable_feedback) - 5} more feedback items_")
+
+        # Advanced details expander for Tab 4
+        if team_dynamics or strategy_analysis:
+            with st.expander("🔍 Advanced Details", expanded=False):
+                st.markdown("**Additional Team & Strategy Data**")
+
+                # Individual scorecards (per-contributor analysis)
+                individual_scorecards = team_dynamics.get("individual_scorecards", [])
+                if individual_scorecards:
+                    st.markdown("---")
+                    st.markdown("**👤 Individual Contributor Scorecards:**")
+                    for scorecard_item in individual_scorecards[:10]:  # Limit to 10
+                        # Try to get name, fallback to email, then "Unknown"
+                        contributor_name = (
+                            scorecard_item.get("name")
+                            or scorecard_item.get("email")
+                            or scorecard_item.get("contributor_email")
+                            or "Unknown"
+                        )
+                        role = scorecard_item.get("role", "N/A")
+                        commit_count = scorecard_item.get("commit_count", 0)
+
+                        st.markdown(f"**{contributor_name}** ({role}) - {commit_count} commits")
+
+                    if len(individual_scorecards) > 10:
+                        st.caption(f"_...and {len(individual_scorecards) - 10} more contributors_")
+
+                # Collaboration metrics
+                collaboration_metrics = team_dynamics.get("collaboration_metrics", {})
+                if collaboration_metrics and isinstance(collaboration_metrics, dict):
+                    st.markdown("---")
+                    st.markdown("**🤝 Collaboration Metrics:**")
+                    for metric_name, metric_value in collaboration_metrics.items():
+                        formatted_name = metric_name.replace("_", " ").title()
+                        if isinstance(metric_value, (int, float)):
+                            st.markdown(f"- {formatted_name}: {metric_value:.2f}")
+                        else:
+                            st.markdown(f"- {formatted_name}: {metric_value}")
+
+                # Strategic tradeoffs
+                tradeoffs = strategy_analysis.get("tradeoffs", [])
+                if tradeoffs:
+                    st.markdown("---")
+                    st.markdown("**⚖️ Strategic Tradeoffs:**")
+                    for tradeoff in tradeoffs:
+                        if isinstance(tradeoff, dict):
+                            # Format tradeoff with available fields
+                            decision = tradeoff.get("decision", "")
+                            rationale = tradeoff.get("rationale", "")
+                            impact = tradeoff.get("impact_on_score", "")
+
+                            if decision:
+                                formatted = f"**{decision}**"
+                                if rationale:
+                                    formatted += f" - {rationale}"
+                                if impact:
+                                    formatted += f" _(Impact: {impact})_"
+                                st.markdown(f"- {formatted}")
+                            else:
+                                # Fallback if structure is different
+                                st.markdown(f"- {tradeoff.get('description', str(tradeoff))}")
+                        else:
+                            st.markdown(f"- {tradeoff}")
+
+                # Strategy recommendations
+                recommendations = strategy_analysis.get("recommendations", [])
+                if recommendations:
+                    st.markdown("---")
+                    st.markdown("**💡 Strategy Recommendations:**")
+                    for rec in recommendations[:5]:  # Limit to 5
+                        if isinstance(rec, dict):
+                            st.markdown(f"- {rec.get('recommendation', str(rec))}")
+                        else:
+                            st.markdown(f"- {rec}")
+                    if len(recommendations) > 5:
+                        st.caption(f"_...and {len(recommendations) - 5} more recommendations_")
+
+        if not team_dynamics and not strategy_analysis and not actionable_feedback:
+            st.info(
+                "📭 Team dynamics and strategy analysis are not yet available for this submission."
+            )
 
     st.stop()
 
 
 # Continue with leaderboard view
-
-
 # Fetch hackathons for dropdown
 with st.spinner("🔄 Loading hackathons..."):
-    hackathons = fetch_hackathons(st.session_state["api_key"])
+    hackathons_response = api_call("/hackathons")
 
+if not hackathons_response:
+    if st.button("🔄 Retry", key="retry_hackathons"):
+        st.rerun()
+    st.stop()
 
-# Display hackathon selection dropdown
-if not hackathons:
-    st.warning("⚠️ No hackathons found. Create a hackathon first!")
+hackathons = hackathons_response.get("hackathons", [])
+
+# Filter out DRAFT and ARCHIVED hackathons
+active_hackathons = [h for h in hackathons if h.get("status") not in ["draft", "archived"]]
+
+if not active_hackathons:
+    st.warning("⚠️ No active hackathons found.")
+    st.info("💡 Create a hackathon and activate it to start accepting submissions.")
     st.stop()
 
 
 # Create dropdown with hackathon names
-hackathon_options = {h["name"]: h["hack_id"] for h in hackathons}
+hackathon_options = {h["name"]: h["hack_id"] for h in active_hackathons}
 selected_name = st.selectbox(
     "Select Hackathon",
     options=list(hackathon_options.keys()),
     help="Choose a hackathon to view its leaderboard",
 )
 
-
 # Get selected hackathon ID
 selected_hack_id = hackathon_options[selected_name]
-
 
 # Store selected hackathon in session state
 st.session_state["selected_hackathon"] = selected_hack_id
@@ -518,222 +696,219 @@ st.session_state["selected_hackathon"] = selected_hack_id
 # Fetch and display leaderboard
 st.markdown("---")
 
-
 with st.spinner("🏆 Loading leaderboard..."):
-    leaderboard_data = fetch_leaderboard(st.session_state["api_key"], selected_hack_id)
+    leaderboard_data = api_call(f"/hackathons/{selected_hack_id}/leaderboard")
 
+if not leaderboard_data:
+    if st.button("🔄 Retry", key="retry_leaderboard"):
+        st.rerun()
+    st.stop()
 
-if leaderboard_data:
-    # Display summary statistics
-    total_submissions = leaderboard_data.get("total_submissions", 0)
-    analyzed_count = leaderboard_data.get("analyzed_count", 0)
+# Display summary statistics
+hackathon_info = leaderboard_data.get("hackathon", {})
+total_submissions = hackathon_info.get("submission_count", 0)
+analyzed_count = hackathon_info.get("analyzed_count", 0)
 
-    st.subheader("📊 Summary")
+st.subheader("📊 Summary")
 
-    col1, col2 = st.columns(2)
+col1, col2 = st.columns(2)
+
+with col1:
+    st.metric(
+        label="Total Submissions",
+        value=total_submissions,
+        help="Total number of submissions received",
+    )
+
+with col2:
+    st.metric(
+        label="Analyzed Submissions",
+        value=analyzed_count,
+        help="Number of submissions that have been analyzed",
+    )
+
+# Display leaderboard table
+st.markdown("---")
+st.subheader("🏅 Leaderboard")
+
+submissions = leaderboard_data.get("leaderboard", [])
+
+if not submissions:
+    st.info("📭 No submissions have been analyzed yet.")
+    st.caption("Start an analysis from the Live Dashboard to generate results.")
+else:
+    # Search and sort controls
+    col1, col2 = st.columns([2, 1])
 
     with col1:
-        st.metric(
-            label="Total Submissions",
-            value=total_submissions,
-            help="Total number of submissions received",
+        search_query = st.text_input(
+            "🔍 Search by team name",
+            placeholder="Enter team name...",
+            help="Filter submissions by team name (case-insensitive)",
+            key="search_query_input",
         )
 
     with col2:
-        st.metric(
-            label="Analyzed Submissions",
-            value=analyzed_count,
-            help="Number of submissions that have been analyzed",
+        sort_option = st.selectbox(
+            "Sort by",
+            options=["score", "team_name", "created_at"],
+            format_func=lambda x: {
+                "score": "Overall Score",
+                "team_name": "Team Name",
+                "created_at": "Submission Date",
+            }[x],
+            help="Sort leaderboard by selected field",
+            key="sort_option_select",
         )
 
-    # Display leaderboard table
-    st.markdown("---")
-    st.subheader("🏅 Leaderboard")
+    # Reset page number when search or sort changes
+    if "last_search_query" not in st.session_state:
+        st.session_state["last_search_query"] = ""
+    if "last_sort_option" not in st.session_state:
+        st.session_state["last_sort_option"] = "score"
 
-    submissions = leaderboard_data.get("submissions", [])
+    if (
+        search_query != st.session_state["last_search_query"]
+        or sort_option != st.session_state["last_sort_option"]
+    ):
+        st.session_state["results_page_number"] = 1
+        st.session_state["last_search_query"] = search_query
+        st.session_state["last_sort_option"] = sort_option
 
-    if not submissions:
-        st.info("📭 No submissions have been analyzed yet.")
-        st.caption("Start an analysis from the Live Dashboard to generate results.")
+    # Apply search filter (case-insensitive)
+    filtered_submissions = submissions
+    if search_query:
+        filtered_submissions = [
+            s for s in submissions if search_query.lower() in s.get("team_name", "").lower()
+        ]
+
+    # Apply sorting
+    if sort_option == "score":
+        # Sort by overall_score descending (highest first)
+        filtered_submissions = sorted(
+            filtered_submissions, key=lambda x: x.get("overall_score", 0), reverse=True
+        )
+    elif sort_option == "team_name":
+        # Sort by team_name ascending (A-Z)
+        filtered_submissions = sorted(
+            filtered_submissions, key=lambda x: x.get("team_name", "").lower()
+        )
+    elif sort_option == "created_at":
+        # Sort by created_at descending (newest first)
+        filtered_submissions = sorted(
+            filtered_submissions, key=lambda x: x.get("created_at", ""), reverse=True
+        )
+
+    # Display filtered and sorted results
+    if not filtered_submissions:
+        st.warning(f"⚠️ No submissions found matching '{search_query}'")
     else:
-        # Search and sort controls
-        col1, col2 = st.columns([2, 1])
+        # Pagination setup
+        ITEMS_PER_PAGE = 50
+        total_items = len(filtered_submissions)
+        total_pages = (total_items + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE
 
-        with col1:
-            search_query = st.text_input(
-                "🔍 Search by team name",
-                placeholder="Enter team name...",
-                help="Filter submissions by team name (case-insensitive)",
-                key="search_query_input",
-            )
-
-        with col2:
-            sort_option = st.selectbox(
-                "Sort by",
-                options=["score", "team_name", "created_at"],
-                format_func=lambda x: {
-                    "score": "Overall Score",
-                    "team_name": "Team Name",
-                    "created_at": "Submission Date",
-                }[x],
-                help="Sort leaderboard by selected field",
-                key="sort_option_select",
-            )
-
-        # Reset page number when search or sort changes
-        if "last_search_query" not in st.session_state:
-            st.session_state["last_search_query"] = ""
-        if "last_sort_option" not in st.session_state:
-            st.session_state["last_sort_option"] = "score"
-
-        if (
-            search_query != st.session_state["last_search_query"]
-            or sort_option != st.session_state["last_sort_option"]
-        ):
+        # Initialize page number in session state
+        if "results_page_number" not in st.session_state:
             st.session_state["results_page_number"] = 1
-            st.session_state["last_search_query"] = search_query
-            st.session_state["last_sort_option"] = sort_option
 
-        # Apply search filter (case-insensitive)
-        filtered_submissions = submissions
-        if search_query:
-            filtered_submissions = [
-                s for s in submissions if search_query.lower() in s.get("team_name", "").lower()
-            ]
+        # Ensure page number is within valid range
+        if st.session_state["results_page_number"] > total_pages:
+            st.session_state["results_page_number"] = total_pages
+        if st.session_state["results_page_number"] < 1:
+            st.session_state["results_page_number"] = 1
 
-        # Apply sorting
-        if sort_option == "score":
-            # Sort by overall_score descending (highest first)
-            filtered_submissions = sorted(
-                filtered_submissions, key=lambda x: x.get("overall_score", 0), reverse=True
-            )
-        elif sort_option == "team_name":
-            # Sort by team_name ascending (A-Z)
-            filtered_submissions = sorted(
-                filtered_submissions, key=lambda x: x.get("team_name", "").lower()
-            )
-        elif sort_option == "created_at":
-            # Sort by created_at descending (newest first)
-            filtered_submissions = sorted(
-                filtered_submissions, key=lambda x: x.get("created_at", ""), reverse=True
-            )
+        current_page = st.session_state["results_page_number"]
 
-        # Display filtered and sorted results
-        if not filtered_submissions:
-            st.warning(f"⚠️ No submissions found matching '{search_query}'")
-        else:
-            # Pagination setup
-            ITEMS_PER_PAGE = 50
-            total_items = len(filtered_submissions)
-            total_pages = (total_items + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE  # Ceiling division
+        # Calculate pagination slice
+        start_idx = (current_page - 1) * ITEMS_PER_PAGE
+        end_idx = min(start_idx + ITEMS_PER_PAGE, total_items)
+        paginated_submissions = filtered_submissions[start_idx:end_idx]
 
-            # Initialize page number in session state
-            if "results_page_number" not in st.session_state:
-                st.session_state["results_page_number"] = 1
+        # Display table header
+        header_col1, header_col2, header_col3, header_col4, header_col5 = st.columns(
+            [0.5, 2, 1, 1.5, 1]
+        )
+        with header_col1:
+            st.markdown("**Rank**")
+        with header_col2:
+            st.markdown("**Team Name**")
+        with header_col3:
+            st.markdown("**Score**")
+        with header_col4:
+            st.markdown("**Recommendation**")
+        with header_col5:
+            st.markdown("**Actions**")
 
-            # Ensure page number is within valid range
-            if st.session_state["results_page_number"] > total_pages:
-                st.session_state["results_page_number"] = total_pages
-            if st.session_state["results_page_number"] < 1:
-                st.session_state["results_page_number"] = 1
+        st.divider()
 
-            current_page = st.session_state["results_page_number"]
+        # Display submissions as clickable rows
+        for submission in paginated_submissions:
+            rank = submission.get("rank", "N/A")
+            team_name = submission.get("team_name", "Unknown")
+            overall_score = submission.get("overall_score", 0)
+            recommendation = submission.get("recommendation", "N/A").replace("_", " ").title()
+            sub_id = submission.get("sub_id", "")
 
-            # Calculate pagination slice
-            start_idx = (current_page - 1) * ITEMS_PER_PAGE
-            end_idx = min(start_idx + ITEMS_PER_PAGE, total_items)
-            paginated_submissions = filtered_submissions[start_idx:end_idx]
+            # Create a container for each row
+            col1, col2, col3, col4, col5 = st.columns([0.5, 2, 1, 1.5, 1])
 
-            # Display table header
-            header_col1, header_col2, header_col3, header_col4, header_col5 = st.columns(
-                [0.5, 2, 1, 1.5, 1]
-            )
-            with header_col1:
-                st.markdown("**Rank**")
-            with header_col2:
-                st.markdown("**Team Name**")
-            with header_col3:
-                st.markdown("**Score**")
-            with header_col4:
-                st.markdown("**Recommendation**")
-            with header_col5:
-                st.markdown("**Actions**")
+            with col1:
+                st.markdown(f"{rank}")
+
+            with col2:
+                st.markdown(f"{team_name}")
+
+            with col3:
+                st.markdown(f"{overall_score:.1f}")
+
+            with col4:
+                st.markdown(f"{recommendation}")
+
+            with col5:
+                # Make the row clickable with a button
+                if st.button("View Details", key=f"view_{sub_id}"):
+                    # Store selected sub_id in session state
+                    st.session_state["selected_sub_id"] = sub_id
+                    st.session_state["view_mode"] = "team_detail"
+                    st.rerun()
 
             st.divider()
 
-            # Display submissions as clickable rows
-            for submission in paginated_submissions:
-                rank = submission.get("rank", "N/A")
-                team_name = submission.get("team_name", "Unknown")
-                overall_score = submission.get("overall_score", 0)
-                recommendation = submission.get("recommendation", "N/A").replace("_", " ").title()
-                sub_id = submission.get("sub_id", "")
+        # Pagination controls
+        if total_pages > 1:
+            col1, col2, col3, col4, col5 = st.columns([1, 1, 2, 1, 1])
 
-                # Create a container for each row
-                col1, col2, col3, col4, col5 = st.columns([0.5, 2, 1, 1.5, 1])
+            with col1:
+                if st.button("⏮️ First", disabled=(current_page == 1), key="page_first"):
+                    st.session_state["results_page_number"] = 1
+                    st.rerun()
 
-                with col1:
-                    st.markdown(f"{rank}")
+            with col2:
+                if st.button("◀️ Previous", disabled=(current_page == 1), key="page_prev"):
+                    st.session_state["results_page_number"] = current_page - 1
+                    st.rerun()
 
-                with col2:
-                    st.markdown(f"{team_name}")
+            with col3:
+                st.markdown(
+                    f"<div style='text-align: center; padding: 5px;'>Page {current_page} of {total_pages}</div>",
+                    unsafe_allow_html=True,
+                )
 
-                with col3:
-                    st.markdown(f"{overall_score:.1f}")
+            with col4:
+                if st.button("Next ▶️", disabled=(current_page == total_pages), key="page_next"):
+                    st.session_state["results_page_number"] = current_page + 1
+                    st.rerun()
 
-                with col4:
-                    st.markdown(f"{recommendation}")
+            with col5:
+                if st.button("Last ⏭️", disabled=(current_page == total_pages), key="page_last"):
+                    st.session_state["results_page_number"] = total_pages
+                    st.rerun()
 
-                with col5:
-                    # Make the row clickable with a button
-                    if st.button("View Details", key=f"view_{sub_id}"):
-                        # Store selected sub_id in session state
-                        st.session_state["selected_sub_id"] = sub_id
-                        st.session_state["view_mode"] = "team_detail"
-                        st.rerun()
-
-                st.divider()
-
-            # Pagination controls
-            if total_pages > 1:
-                col1, col2, col3, col4, col5 = st.columns([1, 1, 2, 1, 1])
-
-                with col1:
-                    if st.button("⏮️ First", disabled=(current_page == 1)):
-                        st.session_state["results_page_number"] = 1
-                        st.rerun()
-
-                with col2:
-                    if st.button("◀️ Previous", disabled=(current_page == 1)):
-                        st.session_state["results_page_number"] = current_page - 1
-                        st.rerun()
-
-                with col3:
-                    st.markdown(
-                        f"<div style='text-align: center; padding: 5px;'>Page {current_page} of {total_pages}</div>",
-                        unsafe_allow_html=True,
-                    )
-
-                with col4:
-                    if st.button("Next ▶️", disabled=(current_page == total_pages)):
-                        st.session_state["results_page_number"] = current_page + 1
-                        st.rerun()
-
-                with col5:
-                    if st.button("Last ⏭️", disabled=(current_page == total_pages)):
-                        st.session_state["results_page_number"] = total_pages
-                        st.rerun()
-
-            st.caption(f"Showing {start_idx + 1}-{end_idx} of {total_items} submission(s)")
-
-else:
-    st.error("❌ Failed to load leaderboard. Please try again.")
-    retry_button(lambda: st.cache_data.clear() or st.rerun(), "🔄 Retry Loading Leaderboard")
+        st.caption(f"Showing {start_idx + 1}-{end_idx} of {total_items} submission(s)")
 
 
 # Manual refresh button
 st.markdown("---")
-if st.button("🔄 Refresh"):
-    # Clear cache to force refresh
-    st.cache_data.clear()
+if st.button("🔄 Refresh Data", key="refresh_main"):
     st.rerun()

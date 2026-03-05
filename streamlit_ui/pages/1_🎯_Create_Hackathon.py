@@ -101,6 +101,83 @@ def render_hackathon_form() -> None:
         )
 
         st.markdown("---")
+        st.markdown("### Judging Configuration")
+
+        # AI Agents selection
+        st.markdown("**Select AI Agents to Enable:**")
+        col1, col2 = st.columns(2)
+
+        with col1:
+            bug_hunter = st.checkbox(
+                "🐛 Bug Hunter", value=True, help="Code quality, security, and testing"
+            )
+            performance = st.checkbox(
+                "⚡ Performance Analyzer",
+                value=True,
+                help="Architecture, scalability, and performance",
+            )
+
+        with col2:
+            innovation = st.checkbox(
+                "💡 Innovation Scorer", value=True, help="Creativity, novelty, and documentation"
+            )
+            ai_detection = st.checkbox(
+                "🤖 AI Detection", value=True, help="Development authenticity and AI usage"
+            )
+
+        # Rubric weights
+        st.markdown("**Scoring Weights** (must sum to 1.0):")
+        col1, col2 = st.columns(2)
+
+        with col1:
+            bug_hunter_weight = st.number_input(
+                "Bug Hunter Weight",
+                min_value=0.0,
+                max_value=1.0,
+                value=0.3,
+                step=0.05,
+                disabled=not bug_hunter,
+                help="Weight for code quality, security, and testing analysis. Higher weight = more impact on final score.",
+            )
+            performance_weight = st.number_input(
+                "Performance Weight",
+                min_value=0.0,
+                max_value=1.0,
+                value=0.3,
+                step=0.05,
+                disabled=not performance,
+                help="Weight for architecture, scalability, and performance analysis. Higher weight = more impact on final score.",
+            )
+
+        with col2:
+            innovation_weight = st.number_input(
+                "Innovation Weight",
+                min_value=0.0,
+                max_value=1.0,
+                value=0.3,
+                step=0.05,
+                disabled=not innovation,
+                help="Weight for creativity, novelty, and documentation analysis. Higher weight = more impact on final score.",
+            )
+            ai_detection_weight = st.number_input(
+                "AI Detection Weight",
+                min_value=0.0,
+                max_value=1.0,
+                value=0.1,
+                step=0.05,
+                disabled=not ai_detection,
+                help="Weight for development authenticity and AI usage analysis. Higher weight = more impact on final score.",
+            )
+
+        # AI Policy Mode
+        ai_policy_mode = st.selectbox(
+            "AI Policy Mode",
+            options=["ai_assisted", "no_ai", "ai_generated"],
+            index=0,
+            help="How AI-generated code should be evaluated",
+        )
+
+        st.markdown("---")
 
         # Submit button
         submit_button = st.form_submit_button(
@@ -134,12 +211,88 @@ def render_hackathon_form() -> None:
                 st.error(f"❌ {budget_error}")
                 return
 
+            # Validate at least one agent is selected
+            agents_enabled = []
+            if bug_hunter:
+                agents_enabled.append("bug_hunter")
+            if performance:
+                agents_enabled.append("performance")
+            if innovation:
+                agents_enabled.append("innovation")
+            if ai_detection:
+                agents_enabled.append("ai_detection")
+
+            if not agents_enabled:
+                st.error("❌ At least one AI agent must be enabled")
+                return
+
+            # Validate rubric weights sum to 1.0
+            total_weight = 0.0
+            rubric_dimensions = []
+
+            if bug_hunter:
+                total_weight += bug_hunter_weight
+                rubric_dimensions.append(
+                    {
+                        "name": "Code Quality",
+                        "agent": "bug_hunter",
+                        "weight": bug_hunter_weight,
+                        "description": "Code quality, security, and testing",
+                    }
+                )
+
+            if performance:
+                total_weight += performance_weight
+                rubric_dimensions.append(
+                    {
+                        "name": "Architecture",
+                        "agent": "performance",
+                        "weight": performance_weight,
+                        "description": "Architecture, scalability, and performance",
+                    }
+                )
+
+            if innovation:
+                total_weight += innovation_weight
+                rubric_dimensions.append(
+                    {
+                        "name": "Innovation",
+                        "agent": "innovation",
+                        "weight": innovation_weight,
+                        "description": "Creativity, novelty, and documentation",
+                    }
+                )
+
+            if ai_detection:
+                total_weight += ai_detection_weight
+                rubric_dimensions.append(
+                    {
+                        "name": "Authenticity",
+                        "agent": "ai_detection",
+                        "weight": ai_detection_weight,
+                        "description": "Development authenticity and AI usage",
+                    }
+                )
+
+            # Check if weights sum to 1.0 (with small tolerance for floating point)
+            if abs(total_weight - 1.0) > 0.01:
+                st.error(f"❌ Rubric weights must sum to 1.0 (current sum: {total_weight:.2f})")
+                return
+
             # Prepare request payload
             payload = {
                 "name": name,
                 "description": description,
                 "start_date": start_datetime.isoformat(),
                 "end_date": end_datetime.isoformat(),
+                "rubric": {
+                    "name": "Custom Rubric",
+                    "version": "1.0",
+                    "max_score": 100.0,
+                    "dimensions": rubric_dimensions,
+                },
+                "agents_enabled": agents_enabled,
+                "ai_policy_mode": ai_policy_mode,
             }
 
             # Add budget if provided
@@ -164,7 +317,10 @@ def render_hackathon_form() -> None:
                     st.markdown("### Hackathon Created")
                     st.info(f"**Hackathon ID**: `{response.get('hack_id', 'N/A')}`")
                     st.info(f"**Name**: {response.get('name', 'N/A')}")
-                    st.info(f"**Status**: {response.get('status', 'N/A')}")
+                    st.info(f"**Status**: {response.get('status', 'N/A').upper()}")
+
+                    # Store hack_id in session state for activation
+                    st.session_state["created_hack_id"] = response.get("hack_id")
 
                     # Clear cache to ensure fresh data on other pages
                     st.cache_data.clear()
@@ -174,12 +330,10 @@ def render_hackathon_form() -> None:
                     # Show next steps
                     st.markdown("---")
                     st.markdown("### Next Steps")
-                    st.markdown("""
-                    1. Share the submission form with participants
-                    2. Monitor submissions on the **📊 Live Dashboard** page
-                    3. Trigger analysis when submissions are ready
-                    4. View results on the **🏆 Results** page
-                    """)
+                    st.info(
+                        "Your hackathon is in **DRAFT** status. "
+                        "Go to the **Manage Hackathons** page to activate it before participants can submit."
+                    )
 
             except ValidationError as e:
                 # Display validation errors inline

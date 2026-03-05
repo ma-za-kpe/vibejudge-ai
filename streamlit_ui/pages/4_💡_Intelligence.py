@@ -1,16 +1,12 @@
 """Intelligence page for viewing hiring insights and technology trends.
 
-This page allows organizers to:
-- Select a hackathon from a dropdown
-- View must-interview candidates with hiring scores
-- See technology trends with visualizations
-- View sponsor API usage statistics
+Simplified version - backend is source of truth, no caching complexity.
 """
 
 import logging
 
+import requests
 import streamlit as st
-from components.api_client import APIClient, APIError
 from components.auth import is_authenticated
 from components.charts import create_technology_trends_chart
 
@@ -28,63 +24,68 @@ if not is_authenticated():
     st.stop()
 
 
-# Initialize API client
-api_client = APIClient(st.session_state["api_base_url"], st.session_state["api_key"])
-
-
 # Page header
 st.title("💡 Intelligence")
 st.markdown("View hiring insights and technology trends from your hackathon submissions.")
 
 
-# Cached function to fetch hackathons list
-@st.cache_data(ttl=30)
-def fetch_hackathons(api_key: str) -> list[dict]:
-    """Fetch list of hackathons from the backend.
+# Helper function for API calls
+def api_call(endpoint: str) -> dict | None:
+    """Make API call with error handling.
 
     Args:
-        api_key: The API key for authentication (used as cache key)
+        endpoint: API endpoint path (e.g., "/hackathons")
 
     Returns:
-        List of hackathon dictionaries
+        Response JSON or None if error
     """
-    client = APIClient(st.session_state["api_base_url"], api_key)
     try:
-        response = client.get("/hackathons")
-        return response if isinstance(response, list) else []
-    except APIError as e:
-        logger.error(f"Failed to fetch hackathons: {e}")
-        st.error(f"❌ Failed to fetch hackathons: {e}")
-        return []
+        base_url = st.session_state["api_base_url"].rstrip("/")
+        headers = {"X-API-Key": st.session_state["api_key"]}
+        url = f"{base_url}{endpoint}"
 
+        response = requests.get(url, headers=headers, timeout=60)
+        response.raise_for_status()
+        return response.json()
 
-# Cached function to fetch intelligence data
-@st.cache_data(ttl=30)
-def fetch_intelligence(api_key: str, hack_id: str) -> dict | None:
-    """Fetch intelligence data for a specific hackathon.
+    except requests.HTTPError as e:
+        status = e.response.status_code
 
-    Args:
-        api_key: The API key for authentication (used as cache key)
-        hack_id: The hackathon ID
+        if status == 401:
+            st.error("❌ Invalid API key")
+        elif status == 404:
+            st.error("❌ Resource not found")
+        else:
+            try:
+                error_detail = e.response.json().get("detail", str(e))
+            except:
+                error_detail = str(e)
+            st.error(f"❌ Error: {error_detail}")
 
-    Returns:
-        Dictionary containing intelligence data or None if error occurred
-    """
-    client = APIClient(st.session_state["api_base_url"], api_key)
-    try:
-        return client.get(f"/hackathons/{hack_id}/intelligence")
-    except APIError as e:
-        logger.error(f"Failed to fetch intelligence for {hack_id}: {e}")
-        # Return None to indicate data is unavailable (not an error to display)
+        logger.error(f"API error: {status} - {e}")
+        return None
+
+    except requests.Timeout:
+        st.error("⏱️ Request timed out. Please try again.")
+        return None
+
+    except Exception as e:
+        st.error(f"❌ Unexpected error: {e}")
+        logger.error(f"Unexpected error: {e}")
         return None
 
 
 # Fetch hackathons for dropdown
 with st.spinner("🔄 Loading hackathons..."):
-    hackathons = fetch_hackathons(st.session_state["api_key"])
+    hackathons_response = api_call("/hackathons")
 
+if not hackathons_response:
+    if st.button("🔄 Retry"):
+        st.rerun()
+    st.stop()
 
-# Display hackathon selection dropdown
+hackathons = hackathons_response.get("hackathons", [])
+
 if not hackathons:
     st.warning("⚠️ No hackathons found. Create a hackathon first!")
     st.stop()
@@ -98,10 +99,8 @@ selected_name = st.selectbox(
     help="Choose a hackathon to view its intelligence insights",
 )
 
-
 # Get selected hackathon ID
 selected_hack_id = hackathon_options[selected_name]
-
 
 # Store selected hackathon in session state
 st.session_state["selected_hackathon"] = selected_hack_id
@@ -110,10 +109,8 @@ st.session_state["selected_hackathon"] = selected_hack_id
 # Fetch and display intelligence data
 st.markdown("---")
 
-
 with st.spinner("💡 Loading intelligence insights..."):
-    intelligence_data = fetch_intelligence(st.session_state["api_key"], selected_hack_id)
-
+    intelligence_data = api_call(f"/hackathons/{selected_hack_id}/intelligence")
 
 if not intelligence_data:
     st.info(
@@ -163,7 +160,6 @@ else:
                 with col3:
                     skills = candidate.get("skills", [])
                     if skills:
-                        # Display skills as comma-separated list
                         skills_str = ", ".join(skills)
                         st.markdown(skills_str)
                     else:
@@ -181,47 +177,72 @@ else:
         # Technology trends section
         st.markdown("### 📊 Technology Trends")
 
-        technology_trends = intelligence_data.get("technology_trends", [])
+        technology_trends_obj = intelligence_data.get("technology_trends", {})
 
-    if not technology_trends:
-        st.info("📭 No technology trends data available yet.")
-    else:
-        # Display technology trends chart
-        fig = create_technology_trends_chart(technology_trends)
-        st.plotly_chart(fig, use_container_width=True)
+        # Check if technology_trends is a valid dict with data
+        if (
+            not technology_trends_obj
+            or not isinstance(technology_trends_obj, dict)
+            or not technology_trends_obj.get("most_used", [])
+        ):
+            st.info("📭 No technology trends data available yet.")
+        else:
+            # Extract most_used from technology_trends object
+            # API returns: {"most_used": [["Python", 5], ["JavaScript", 3]], "emerging": [...], "popular_stacks": [...]}
+            most_used = technology_trends_obj.get("most_used", [])
 
-        # Display technology trends table
-        with st.expander("📋 View Detailed Technology Breakdown", expanded=False):
-            # Table header
-            header_col1, header_col2, header_col3 = st.columns([2, 2, 1])
-            with header_col1:
-                st.markdown("**Technology**")
-            with header_col2:
-                st.markdown("**Category**")
-            with header_col3:
-                st.markdown("**Usage Count**")
+            # Convert tuples/lists to dict format expected by chart
+            technology_trends = [
+                {"technology": tech, "usage_count": count, "category": "language"}
+                for tech, count in most_used
+            ]
 
-            st.divider()
+            if not technology_trends:
+                st.info("📭 No technology trends data available yet.")
+            else:
+                # Display technology trends chart
+                fig = create_technology_trends_chart(technology_trends)
+                st.plotly_chart(fig, use_container_width=True)
 
-            # Display each technology
-            for trend in technology_trends:
-                col1, col2, col3 = st.columns([2, 2, 1])
+                # Display technology trends table
+                with st.expander("📋 View Detailed Technology Breakdown", expanded=False):
+                    # Table header
+                    header_col1, header_col2, header_col3 = st.columns([2, 2, 1])
+                    with header_col1:
+                        st.markdown("**Technology**")
+                    with header_col2:
+                        st.markdown("**Category**")
+                    with header_col3:
+                        st.markdown("**Usage Count**")
 
-                with col1:
-                    technology = trend.get("technology", "Unknown")
-                    st.markdown(technology)
+                    st.divider()
 
-                with col2:
-                    category = trend.get("category", "N/A")
-                    st.markdown(category.title() if isinstance(category, str) else "N/A")
+                    # Display each technology
+                    for trend in technology_trends:
+                        col1, col2, col3 = st.columns([2, 2, 1])
 
-                with col3:
-                    usage_count = trend.get("usage_count", 0)
-                    st.markdown(str(usage_count))
+                        with col1:
+                            technology = trend.get("technology", "Unknown")
+                            st.markdown(technology)
 
-                st.divider()
+                        with col2:
+                            category = trend.get("category", "N/A")
+                            st.markdown(category.title() if isinstance(category, str) else "N/A")
 
-            st.caption(f"Total technologies tracked: {len(technology_trends)}")
+                        with col3:
+                            usage_count = trend.get("usage_count", 0)
+                            st.markdown(str(usage_count))
+
+                        st.divider()
+
+                    st.caption(f"Total technologies tracked: {len(technology_trends)}")
+
+                # Display emerging technologies if available
+                emerging = technology_trends_obj.get("emerging", [])
+                if emerging:
+                    st.markdown("### 🌟 Emerging Technologies")
+                    st.markdown(", ".join(emerging))
+                    st.caption("Technologies used by 2-5 teams")
 
     with tab3:
         # Sponsor API usage section
@@ -258,7 +279,5 @@ else:
 
 # Manual refresh button
 st.markdown("---")
-if st.button("🔄 Refresh"):
-    # Clear cache to force refresh
-    st.cache_data.clear()
+if st.button("🔄 Refresh Data"):
     st.rerun()

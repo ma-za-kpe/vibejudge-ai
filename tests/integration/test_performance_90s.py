@@ -12,10 +12,12 @@ from src.models.analysis import CommitInfo, RepoData, SourceFile
 from src.models.common import AgentName
 from src.models.hackathon import RubricConfig, RubricDimension
 from src.models.submission import RepoMeta
-from tests.fixtures.complete_mock_responses import (AI_DETECTION_RESPONSE,
-                                                    BUG_HUNTER_RESPONSE,
-                                                    INNOVATION_RESPONSE,
-                                                    PERFORMANCE_RESPONSE)
+from tests.fixtures.complete_mock_responses import (
+    AI_DETECTION_RESPONSE,
+    BUG_HUNTER_RESPONSE,
+    INNOVATION_RESPONSE,
+    PERFORMANCE_RESPONSE,
+)
 
 # ============================================================
 # HELPER FUNCTIONS
@@ -340,8 +342,7 @@ async def test_orchestrator_performance_with_failures(
 @pytest.mark.performance
 def test_performance_monitor_tracks_90s_target() -> None:
     """Test that PerformanceMonitor correctly tracks 90-second target."""
-    from src.analysis.performance_monitor import (PERFORMANCE_TARGETS,
-                                                  PerformanceMonitor)
+    from src.analysis.performance_monitor import PERFORMANCE_TARGETS, PerformanceMonitor
 
     monitor = PerformanceMonitor("SUB#test")
 

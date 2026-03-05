@@ -114,7 +114,6 @@ GSI1SK: ORG#<org_id>
 | name | S | ✅ | Display name |
 | organization | S | ❌ | Company/org name |
 | tier | S | ✅ | `free` \| `premium` \| `enterprise` |
-| api_key_hash | S | ✅ | SHA-256 hash of API key |
 | hackathon_count | N | ✅ | Running count of hackathons created |
 | created_at | S | ✅ | ISO 8601 |
 | updated_at | S | ✅ | ISO 8601 |
@@ -707,7 +706,6 @@ Resources:
   "name": "Demo Organizer",
   "organization": "Vibe Coders",
   "tier": "premium",
-  "api_key_hash": "sha256_placeholder",
   "hackathon_count": 1,
   "created_at": "2026-02-13T00:00:00Z",
   "updated_at": "2026-02-13T00:00:00Z",

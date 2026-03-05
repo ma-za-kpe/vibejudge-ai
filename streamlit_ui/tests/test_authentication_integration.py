@@ -26,7 +26,7 @@ def test_authentication_form_displayed_on_initial_load() -> None:
     - Title and welcome message
     """
     # Initialize the app
-    at = AppTest.from_file("app.py")
+    at = AppTest.from_file("streamlit_ui/app.py")
     at.run()
 
     # Verify the page loaded without errors
@@ -62,7 +62,7 @@ def test_login_success_with_valid_api_key(mock_get: MagicMock) -> None:
     mock_get.return_value = mock_response
 
     # Initialize the app
-    at = AppTest.from_file("app.py")
+    at = AppTest.from_file("streamlit_ui/app.py")
     at.run()
 
     # Find the API key input field (should be the first text_input)
@@ -114,7 +114,7 @@ def test_login_failure_with_invalid_api_key(mock_get: MagicMock) -> None:
     mock_get.return_value = mock_response
 
     # Initialize the app
-    at = AppTest.from_file("app.py")
+    at = AppTest.from_file("streamlit_ui/app.py")
     at.run()
 
     # Find the API key input field
@@ -159,7 +159,7 @@ def test_logout_functionality(mock_get: MagicMock) -> None:
     mock_get.return_value = mock_response
 
     # Initialize the app
-    at = AppTest.from_file("app.py")
+    at = AppTest.from_file("streamlit_ui/app.py")
     at.run()
 
     # First, log in with a valid API key
@@ -197,7 +197,7 @@ def test_logout_functionality(mock_get: MagicMock) -> None:
     # After logout, we need to create a fresh AppTest instance
     # because the session state has been cleared and widgets reset
     # This simulates the actual behavior where the page reloads
-    at_after_logout = AppTest.from_file("app.py")
+    at_after_logout = AppTest.from_file("streamlit_ui/app.py")
     at_after_logout.run()
 
     # Verify the API key was cleared from session state
@@ -223,7 +223,7 @@ def test_empty_api_key_validation(mock_get: MagicMock) -> None:
     - No API call should be made
     """
     # Initialize the app
-    at = AppTest.from_file("app.py")
+    at = AppTest.from_file("streamlit_ui/app.py")
     at.run()
 
     # Leave the API key input empty and submit the form
@@ -263,7 +263,7 @@ def test_api_base_url_configuration(mock_get: MagicMock) -> None:
     mock_get.return_value = mock_response
 
     # Initialize the app
-    at = AppTest.from_file("app.py")
+    at = AppTest.from_file("streamlit_ui/app.py")
     at.run()
 
     # Verify that api_base_url is set in session state
@@ -293,7 +293,7 @@ def test_authentication_with_network_timeout(mock_get: MagicMock) -> None:
     mock_get.side_effect = requests.Timeout("Connection timed out")
 
     # Initialize the app
-    at = AppTest.from_file("app.py")
+    at = AppTest.from_file("streamlit_ui/app.py")
     at.run()
 
     # Enter API key and submit
@@ -335,7 +335,7 @@ def test_authentication_with_connection_error(mock_get: MagicMock) -> None:
     mock_get.side_effect = requests.ConnectionError("Cannot connect to server")
 
     # Initialize the app
-    at = AppTest.from_file("app.py")
+    at = AppTest.from_file("streamlit_ui/app.py")
     at.run()
 
     # Enter API key and submit

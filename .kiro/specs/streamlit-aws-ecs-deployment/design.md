@@ -18,28 +18,28 @@ graph TB
     subgraph "Internet"
         Users[Users/Organizers]
     end
-    
+
     subgraph "AWS Cloud - us-east-1"
         subgraph "Public Subnets"
             ALB[Application Load Balancer<br/>Port 80/443]
         end
-        
+
         subgraph "Public Subnets with Internet Gateway"
             ECS1[ECS Task 1<br/>Streamlit:8501<br/>0.5 vCPU, 1GB RAM]
             ECS2[ECS Task 2<br/>Streamlit:8501<br/>0.5 vCPU, 1GB RAM]
         end
-        
+
         subgraph "AWS Services"
             ECR[ECR Repository<br/>vibejudge-dashboard]
             CW[CloudWatch Logs<br/>/ecs/vibejudge-dashboard]
             ASG[Auto Scaling<br/>2-10 tasks<br/>Target: 70% CPU]
         end
-        
+
         subgraph "External"
             API[Backend API<br/>API Gateway]
         end
     end
-    
+
     Users -->|HTTPS| ALB
     ALB -->|HTTP:8501| ECS1
     ALB -->|HTTP:8501| ECS2
@@ -246,31 +246,31 @@ Resources:
   - PublicSubnet2
   - InternetGateway
   - RouteTable
-  
+
   # Security
   - ALBSecurityGroup
   - ECSSecurityGroup
-  
+
   # Container Registry
   - ECRRepository
-  
+
   # Load Balancing
   - ApplicationLoadBalancer
   - ALBListener80
   - ALBListener443
   - TargetGroup
-  
+
   # ECS
   - ECSCluster
   - TaskDefinition
   - TaskExecutionRole
   - TaskRole
   - ECSService
-  
+
   # Auto Scaling
   - ScalableTarget
   - ScalingPolicy
-  
+
   # Monitoring
   - LogGroup
   - HealthyHostAlarm
@@ -306,7 +306,7 @@ BEGIN
   ASSERT docker_installed() = true
   ASSERT sam_cli_installed() = true
   ASSERT git_commit_sha IS NOT NULL
-  
+
   // Step 2: Build Docker image
   PRINT "Building Docker image..."
   docker_build_result ← EXECUTE "docker build -t vibejudge-dashboard:${git_commit_sha} -f Dockerfile ."
@@ -314,15 +314,15 @@ BEGIN
     PRINT "Docker build failed"
     RETURN (FAILED, NULL)
   END IF
-  
+
   // Step 3: Tag image
   PRINT "Tagging image..."
   aws_account_id ← EXECUTE "aws sts get-caller-identity --query Account --output text"
   ecr_uri ← "${aws_account_id}.dkr.ecr.us-east-1.amazonaws.com/vibejudge-dashboard"
-  
+
   EXECUTE "docker tag vibejudge-dashboard:${git_commit_sha} ${ecr_uri}:${git_commit_sha}"
   EXECUTE "docker tag vibejudge-dashboard:${git_commit_sha} ${ecr_uri}:latest"
-  
+
   // Step 4: Authenticate with ECR
   PRINT "Authenticating with ECR..."
   ecr_login ← EXECUTE "aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${ecr_uri}"
@@ -330,7 +330,7 @@ BEGIN
     PRINT "ECR authentication failed"
     RETURN (FAILED, NULL)
   END IF
-  
+
   // Step 5: Push image to ECR
   PRINT "Pushing image to ECR..."
   push_sha ← EXECUTE "docker push ${ecr_uri}:${git_commit_sha}"
@@ -339,7 +339,7 @@ BEGIN
     PRINT "Image push failed"
     RETURN (FAILED, NULL)
   END IF
-  
+
   // Step 6: Deploy infrastructure with SAM
   PRINT "Deploying infrastructure..."
   sam_deploy ← EXECUTE "sam deploy --config-env ${environment} --parameter-overrides ImageTag=${git_commit_sha}"
@@ -347,24 +347,24 @@ BEGIN
     PRINT "SAM deployment failed"
     RETURN (FAILED, NULL)
   END IF
-  
+
   // Step 7: Wait for ECS service to stabilize
   PRINT "Waiting for ECS service to stabilize..."
   cluster_name ← "vibejudge-cluster"
   service_name ← "vibejudge-dashboard-service"
-  
+
   wait_result ← EXECUTE "aws ecs wait services-stable --cluster ${cluster_name} --services ${service_name} --region us-east-1"
   IF wait_result.exit_code ≠ 0 THEN
     PRINT "ECS service failed to stabilize"
     RETURN (FAILED, NULL)
   END IF
-  
+
   // Step 8: Get ALB URL
   alb_dns ← EXECUTE "aws cloudformation describe-stacks --stack-name vibejudge-dashboard-${environment} --query 'Stacks[0].Outputs[?OutputKey==`LoadBalancerDNS`].OutputValue' --output text"
-  
+
   PRINT "Deployment successful!"
   PRINT "Dashboard URL: https://${alb_dns}"
-  
+
   RETURN (SUCCESS, alb_dns)
 END
 ```

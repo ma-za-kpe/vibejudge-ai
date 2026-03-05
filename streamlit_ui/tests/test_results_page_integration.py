@@ -24,6 +24,11 @@ def authenticated_app() -> AppTest:
     Returns:
         An AppTest instance with authentication already set up.
     """
+    import streamlit as st
+
+    # Clear all caches before each test to prevent cache pollution
+    st.cache_data.clear()
+
     at = AppTest.from_file("streamlit_ui/pages/3_🏆_Results.py")
 
     # Set up authentication in session state
@@ -221,7 +226,9 @@ def test_search_functionality_filters_by_team_name(
     # Find the search input (should have "search" in key or label)
     search_input = None
     for text_input in at.text_input:
-        if "search" in text_input.key.lower() or "search" in str(text_input.label).lower():
+        key_match = text_input.key and "search" in text_input.key.lower()
+        label_match = "search" in str(text_input.label).lower()
+        if key_match or label_match:
             search_input = text_input
             break
 
@@ -276,7 +283,9 @@ def test_sort_functionality_by_score(
     # Find the sort dropdown (should have "sort" in key or label)
     sort_dropdown = None
     for selectbox in at.selectbox:
-        if "sort" in selectbox.key.lower() or "sort" in str(selectbox.label).lower():
+        key_match = selectbox.key and "sort" in selectbox.key.lower()
+        label_match = "sort" in str(selectbox.label).lower()
+        if key_match or label_match:
             sort_dropdown = selectbox
             break
 
@@ -309,14 +318,28 @@ def test_team_detail_navigation(
         mock_response.status_code = 200
         mock_response.ok = True
 
-        if "/scorecard" in url:
+        if "/individual-scorecards" in url:
+            # Return individual scorecards data
+            mock_response.json.return_value = {
+                "team_dynamics": {
+                    "collaboration_quality": "excellent",
+                    "role_distribution": "balanced",
+                    "communication_frequency": "high",
+                },
+                "members": [],
+            }
+        elif "/scorecard" in url:
             mock_response.json.return_value = mock_scorecard_data
         elif "/leaderboard" in url:
             mock_response.json.return_value = mock_leaderboard_data
         else:
-            mock_response.json.return_value = [
-                {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
-            ]
+            mock_response.json.return_value = {
+                "hackathons": [
+                    {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
+                ],
+                "next_cursor": None,
+                "has_more": False,
+            }
 
         return mock_response
 
@@ -325,6 +348,12 @@ def test_team_detail_navigation(
     at = authenticated_app
     at.run()
 
+    # Verify hackathon dropdown exists and select first hackathon
+    assert len(at.selectbox) > 0, "Hackathon dropdown not found"
+
+    # The selectbox should auto-select the first hackathon
+    # Now verify leaderboard is displayed with View Details buttons
+
     # Find "View Details" button for first submission
     view_button = None
     for button in at.button:
@@ -332,14 +361,17 @@ def test_team_detail_navigation(
             view_button = button
             break
 
-    assert view_button is not None, "View Details button not found"
+    assert view_button is not None, (
+        f"View Details button not found. Available buttons: {[b.label for b in at.button]}"
+    )
 
     # Click the button to navigate to team detail
     view_button.click()
     at.run()
 
     # Verify we're now in team detail view
-    assert at.session_state.get("view_mode") == "team_detail"
+    # AppTest session_state doesn't have .get(), use 'in' operator
+    assert "view_mode" in at.session_state and at.session_state["view_mode"] == "team_detail"
     assert "selected_sub_id" in at.session_state
 
     # Verify scorecard API was called
@@ -374,14 +406,26 @@ def test_scorecard_display_completeness(
         mock_response.status_code = 200
         mock_response.ok = True
 
-        if "/scorecard" in url:
+        if "/individual-scorecards" in url:
+            mock_response.json.return_value = {
+                "team_dynamics": {
+                    "collaboration_quality": "excellent",
+                    "role_distribution": "balanced",
+                },
+                "members": [],
+            }
+        elif "/scorecard" in url:
             mock_response.json.return_value = mock_scorecard_data
         elif "/leaderboard" in url:
             mock_response.json.return_value = mock_leaderboard_data
         else:
-            mock_response.json.return_value = [
-                {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
-            ]
+            mock_response.json.return_value = {
+                "hackathons": [
+                    {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
+                ],
+                "next_cursor": None,
+                "has_more": False,
+            }
 
         return mock_response
 
@@ -464,9 +508,13 @@ def test_pagination_limit_50_submissions(mock_get: MagicMock, authenticated_app:
         if "/leaderboard" in url:
             mock_response.json.return_value = large_leaderboard_data
         else:
-            mock_response.json.return_value = [
-                {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
-            ]
+            mock_response.json.return_value = {
+                "hackathons": [
+                    {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
+                ],
+                "next_cursor": None,
+                "has_more": False,
+            }
 
         return mock_response
 
@@ -515,12 +563,18 @@ def test_back_to_leaderboard_button(
         mock_response.status_code = 200
         mock_response.ok = True
 
-        if "/scorecard" in url:
+        if "/individual-scorecards" in url:
+            mock_response.json.return_value = {"team_dynamics": {}, "members": []}
+        elif "/scorecard" in url:
             mock_response.json.return_value = mock_scorecard_data
         else:
-            mock_response.json.return_value = [
-                {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
-            ]
+            mock_response.json.return_value = {
+                "hackathons": [
+                    {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
+                ],
+                "next_cursor": None,
+                "has_more": False,
+            }
 
         return mock_response
 
@@ -549,7 +603,8 @@ def test_back_to_leaderboard_button(
     at.run()
 
     # Verify we're back in leaderboard view
-    assert at.session_state.get("view_mode") == "leaderboard"
+    # AppTest session_state doesn't have .get(), use 'in' operator
+    assert "view_mode" in at.session_state and at.session_state["view_mode"] == "leaderboard"
 
 
 @patch("components.api_client.requests.Session.get")
@@ -578,9 +633,13 @@ def test_no_submissions_message(mock_get: MagicMock, authenticated_app: AppTest)
         if "/leaderboard" in url:
             mock_response.json.return_value = empty_leaderboard_data
         else:
-            mock_response.json.return_value = [
-                {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
-            ]
+            mock_response.json.return_value = {
+                "hackathons": [
+                    {"hack_id": "01HXXX111", "name": "Test Hackathon", "status": "active"}
+                ],
+                "next_cursor": None,
+                "has_more": False,
+            }
 
         return mock_response
 
@@ -590,7 +649,7 @@ def test_no_submissions_message(mock_get: MagicMock, authenticated_app: AppTest)
     at.run()
 
     # Verify info message is displayed
-    assert len(at.info) > 0
+    assert len(at.info) > 0, f"Expected info message but got {len(at.info)} info messages"
     info_message = at.info[0].value
     assert "no submissions" in info_message.lower() or "analyzed" in info_message.lower()
 
